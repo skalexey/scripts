@@ -14,6 +14,7 @@ test_all_build_deps_job()
 				"$ai/list_job.sh" \
 				"$ai/print_args_job.sh" \
 				"$ai/copy_job.sh" \
+				"$ai/swap_args_job.sh" \
 	)
 	env_include ${includes[@]}
 
