@@ -23,7 +23,7 @@ dir_job()
 #	echo "dir_job: job: $job"
 	source list_job.sh
 	echo "dir_job: list_job ${#file_list[@]} ${file_list[@]} dir_file_job.sh $directory $job ${@:$((job_index+1))}"
-	list_job ${#file_list[@]} ${file_list[@]} dir_file_job.sh $directory $job ${@:$((job_index+1))}
+	list_job ${#file_list[@]} ${file_list[@]} swap_args_job.sh $directory dir_file_job.sh $job ${@:$((job_index+1))}
 }
 
 job()
