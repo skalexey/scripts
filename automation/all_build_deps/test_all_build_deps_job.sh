@@ -18,8 +18,6 @@ test_all_build_deps_job()
 							"vl_cpp_generator2" \
 	)
 
-	source automation_config.sh
-
 	local take_dir_list=(	"$projects_dir/vl_cpp_generator" \
 							"$projects_dir/spellbook" \
 	)
