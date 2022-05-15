@@ -1,55 +1,55 @@
 #!/bin/bash
 
-lastFolderName=$folderName
-folderName=${PWD##*/}
+local lastFolderName=$folderName
+local folderName=${PWD##*/}
 
 source log.sh
-last_log_prefix=$log_prefix
-log_prefix="-- [${folderName} dependencies script]: "
+local last_log_prefix=$log_prefix
+local log_prefix="-- [${folderName} dependencies script]: "
 
-buildFolderPrefix="Build"
-onlyLibArg=" "
-cmakeTestsArg=" "
-cmakeGppArg=" "
-buildConfig="Debug"
-logArg=" -DLOG_ON=ON"
-build=""
-rootDirectory="."
-onlyConfig=false
+local buildFolderPrefix="Build"
+local onlyLibArg=" "
+local cmakeTestsArg=" "
+local cmakeGppArg=" "
+local buildConfig="Debug"
+local logArg=" local -DLOG_ON=ON"
+local build=""
+local rootDirectory="."
+local onlyConfig=false
 
 parse_args()
 {
-	argIndex=0
+	local argIndex=0
 	for arg in "$@" 
 	do
 		#echo "arg[$argIndex]: '$arg'"
 		
 		if [[ $argIndex -eq 0 ]]; then
-			rootDirectory=$arg
+			local rootDirectory=$arg
 		else
 			if [[ "$arg" == "only-lib" ]]; then
 				log "'only-lib' option passed. Build only library without tests" " --"
-				onlyLibArg=" only-lib"
-				cmakeTestsArg=" "
+				local onlyLibArg=" only-lib"
+				local cmakeTestsArg=" "
 			elif [[ "$arg" == "g++" ]]; then
 				log "'g++' option passed. Build with g++ compiler" " --"
-				cmakeGppArg= -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gpp
-				gppArg="g++"
-				buildFolderPrefix="Build-g++"
+				local cmakeGppArg= -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gpp
+				local gppArg="g++"
+				local buildFolderPrefix="Build-g++"
 			elif [[ "$arg" == "no-log" ]]; then
 				log "'no-log' option passed. Turn off LOG_ON compile definition" " --"
-				logArg=" "
+				local logArg=" "
 			elif [[ "$arg" == "release" ]]; then
 				log "'release' option passed. Set Release build type" " --"
-				buildConfig="Release"
+				local buildConfig="Release"
 			elif [[ "$arg" == "configure" ]]; then
 				log "'configure' option passed. Will not build the project. Only make the config" " --"
-				onlyConfig=true
+				local onlyConfig=true
 			fi
 		fi	
-		argIndex=$((argIndex + 1))
+		local argIndex=$((argIndex + 1))
 	done
 }
 
-folderName=$lastFolderName
-log_prefix=$last_log_prefix
+local folderName=$lastFolderName
+local log_prefix=$last_log_prefix
