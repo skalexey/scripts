@@ -1,8 +1,10 @@
 #!/bin/bash
 
+lastFolderName=$folderName
 folderName=${PWD##*/}
 
 source log.sh
+last_log_prefix=$log_prefix
 log_prefix="-- [${folderName} dependencies script]: "
 
 download_dependency()
@@ -43,3 +45,6 @@ download_dependency()
 		log "Dependency '$dep_dir_name' is already downloaded" " ---"
 	fi
 }
+
+folderName=$lastFolderName
+log_prefix=$last_log_prefix

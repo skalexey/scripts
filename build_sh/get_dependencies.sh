@@ -7,10 +7,12 @@ if [ ! -z "$1" ]; then
 	cd "$1" # go to the source directory passed
 fi
 
+lastFolderName=$folderName
 folderName=${PWD##*/}
 
 source log.sh
 
+last_log_prefix=$log_prefix
 log_prefix="-- [${folderName} get_dependencies script]: "
 
 log "Check for dependencies" " -"
@@ -30,3 +32,6 @@ if [ $retval -ne 0 ]; then
 fi
 
 cd "${enterDirectory}"
+
+folderName=$lastFolderName
+log_prefix=$last_log_prefix

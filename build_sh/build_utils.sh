@@ -1,8 +1,10 @@
 #!/bin/bash
 
+lastFolderName=$folderName
 folderName=${PWD##*/}
 
 source log.sh
+last_log_prefix=$log_prefix
 log_prefix="-- [${folderName} dependencies script]: "
 
 buildFolderPrefix="Build"
@@ -49,3 +51,5 @@ parse_args()
 	done
 }
 
+folderName=$lastFolderName
+log_prefix=$last_log_prefix

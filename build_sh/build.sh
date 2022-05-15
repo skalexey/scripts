@@ -1,10 +1,10 @@
 #!/bin/bash
 
-[ -z $script_includes_dir ] && script_includes_dir="."
-
+lastFolderName=$folderName
 folderName=${PWD##*/}
 
-source $script_includes_dir/log.sh
+source log.sh
+last_log_prefix=$log_prefix
 log_prefix="-- [${folderName} build script]: "
 
 log "Build for OS: $OSTYPE" " -" " ---"
@@ -18,7 +18,7 @@ if [ -f "deps_config.sh" ]; then
 fi
 
 source build_config.sh
-source $script_includes_dir/os.sh
+source os.sh
 
 if is_windows; then
 	generatorArg=" "
@@ -92,3 +92,6 @@ fi
 cd "$enterDirectory"
 
 log "Finished build" " -" " ---"
+
+folderName=$lastFolderName
+log_prefix=$last_log_prefix
