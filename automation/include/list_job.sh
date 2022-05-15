@@ -16,8 +16,8 @@ list_job()
 	local job_index=$((list_size+2))
 	#echo "list_job: job_index: $job_index"
 	local job_path=${!job_index}
-	source $job_path
 	local job=$(basename $job_path)
+	source $job
 	local jobname=$(echo $job| cut -d. -f1)
 	#echo "list_job: jobname: $jobname"
 	#echo "list_job: list: ${list[@]}"
