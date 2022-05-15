@@ -2,26 +2,21 @@
 
 all_build_deps_job()
 {
-	ai="automation/include"
-	si="include"
-	includes=(	"$si/log.sh" \
-				"$si/file_utils.sh" \
-				"$si/file_utils.py" \
-				"automation/automation_config.sh" \
-				"$ai/dir_job.sh" \
-				"$ai/dir_file_job.sh" \
-				"$ai/list_job.sh" \
-				"$ai/print_args_job.sh" \
+	source automation_config.sh
+
+	local includes=(	"$scripts_dir/include/log.sh" \
+						"$scripts_dir/include/file_utils.sh" \
+						"$scripts_dir/include/file_utils.py" \
+						"$scripts_dir/automation/automation_config.sh" \
+						"$scripts_dir/automation/include" \
 	)
 	env_include ${includes[@]}
 
-	source automation_config.sh
-
-	dir_list=(	"$projects_dir/vl_cpp_generator" \
-				"$projects_dir/spellbook" \
-				"$projects_dir/VL" \
-				"$projects_dir/VL/JSONConverter" \
-				"$projects_dir/DataModelBuilder/Core" \
+	local dir_list=(	"$projects_dir/vl_cpp_generator" \
+						"$projects_dir/spellbook" \
+						"$projects_dir/VL" \
+						"$projects_dir/VL/JSONConverter" \
+						"$projects_dir/DataModelBuilder/Core" \
 	)
 
 	[ -z $1 ] && echo "[all_build_deps]: No job specified" && exit || job=$1
