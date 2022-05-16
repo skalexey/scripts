@@ -7,23 +7,26 @@
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $THIS_DIR/include/env.sh
 
+# store the current (invocation) dir for global usage
+RUN_INVOCATION_DIR=${PWD}
+
 # collect all extra jobs passed as arguments to this script
 arg_includes=()
 for arg in "$@" 
 do
 	if [[ $arg =~ "_job.sh" ]]; then
-		arg_includes+=($arg)
+		[[ $arg == /* ]] && fp=$arg || fp=$RUN_INVOCATION_DIR/$arg
+		arg_includes+=($fp)
 	fi
 done
-echo "		arg_includes: ${arg_includes[@]}"
+#echo "		arg_includes: ${arg_includes[@]}"
 
 # create env directory in the location of the passed job script
 # with copies of all scripts from the job script directory
-target_dir=$(dirname $1)
-setup_environment $target_dir $target_dir ${arg_includes[@]}
+TARGET_DIR=$(dirname $1)
+setup_environment $TARGET_DIR $TARGET_DIR ${arg_includes[@]}
 
 # go to the environment directory and call the same script from there
-ENV_ORIGINAL_DIR=${PWD}
 cd $ENV_DIR
 
 job=$(basename $1)
