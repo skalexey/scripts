@@ -3,12 +3,11 @@
 source file_utils.sh
 source log.sh
 
-last_log_prefix=$log_prefix
-log_prefix="[close_overlappings_file_job]: "
-
 close_overlappings_file_job()
 {
-	[ -z "$1" ] && exit || log "do job for $1"
+	local log_prefix="[close_overlappings_file_job]: "
+
+	[ -z "$1" ] && log "No file path specified" && exit || log "do the job for $1"
 
 	local ret=$(file_search "$1" "folderName=\$lastFolderName")
 	log "search folderName saving into '$1': '$ret'"
@@ -51,5 +50,3 @@ job()
 {
 	close_overlappings_file_job $@
 }
-
-log_prefix=$last_log_prefix
