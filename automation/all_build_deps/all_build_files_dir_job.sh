@@ -7,7 +7,6 @@ all_build_files_dir_job()
 	local includes=(	"$scripts_dir/include/log.sh" \
 						"$scripts_dir/include/file_utils.sh" \
 						"$scripts_dir/include/file_utils.py" \
-						"$scripts_dir/automation/automation_config.sh" \
 						"$scripts_dir/automation/include" \
 	)
 	env_include ${includes[@]}

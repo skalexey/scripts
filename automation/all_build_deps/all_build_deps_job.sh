@@ -3,11 +3,10 @@
 all_build_deps_job()
 {
 	source automation_config.sh
-
 	local includes=(	"$scripts_dir/include/log.sh" \
 						"$scripts_dir/include/file_utils.sh" \
 						"$scripts_dir/include/file_utils.py" \
-						"$scripts_dir/automation/automation_config.sh" \
+						"$scripts_dir/include/git_utils.sh"
 						"$scripts_dir/automation/include" \
 	)
 	env_include ${includes[@]}

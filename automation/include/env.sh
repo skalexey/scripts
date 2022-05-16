@@ -22,12 +22,13 @@ env_include()
 
 	for e in ${includes[@]}; do
 		if [[ $e == /* ]]; then
-			fp=$e
+			local fp=$e
 		else
-			[ ! -z $ENV_ORIGINAL_DIR ] && fp=$ENV_ORIGINAL_DIR/$e || fp=$e # includes are all relative to the invocation dir
+			# includes are all relative to the target dir
+			[ ! -z $ENV_TARGET_DIR ] && fp=$ENV_TARGET_DIR/$e || fp=$e
 		fi
 		[ -z "$fp" ] && log "empty path in includes: '$fp'" && continue
-
+		# log "Process the include '$e' transformed into '$fp'"
 		if [ -d "$fp" ]; then
 			file0=$(ls -p $fp | grep -v / | head -1)
 			# log $file0
@@ -68,21 +69,21 @@ setup_environment()
 	local log_postfix="\033[0m"
 
 	# arguments 
-	[ -z "$1" ] && exit || local target_dir=$(dir_full_path "$1") # target_dir
-	[ ! -z "$2" ] && local where_dir=$(dir_full_path "$2") || local where_dir="$target_dir" # where
+	[ -z "$1" ] && exit || ENV_TARGET_DIR=$(dir_full_path "$1") # ENV_TARGET_DIR
+	[ ! -z "$2" ] && local where_dir=$(dir_full_path "$2") || local where_dir="$ENV_TARGET_DIR" # where
 	[ ! -z "$3" ] && local includes=${@:3} #includes
 
 	# check the directories exists
 	[ ! -d "$1" ] && log "No such directory passed in the first argument: '$1'" && exit
 
 	# check the processed directories paths are not empty
-	[ -z "$target_dir" ] && exit
+	[ -z "$ENV_TARGET_DIR" ] && exit
 	[ -z "$where_dir" ] && exit
 
 	# do the work
 	log "setup_environment in '$where_dir'"
 
-	local target_name=$(basename $target_dir)
+	local target_name=$(basename $ENV_TARGET_DIR)
 	local env_dir="$where_dir/env"
 
 	# set the global ENV_DIR variable
@@ -94,9 +95,12 @@ setup_environment()
 	mkdir -p $env_dir
 	# [ ! -d "$env_dir" ] && mkdir -p $env_dir
 
+	# copy some essential dependencies
+	cp "$THIS_DIR/../automation_config.sh" "$env_dir/"
+	
 	# copy include directories content to the env directory
 	[ ! -z "$includes" ] && env_include ${includes[@]}
 
 	# copy the target directory content into the env
-	cp $target_dir/* "$env_dir/"
+	cp $ENV_TARGET_DIR/* "$env_dir/"
 }
