@@ -83,10 +83,10 @@ build()
 		source get_dependencies.sh $@
 		local retval=$?
 		if [ $retval -ne 0 ]; then
-			log "Dependencies resolution error" " --"
+			log_error "Dependencies resolution error" " --"
 			exit 1
 		else
-			log "Done with dependencies" " --"
+			log_success "Done with dependencies" " --"
 			cd "$enterDirectory"
 		fi
 	fi
@@ -97,43 +97,42 @@ build()
 		local folderName=$rootDirectory
 	fi
 
-	echo "--- [${folderName}]: Configure with CMake"
-
 	local build="${buildFolderPrefix}-cmake"
 
 	log "Output directory: '$build'" " -"
 
-	[ ! -d "$build" ] && mkdir $build || echo "	already exists"
+	[ ! -d "$build" ] && mkdir $build || log "	already exists"
 	cd $build
 
+	log "Configure with CMake: cmake ..$generatorArg$logArg$extraArg" "\033[0;36m" "\033[0m"
 	cmake ..$generatorArg$logArg$extraArg
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
-		log "CMake configure error" " -"
+		log_error "CMake configure error" " -"
 		cd "$enterDirectory"
 		exit
 	else
-		log "CMake configuring has been successfully done" " -"
+		log_sccess "CMake configuring has been successfully done" " -"
 	fi
 
 	[ "$onlyConfig" == true ] && log "Exit without build" " -" && exit || log "Run cmake --build" " -"
 
-	log "cmake --build . --config=$buildConfig" "\033[0;32m" "\033[0m"
+	log "cmake --build . --config=$buildConfig" "\033[0;36m" "\033[0m"
 	cmake --build . --config=$buildConfig
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
-		log "CMake build error" " -"
+		log_error "CMake build error" " -"
 		cd "$enterDirectory"
 		exit
 	else
-		log "CMake building is successfully done" "-" " ---"
+		log_success "CMake building is successfully done" "-" " ---"
 	fi
 
 	cd "$enterDirectory"
 
-	log "Finished build" " -" " ---"
+	log_success "Finished build" " -" " ---"
 }
 
 build $@
