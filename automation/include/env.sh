@@ -96,7 +96,8 @@ setup_environment()
 	# [ ! -d "$env_dir" ] && mkdir -p $env_dir
 
 	# copy some essential dependencies
-	cp "$THIS_DIR/../automation_config.sh" "$env_dir/"
+	cp "$automation_dir/automation_config.sh" "$env_dir/"
+	cp "$scripts_dir/include/log.sh" "$env_dir/"
 	
 	# copy include directories content to the env directory
 	[ ! -z "$includes" ] && env_include ${includes[@]}
