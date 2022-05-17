@@ -6,9 +6,11 @@
 # from the parent job like dir_job but should be used as an output path.
 swap_args_job()
 {
-	[ -z "$1" ] && echo "[swap_args_job]: No agument provided 0 of 3" && exit
-	[ -z "$2" ] && echo "[swap_args_job]: No agument provided 1 of 3" && exit
-	[ -z "$3" ] && echo "[swap_args_job]: No job provided 2 of 3" && exit || job_path=$3
+	source log.sh
+	local log_prefix="[swap_args_job]: "
+	[ -z "$1" ] && log "No agument provided 0 of 3" && exit
+	[ -z "$2" ] && log "No agument provided 1 of 3" && exit
+	[ -z "$3" ] && log "No job provided 2 of 3" && exit || job_path=$3
 
 	local job=$(basename $job_path)
 	source $job

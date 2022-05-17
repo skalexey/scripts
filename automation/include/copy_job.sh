@@ -5,7 +5,7 @@
 copy_job()
 {
 	source log.sh
-	log_prefix="[copy_job]: "
+	local log_prefix="[copy_job]: "
 	[ -z "$1" ] && log_error "too few arguments 0 of 2" && exit
 	[ -z "$2" ] && log_error "too few arguments 1 of 2" && exit
 	cp "$1" "$2"

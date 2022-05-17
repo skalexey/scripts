@@ -6,12 +6,15 @@
 
 dir_job()
 {
+	source log.sh
+	local log_prefix="[dir_job]: "
 	# arguments 
-	[ -z "$1" ] && exit # directory
-	[ -z "$2" ] && exit # relative file list size
-	[ -z "$3" ] && exit # relative file list
-	[ -z "$4" ] && exit # job
-
+	[ -z "$1" ] && log_error "No directory provided" && exit # directory
+	[ -z "$2" ] && log_error "No relative file list size provided" && exit # relative file list size
+	[ -z "$3" ] && log_error "No relative file list provided" && exit # relative file list
+	[ -z "$4" ] && log_error "No job provided" && exit # job
+	# outputs
+	# {1} - $directory/$file
 	local directory=$1
 #	echo "dir_job: dir: $directory"
 	local list_size=$2
@@ -22,7 +25,7 @@ dir_job()
 	local job=${!job_index}
 #	echo "dir_job: job: $job"
 	source list_job.sh
-	echo "dir_job: list_job ${#file_list[@]} ${file_list[@]} dir_file_job.sh $directory $job ${@:$((job_index+1))}"
+	log "command: list_job ${#file_list[@]} ${file_list[@]} swap_args_job.sh $directory dir_file_job.sh $job ${@:$((job_index+1))}"
 	list_job ${#file_list[@]} ${file_list[@]} swap_args_job.sh $directory dir_file_job.sh $job ${@:$((job_index+1))}
 }
 
