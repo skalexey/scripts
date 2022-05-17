@@ -2,6 +2,8 @@
 
 all_build_includes_dir_job()
 {
+	source log.sh
+	local log_prefix="[all_build_includes_dir_job]: "
 	source automation_config.sh
 	
 	local includes=(	"$scripts_dir/include/log.sh" \
@@ -16,9 +18,14 @@ all_build_includes_dir_job()
 						get_dependencies.sh \
 	)
 
-	[ -z $1 ] && echo "[all_build_files]: No directory specified" && exit || input_dir=$1
-	[ -z $2 ] && echo "[all_build_files]: No job specified" && exit || job=$2
+	# arguments
+	# input directory
+	[ -z $1 ] && log_error "No directory specified" && exit || input_dir=$1
+	# job - provided with the output {1}
+	[ -z $2 ] && log_error "No job specified" && exit || job=$2
 
+	# outputs
+	# {1} - output of dir_job: $directory/$file
 	source dir_job.sh
 
 	dir_job $input_dir ${#file_list[@]} ${file_list[@]} $job ${@:3}
