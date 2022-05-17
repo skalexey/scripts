@@ -14,7 +14,6 @@ all_build_files_dir_job()
 	local file_list=(	build.sh \
 				dependencies.sh \
 				get_dependencies.sh \
-				build_utils.sh \
 				deps_scenario.sh \
 	)
 

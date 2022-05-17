@@ -14,7 +14,6 @@ all_build_includes_dir_job()
 	local file_list=(	build.sh \
 						dependencies.sh \
 						get_dependencies.sh \
-						build_utils.sh \
 	)
 
 	[ -z $1 ] && echo "[all_build_files]: No directory specified" && exit || input_dir=$1
