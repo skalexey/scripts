@@ -37,12 +37,30 @@ file_search() {
 	#[[ $(cat $1) =~ .*$2* ]] && true || false
 }
 
+full_path() {
+	[ -z "$1" ] && exit # input path
+	[ -d "$1" ] && dir_full_path $1
+	[ -f "$1" ] && file_full_path $1
+}
+
 dir_full_path() {
 	[ -z "$1" ] && exit # directory path
-	
 	[ ! -d "$1" ] && exit
+	
 	local cur_dir=${PWD}
 	cd "$1"
 	echo ${PWD}
+	cd $cur_dir
+}
+
+file_full_path() {
+	[ -z "$1" ] && exit # file path
+	[ ! -f "$1" ] && exit
+	
+	file_dir=$(dirname "$1")
+	file_name=$(basename "$1")
+	local cur_dir=${PWD}
+	cd "$file_dir"
+	echo ${PWD}/$file_name
 	cd $cur_dir
 }
