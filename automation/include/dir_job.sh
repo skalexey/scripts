@@ -25,8 +25,9 @@ dir_job()
 	local job=${!job_index}
 #	echo "dir_job: job: $job"
 	source list_job.sh
-	log "command: list_job ${#file_list[@]} ${file_list[@]} swap_args_job.sh $directory dir_file_job.sh $job ${@:$((job_index+1))}"
-	list_job ${#file_list[@]} ${file_list[@]} swap_args_job.sh $directory dir_file_job.sh $job ${@:$((job_index+1))}
+	cmd="list_job ${#file_list[@]} ${file_list[@]} swap_args_job.sh $directory dir_file_job.sh $job ${@:$((job_index+1))}"
+	log "command: $cmd"
+	$cmd
 }
 
 job()
