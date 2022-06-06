@@ -1,7 +1,7 @@
 #!/bin/bash
 
 buildFolderPrefix="Build"
-extraArg=" -DDEPS=${depsLocationFull} -DVL_DIR=${vlDirFull} -DRAPIDJSON_DIR=${rapidjsonDirFull}"
+extraArg=" -DDEPS=${depsLocationFull} -DINCLUDES=${HOME}/Projects/Utils/include"
 extraArgWin=$extraArg
 extraArgMac=$extraArg
 buildConfig="Debug"
