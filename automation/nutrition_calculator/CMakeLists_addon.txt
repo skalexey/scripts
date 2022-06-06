@@ -1,0 +1,31 @@
+if ("${DEPS}" STREQUAL "")
+	message("nutrition_calculator: WARNING: DEPS is not specified. Take the default value")
+	set(DEPS "${PROJECT_SOURCE_DIR}/dependencies")
+else()
+	message("nutrition_calculator: DEPS: ${DEPS}")
+endif()
+
+set(UTILS_DIR "${DEPS}/Utils/include")
+foreach(items ${UTILS_DIR})
+	file(GLOB_RECURSE UTILS_SRC "${items}/*.cpp")
+endforeach()
+
+set(nutrition_calculator_INCLUDES
+	"${PROJECT_SOURCE_DIR}/include"
+	"${UTILS_DIR}"
+)
+
+if (NOT "${INCLUDES}" STREQUAL "")
+	message("nutrition_calculator: External INCLUDES variable: ${INCLUDES}")
+	set(nutrition_calculator_INCLUDES ${nutrition_calculator_INCLUDES} ${INCLUDES})
+	foreach(items ${INCLUDES})
+		file(GLOB_RECURSE INCLUDES_SRC "${items}/*.cpp")
+	endforeach()
+	message("nutrition_calculator: External INCLUDES sources: ${INCLUDES_SRC}")
+endif()
+
+set(nutrition_calculator_INCLUDES ${nutrition_calculator_INCLUDES} PARENT_SCOPE)
+message("nutrition_calculator: nutrition_calculator_INCLUDES: ${nutrition_calculator_INCLUDES}")
+
+include_directories("${nutrition_calculator_INCLUDES}")
+include_directories(${PROJECT_BINARY_DIR})
