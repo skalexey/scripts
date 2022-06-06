@@ -113,7 +113,7 @@ build()
 		cd "$enterDirectory"
 		exit
 	else
-		log_sccess "CMake configuring has been successfully done" " -"
+		log_success "CMake configuring has been successfully done" " -"
 	fi
 
 	[ "$onlyConfig" == true ] && log "Exit without build" " -" && exit || log "Run cmake --build" " -"
