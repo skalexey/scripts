@@ -19,9 +19,9 @@ file_replace() {
 	[ -z "$1" ] && exit # file name
 	[ -z "$2" ] && exit # regex to find
 	[ -z "$3" ] && exit # text to replace regex to
-	
-	sed -i -E "s/$2/$3/" $1
-	return $?
+	#echo "s/$2/$3/g$4"
+	sed -i -E "s/$2/$3/g$4" $1
+	#echo $(python -c "from file_utils import*; replace(\"$1\", \"$2\", \"$3\");")
 }
 
 file_search() {
@@ -57,10 +57,24 @@ file_full_path() {
 	[ -z "$1" ] && exit # file path
 	[ ! -f "$1" ] && exit
 	
-	file_dir=$(dirname "$1")
-	file_name=$(basename "$1")
+	local file_dir=$(dirname "$1")
+	local file_name=$(basename "$1")
 	local cur_dir=${PWD}
 	cd "$file_dir"
 	echo ${PWD}/$file_name
 	cd $cur_dir
+}
+
+rename() {
+	[ -z "$1" ] && echo "No path specified" && exit # path
+	[ ! -d "$1" ] && [ ! -f "$1" ] && echo "No file or directory exists in the given path '$1'" && exit 1
+	[ -z "$2" ] && echo "No new name specified" && exit 2 # new name
+	
+	local b=$(dirname "$1")
+	local new_path="$b/$2"
+	if [ -d "$new_path" ] || [ -f "$new_path" ]; then
+		echo "This name is already taken: '$new_path'"
+		exit 3
+	fi
+	mv "$1" "$new_path"
 }
