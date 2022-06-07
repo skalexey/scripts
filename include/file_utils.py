@@ -1,6 +1,6 @@
 
 def insert_before(fpath, where, what):
-	replace(fpath, where, where + what, 1)
+	replace(fpath, where, what + where, 1)
 
 def replace(fpath, where, what, count = -1):
 	with open(fpath, "r") as f:

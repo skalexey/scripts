@@ -5,8 +5,10 @@ file_insert_before() {
 	[ -z "$2" ] && exit # string before which to insert
 	[ -z "$3" ] && exit # what to insert
 	#sed -i "" "s/$2/$3$2/" "$1"
-	# due to platform independence
-	echo $(python -c "from file_utils import*; insert_before(\"$1\", \"$2\", \"$3\");")
+	# Use python due to platform independence
+	# use relative paths due to platform independence
+	fpath=$(realpath --relative-to="${PWD}" "$1")
+	return $(python -c "from file_utils import*; insert_before(\"$fpath\", \"$2\", \"$3\");")
 }
 
 file_append_line() {
