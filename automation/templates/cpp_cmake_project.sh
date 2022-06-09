@@ -75,6 +75,10 @@ if [ "${proj_type^^}" == "EXE" ]; then
     log_success "Project directory created"
 else
     rm -rf $project_path/exe
+    rm -rf $project_path/lib
+    rm -rf $project_path/Test
+    file_replace $project_path/CMakeLists.txt "Project" "$project_name"
+    #file_replace $project_path/CMakeLists.txt "{TPL_CUSTOM_INCLUDES}" ""
 fi
 
 log "Deliver build scripts ..."

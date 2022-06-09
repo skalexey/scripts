@@ -60,7 +60,8 @@ function job()
     file_replace $exe_path/CMakeLists.txt "ExeTitle" "$exe_name"
     file_replace $exe_path/main.cpp "ExeTitle" "$exe_name"
     if [ -f "$target_path/CMakeLists.txt" ]; then
-        file_insert_before $target_path/CMakeLists.txt "add_subdirectory" "add_subdirectory (\\\"$exe_name\\\")\n"
+        #file_insert_before $target_path/CMakeLists.txt "add_subdirectory" "add_subdirectory (\\\"$exe_name\\\")\n"
+        file_append_line $target_path/CMakeLists.txt "add_subdirectory (\"$exe_name\")"
         exitcode=$?
         [ $exitcode -lt 0 ] && log_error "Error during executable directory registration in the root project: $exitcode" && exit 4
         log_success "Added subdirectory to the root project"
@@ -70,7 +71,7 @@ function job()
     log_success "Project directory created"
 }
 
-function cpp_cmake_exe()
+function cpp_cmake_exe_job()
 {
     job $@
 }
