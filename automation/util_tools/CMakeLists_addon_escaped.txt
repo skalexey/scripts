@@ -1,0 +1,5 @@
+set\(UTILS_DIR \"\$\{DEPS\}\/Utils\/include\"\)
+foreach\(items \$\{UTILS_DIR\}\)
+	file\(GLOB_RECURSE UTILS_SRC \"\$\{items\}\/\*\.cpp\"\)
+endforeach\(\)
+set\(CUSTOM_INCLUDES \$\{UTILS_DIR\}\)
