@@ -22,8 +22,12 @@ file_replace() {
 	[ -z "$2" ] && exit # regex to find
 	[ -z "$3" ] && exit # text to replace regex to
 	#echo "s/$2/$3/g$4"
-	sed -i -E "s/$2/$3/g$4" $1
-	#echo $(python -c "from file_utils import*; replace(\"$1\", \"$2\", \"$3\");")
+	sed -i.bac -E "s/$2/$3/g$4" $1
+	rm $1.bac
+	# Use python due to platform independence
+	# use relative paths due to platform independence
+	# fpath=$(realpath --relative-to="${PWD}" "$1")
+	# return $(python -c "from file_utils import*; replace(\"$fpath\", \"$2\", \"$3\");")
 }
 
 file_search() {
