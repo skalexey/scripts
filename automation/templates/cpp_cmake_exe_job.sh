@@ -39,7 +39,8 @@ function job()
     # include dependent scripts to the environment
     source automation_config.sh
     local includes=(	"$scripts_dir/include/file_utils.sh" \
-                "$scripts_dir/include/file_utils.py" \
+                        "$scripts_dir/include/file_utils.py" \
+                        "$scripts_dir/include/os.sh" \
     )
     env_include ${includes[@]}
 
@@ -51,8 +52,9 @@ function job()
     log "Setup project directory ..."
 
     cp -R $project_tpl_dir $target_path
-
-    echo "mv $target_path/Exe $exe_path"
+    [ $? -ne 0 ] && log_error "error while copying a subproject template" && exit
+    cmd="mv $target_path/Exe $exe_path"
+    echo $cmd
     # exit
     mv $target_path/Exe $exe_path
 
