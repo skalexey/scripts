@@ -104,8 +104,10 @@ build()
 	[ ! -d "$build" ] && mkdir $build || log "	already exists"
 	cd $build
 
-	log "Configure with CMake: cmake ..$generatorArg$logArg$extraArg" "\033[0;36m" "\033[0m"
-	cmake ..$generatorArg$logArg$extraArg
+	cmd="cmake ..$generatorArg$logArg$extraArg"
+	log "Configure with CMake command: '$cmd'" "\033[0;36m" "\033[0m"
+	$cmd
+
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
