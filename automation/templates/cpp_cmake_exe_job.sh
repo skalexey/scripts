@@ -7,9 +7,8 @@ function job()
     source $scripts_dir/include/log.sh
     local log_prefix="[cpp_cmake_exe.sh]: "
 
-    [ -z $1 ] && log_error "No executable name provided" && exit 1 || exe_name=$1
-    [ -z $2 ] && log_error "No target path provided" && exit 2 || target_path=$2
-    [ ! -z $3 ] && proj_type=$3
+    [ -z $1 ] && log_error "No executable name provided" && exit 1 || local exe_name=$1
+    [ -z $2 ] && log_error "No target path provided" && exit 2 || local target_path=$2
 
     log "Create CMake C++ executable '$exe_name' in '$target_path'"
 
@@ -27,9 +26,12 @@ function job()
     do
         echo "arg[$arg_index]: '$arg'"
         
-        if [[ $arg_index -gt 2 ]]; then
+        if [[ $arg_index -gt 1 ]]; then
             log "Arg '$arg_index'"
-            # chean an arg
+            if [ "$arg" == "includable" ]; then
+                log "'includable' option passed. Will create includable module .h and .cpp files"
+                local includable=true
+            fi
         else
             log "Skip arg '$arg_index'"
         fi	
@@ -47,20 +49,35 @@ function job()
     # do the job
     source $THIS_DIR/templates_config.sh
 
-    local project_tpl_dir=$templates_dir/CMake/Exe
+    if $includable; then
+        local template_name=ExeIncludable
+    else
+        local Exe
+    fi
+
+    local project_tpl_dir=$templates_dir/CMake/$template_name
 
     log "Setup project directory ..."
 
     cp -R $project_tpl_dir $target_path
     [ $? -ne 0 ] && log_error "error while copying a subproject template" && exit
-    cmd="mv $target_path/Exe $exe_path"
+    local cmd="mv $target_path/Exe $exe_path"
     echo $cmd
     # exit
-    mv $target_path/Exe $exe_path
+    mv $target_path/$template_name $exe_path
 
     source $scripts_dir/include/file_utils.sh
     file_replace $exe_path/CMakeLists.txt "ExeTitle" "$exe_name"
     file_replace $exe_path/main.cpp "ExeTitle" "$exe_name"
+    
+    # rename includable module files
+    if $includable; then
+        mv "$exe_path/ExeTitle.h" "$exe_path/$exe_name.h"
+        mv "$exe_path/ExeTitle.cpp" "$exe_path/$exe_name.cpp"
+        file_replace "$exe_path/$exe_name.h" "ExeTitle" "$exe_name"
+        file_replace "$exe_path/$exe_name.cpp" "ExeTitle" "$exe_name"
+    fi
+
     if [ -f "$target_path/CMakeLists.txt" ]; then
         #file_insert_before $target_path/CMakeLists.txt "add_subdirectory" "add_subdirectory (\\\"$exe_name\\\")\n"
         file_append_line $target_path/CMakeLists.txt "add_subdirectory (\"$exe_name\")"
