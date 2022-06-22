@@ -42,7 +42,7 @@ build()
 	local build=""
 	local rootDirectory="."
 	local onlyConfig=false
-
+	local reconfigure=false
 
 	local argIndex=0
 	for arg in "$@" 
@@ -70,6 +70,10 @@ build()
 			elif [[ "$arg" == "configure" ]]; then
 				log "'configure' option passed. Will not build the project. Only make the config" " --"
 				local onlyConfig=true
+			elif [[ "$arg" == "reconfigure" ]]; then
+				log "'reconfigure' option passed. Will not build the project. Only make the config and remove CMakeCache.txt" " --"
+				local onlyConfig=true
+				local reconfigure=true
 			fi
 		fi	
 		local argIndex=$((argIndex + 1))
@@ -104,10 +108,14 @@ build()
 	[ ! -d "$build" ] && mkdir $build || log "	already exists"
 	cd $build
 
+	if $reconfigure; then
+		local cmd="rm CMakeCache.txt"
+		log "Remove CMakeCache.txt cmd: '$cmd'"
+		$cmd
+	fi
 	cmd="cmake ..$generatorArg$logArg$extraArg"
 	log "Configure with CMake command: '$cmd'" "\033[0;36m" "\033[0m"
 	$cmd
-
 
 	local retval=$?
 	if [ $retval -ne 0 ]; then
