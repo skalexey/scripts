@@ -6,9 +6,6 @@ function update_cmake_subproject_job()
 	source log.sh
 	local log_prefix="[update_cmake_subproject_job]: "
 
-	# Load project config
-	source cpptests_config.sh
-
 	## Do the job
 	subproj_dir=$1
 	subproj_name="$(basename "$subproj_dir")"

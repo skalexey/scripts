@@ -16,8 +16,8 @@ all_subprojects_job()
 	source log.sh
 	local local_prefix="[all_subprojects_job]: "
 
-	# Load project config
-	source cpptests_config.sh
+	project_dir=$2
+	[ ! -d "$project_dir" ] && log_error "Project dir provided is invalid ('$project_dir')" && exit
 
 	# Create directory list
 	local dir_list=()
