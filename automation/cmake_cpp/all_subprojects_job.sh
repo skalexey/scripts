@@ -24,7 +24,7 @@ all_subprojects_job()
 	for d in $project_dir/*/ ; do
 		[ -f "$d/CMakeLists.txt" ] && dir_list+=($d) || log "Skip directory '$d' (not a subproject)"
 	done
-	echo ${diri_list[@]}
+	#echo ${dir_list[@]}
 
 	[ -z $1 ] && log_error "No job specified" && exit || job=$1
 
