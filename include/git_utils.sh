@@ -36,3 +36,28 @@ function git_pull()
 	[ ! -z cur_dir ] && cd $cur_dir
 }
 
+function git_check()
+{
+	source log.sh
+	local log_prefix="[git_check]: "
+
+	# arguments
+	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
+		local path=$1
+		local cur_dir=${PWD}
+		cd $path
+	fi
+
+	verbose=false
+	[ "$2" == "verbose" ] && verbose=true
+
+	local status_res=$(git status | grep "Changes not staged for commit")
+	if [ ! -z "$status_res" ]; then
+		log_info "uncommitted changes in '$path'"
+	elif $verbose; then
+		log "no changes"
+	fi
+	
+	[ ! -z cur_dir ] && cd $cur_dir
+}
+
