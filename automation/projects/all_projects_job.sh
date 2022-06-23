@@ -41,8 +41,10 @@ all_projects_job()
 	[ -z $1 ] && log_error "No job specified" && exit || job=$1
 
 	source list_job.sh
-
+	local tmp=$list_job_log
+	list_job_log=false
 	list_job ${#dir_list[@]} ${dir_list[@]} $job ${@:2}
+	list_job_log=$tmp
 }
 
 job() 
