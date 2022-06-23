@@ -55,7 +55,7 @@ function git_check()
 	if [ ! -z "$status_res" ]; then
 		log_info "uncommitted changes in '$path'"
 	elif $verbose; then
-		log "no changes"
+		log "no changes in '$path'"
 	fi
 	
 	[ ! -z cur_dir ] && cd $cur_dir

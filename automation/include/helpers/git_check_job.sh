@@ -11,7 +11,7 @@ git_check_job()
 	[ -z "$1" ] && log "No directory specified" && exit
 
 	source git_utils.sh
-	git_check $1
+	git_check $1 $2
 }
 
 job()
