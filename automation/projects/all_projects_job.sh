@@ -21,7 +21,8 @@ all_projects_job()
 
 	project_list_projects=()
 	for d in $projects_dir/*/; do
-		[ ! -d "$d/.git" ] && log "Skip dir '$d' (not a git repo)" || project_list_projects+=("${d::-1}")
+		dd=${d%/}
+		[ ! -d "$dd/.git" ] && log "Skip dir '$d' (not a git repo)" || project_list_projects+=("$dd")
 	done
 
 	dir_list=()
@@ -30,7 +31,7 @@ all_projects_job()
 	echo "${dir_list[@]}"
 	for e in ${project_list_projects[@]}; do
 		if [[ ! "${dir_list[*]}" =~ "${e}" ]]; then
-			dir_list+=($e);
+			dir_list+=("$e");
 		else
 			log_info "duplicate found: $e";
 		fi
