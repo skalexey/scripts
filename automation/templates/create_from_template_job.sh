@@ -30,10 +30,10 @@ function create_from_template_job()
 	cp "$tpl_path" "$file_path"
 	[ $? -ne 0 ] && log_error "Errors during template delivering at '$file_path'" && return 6
 
-	file_replace "$file_path" "{TPL_NAME}" "$file_name"
+	file_replace "$file_path" "\{TPL_NAME\}" "$file_name"
 	[ $? -ne 0 ] && log_error "Errors during template initialization at '$file_path'" && return 7
 
-	log_success "file '$file_name' created at '$file_path'"
+	log_success "Template '$(basename "$tpl_path")' successfully instantiated at '$file_path'"
 	return 0
 }
 
