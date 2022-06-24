@@ -71,6 +71,12 @@ file_full_path() {
 	cd $cur_dir
 }
 
+file_extension() {
+	[ -z "$1" ] && exit # file path
+	fname=$(basename "$1")
+	echo "${fname##*.}"
+}
+
 rename() {
 	[ -z "$1" ] && echo "No path specified" && exit # path
 	[ ! -d "$1" ] && [ ! -f "$1" ] && echo "No file or directory exists in the given path '$1'" && exit 1
