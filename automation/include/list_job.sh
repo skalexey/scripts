@@ -28,11 +28,12 @@ list_job()
 	for e in ${list[@]}; do
 		#log "list_job: e: $e"
 		local log_prefix="[list_job] [$counter/$list_size]: "
-		local cmd="$jobname $e ${@:$((job_index+1))}"
+		cmd_args=("$e" "${@:$((job_index+1))}")
+		local cmd="$jobname ${cmd_args[@]}"
 		if $list_job_log; then
 			log "command: $cmd"
 		fi
-		$cmd
+		$jobname "$e" "${@:$((job_index+1))}"
 		[ $counter -ge $((list_size-1)) ] && break || ((counter++))
 	done
 }
