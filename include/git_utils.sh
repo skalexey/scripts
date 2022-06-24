@@ -10,7 +10,7 @@ function git_pull()
 	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
 		local path=$1
 		local cur_dir=${PWD}
-		cd $path
+		cd "$path"
 	fi
 
 	local status_res=$(git status | grep "Changes not staged for commit")
@@ -33,7 +33,7 @@ function git_pull()
 		fi
 	fi
 	
-	[ ! -z cur_dir ] && cd $cur_dir
+	[ ! -z cur_dir ] && cd "$cur_dir"
 }
 
 function git_check()
@@ -45,7 +45,7 @@ function git_check()
 	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
 		local path=$1
 		local cur_dir=${PWD}
-		cd $path
+		cd "$path"
 	fi
 
 	verbose=false
@@ -58,6 +58,26 @@ function git_check()
 		log "no changes in '$path'"
 	fi
 	
-	[ ! -z cur_dir ] && cd $cur_dir
+	[ ! -z cur_dir ] && cd "$cur_dir"
+}
+
+function git_check_update()
+{
+	source log.sh
+	local log_prefix="[git_check_update]: "
+
+	# arguments
+	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
+		local path=$1
+		local cur_dir=${PWD}
+		cd "$path"
+		[ $? -ne 0 ] && log_error "Problem with directory '$path'" && return 1
+	fi
+
+	# git fetch
+	
+	[ ! -z cur_dir ] && cd "$cur_dir"
+
+	return 0
 }
 
