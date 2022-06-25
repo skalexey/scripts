@@ -19,33 +19,34 @@ all_projects_job()
 	# Create directory list
 	local project_list_projects=()
 
-	project_list_projects=()
 	for d in $projects_dir/*/; do
-		dd=${d%/}
+		local dd=${d%/}
 		[ ! -d "$dd/.git" ] && log "Skip dir '$d' (not a git repo)" || project_list_projects+=("$dd")
 	done
 
-	dir_list=()
+	local dir_list=()
 	dir_list+=("${project_list_stuff[@]}")
-	log "dir_list:"
-	echo "${dir_list[@]}"
+	# log "dir_list:"
+	# echo "${dir_list[@]}"
 	for e in ${project_list_projects[@]}; do
 		if [[ ! "${dir_list[*]}" =~ "${e}" ]]; then
 			dir_list+=("$e");
-		else
-			log_info "duplicate found: $e";
+		# else
+			# log_info "duplicate found: $e";
 		fi
 	done
 
 	#echo ${project_list[@]}
 
-	[ -z $1 ] && log_error "No job specified" && exit || job=$1
+	[ -z $1 ] && log_error "No job specified" && return 1 || local job=$1
 
 	source list_job.sh
 	local tmp=$list_job_log
 	list_job_log=false
 	list_job ${#dir_list[@]} ${dir_list[@]} $job ${@:2}
 	list_job_log=$tmp
+
+	return 0
 }
 
 job() 
