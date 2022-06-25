@@ -51,16 +51,23 @@ function git_check()
 	verbose=false
 	[ "$2" == "verbose" ] && verbose=true
 
+	ret=false
 	local status_res=$(git status | grep "Changes not staged for commit")
 	if [ ! -z "$status_res" ]; then
-		log_info "uncommitted changes in '$path'"
+		if $verbose; then
+			log_info "uncommitted changes in '$path'"
+		fi
+		ret=true
 	elif $verbose; then
 		log "no changes in '$path'"
 	fi
 	
 	[ ! -z cur_dir ] && cd "$cur_dir"
+
+	$ret
 }
 
+git_check_update_log=false
 function git_check_update()
 {
 	source log.sh
@@ -74,10 +81,45 @@ function git_check_update()
 		[ $? -ne 0 ] && log_error "Problem with directory '$path'" && return 1
 	fi
 
-	# git fetch
-	
-	[ ! -z cur_dir ] && cd "$cur_dir"
+	if $git_check_update_log; then
+		log_info "Check updates at '$path'"
+	fi
 
-	return 0
+	git fetch
+
+	local UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)"
+	[ -z "$UPSTREAM" ] && UPSTREAM="origin/$(git branch --show-current)"
+	local LOCAL=$(git rev-parse @)
+	local REMOTE=$(git rev-parse "$UPSTREAM")
+	local BASE=$(git merge-base @ "$UPSTREAM")
+
+	# echo "UPSTREAM: '$UPSTREAM'"
+	# echo "LOCAL: '$LOCAL'"
+	# echo "REMOTE: '$REMOTE'"
+	# echo "BASE: '$BASE'"
+
+	ret=false
+	if [ "$LOCAL" = "$REMOTE" ]; then
+		if $git_check_update_log; then
+			log_success "Up-to-date"
+		fi
+	elif [ "$LOCAL" = "$BASE" ]; then
+		if $git_check_update_log; then
+			log_info "Need to pull"
+		fi
+		ret=true
+	elif [ "$REMOTE" = "$BASE" ]; then
+		if $git_check_update_log; then
+			log_info "Need to push"
+		fi
+	else
+		if $git_check_update_log; then
+			log_warning "Diverged"
+		fi
+	fi
+
+	[ ! -z "$cur_dir" ] && cd "$cur_dir"
+
+	$ret
 }
 
