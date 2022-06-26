@@ -19,7 +19,7 @@ function git_pull()
 		log "Stash local work"
 		git stash -m $stash_marker
 	fi
-	local branch=$(git branch --show-current)
+	local branch=$(git rev-parse --abbrev-ref HEAD)
 	log "Current branch: '$branch'"
 	log "Pull command: git pull origin ${branch} --rebase"
 	git pull origin ${branch} --rebase
@@ -88,7 +88,7 @@ function git_check_update()
 	git fetch
 
 	local UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)"
-	[ -z "$UPSTREAM" ] && UPSTREAM="origin/$(git branch --show-current)"
+	[ -z "$UPSTREAM" ] && UPSTREAM="origin/$(git rev-parse --abbrev-ref HEAD)"
 	local LOCAL=$(git rev-parse @)
 	local REMOTE=$(git rev-parse "$UPSTREAM")
 	local BASE=$(git merge-base @ "$UPSTREAM")
