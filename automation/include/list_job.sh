@@ -24,7 +24,7 @@ list_job()
 	local jobname=$(echo $job| cut -d. -f1)
 	#log "list_job: jobname: $jobname"
 	#log "list_job: list: ${list[@]}"
-	local counter=0
+	local counter=1
 	for e in ${list[@]}; do
 		#log "list_job: e: $e"
 		local log_prefix="[list_job] [$counter/$list_size]: "
@@ -34,7 +34,7 @@ list_job()
 			log "command: $cmd"
 		fi
 		$jobname "$e" "${@:$((job_index+1))}"
-		[ $counter -ge $((list_size-1)) ] && break || ((counter++))
+		[ $counter -ge $((list_size)) ] && break || ((counter++))
 	done
 }
 
