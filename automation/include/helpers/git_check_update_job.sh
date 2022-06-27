@@ -16,6 +16,8 @@ function git_check_update_job()
 	source git_utils.sh
 	source job.sh
 
+	log_info "Check update in '$dir'"
+
 	if git_check_update $dir; then
 		local job1=$(extract_job $job1_path)
 		source $job1
