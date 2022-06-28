@@ -95,7 +95,7 @@ build()
 		fi
 	fi
 
-	[ ! -d "$rootDirectory" ] && log "Non-existent project directory passed '$rootDirectory'" " -" && exit 1 || cd "$rootDirectory"
+	[ ! -d "$rootDirectory" ] && log_error "Non-existent project directory passed '$rootDirectory'" " -" && exit 1 || cd "$rootDirectory"
 
 	if [[ "$rootDirectory" != "." ]]; then
 		local folderName=$rootDirectory
