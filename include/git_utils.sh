@@ -39,7 +39,7 @@ function git_pull()
 	local stash_marker="git_utils.sh script stash"
 	if [ ! -z "$status_res" ]; then
 		log_info "Stash the local work"
-		git stash -m "$stash_marker"
+		git stash save "$stash_marker"
 		[ $? -eq 0 ] && log "Stashed" || (log_error "Error while stashing. Stop the job" && return 1)
 	fi
 	local branch=$(git rev-parse --abbrev-ref HEAD)
