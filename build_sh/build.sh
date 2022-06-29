@@ -67,11 +67,11 @@ build()
 			elif [[ "$arg" == "release" ]]; then
 				log "'release' option passed. Set Release build type" " --"
 				local buildConfig="Release"
-			elif [[ "$arg" == "configure" ]]; then
-				log "'configure' option passed. Will not build the project. Only make the config" " --"
+			elif [[ "$arg" == "configure" ]] || [[ "$arg" == "-c" ]]; then
+				log "'$arg' option passed. Will not build the project. Only make the config" " --"
 				local onlyConfig=true
-			elif [[ "$arg" == "reconfigure" ]]; then
-				log "'reconfigure' option passed. Will not build the project. Only make the config and remove CMakeCache.txt" " --"
+			elif [[ "$arg" == "reconfigure" ]] || [[ "$arg" == "-rc" ]]; then
+				log "'$arg' option passed. Will not build the project. Only make the config and remove CMakeCache.txt" " --"
 				local onlyConfig=true
 				local reconfigure=true
 			fi
