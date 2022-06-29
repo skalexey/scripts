@@ -10,15 +10,12 @@ function all_build_deps_job()
 	source "$automation_dir/nutrition_calculator/nutrition_calculator_config.sh"
 	local nutrition_calculator_dir=$project_dir
 	
-	echo "cpptests_dir: '$cpptests_dir'"
-	echo "nutrition_calculator_dir: '$nutrition_calculator_dir'"
-	echo "util_tools_dir: '$util_tools_dir'"
-
 	local includes=(	"$scripts_dir/include/log.sh" \
 						"$scripts_dir/include/file_utils.sh" \
 						"$scripts_dir/include/file_utils.py" \
 						"$scripts_dir/include/git_utils.sh" \
 						"$scripts_dir/automation/include" \
+						"$automation_dir/include/list_job.sh" \
 	)
 	env_include ${includes[@]}
 

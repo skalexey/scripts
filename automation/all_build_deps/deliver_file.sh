@@ -16,7 +16,7 @@ function deliver_file()
 		$THIS_DIR/all_build_deps_job.sh \
 			$THIS_DIR/../include/swap_args_job.sh \
 			"$ffullpath" \
-			$THIS_DIR/../include/print_args_job.sh
+			$THIS_DIR/../include/copy_job.sh
 	return 0
 }
 
