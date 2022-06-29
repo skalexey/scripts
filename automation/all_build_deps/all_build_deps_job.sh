@@ -1,8 +1,19 @@
 #!/bin/bash
 
-all_build_deps_job()
+function all_build_deps_job()
 {
 	source automation_config.sh
+	source "$automation_dir/cpptests/cpptests_config.sh"
+	local cpptests_dir=$project_dir
+	source "$automation_dir/util_tools/util_tools_config.sh"
+	local util_tools_dir=$project_dir
+	source "$automation_dir/nutrition_calculator/nutrition_calculator_config.sh"
+	local nutrition_calculator_dir=$project_dir
+	
+	echo "cpptests_dir: '$cpptests_dir'"
+	echo "nutrition_calculator_dir: '$nutrition_calculator_dir'"
+	echo "util_tools_dir: '$util_tools_dir'"
+
 	local includes=(	"$scripts_dir/include/log.sh" \
 						"$scripts_dir/include/file_utils.sh" \
 						"$scripts_dir/include/file_utils.py" \
@@ -16,6 +27,11 @@ all_build_deps_job()
 						"$projects_dir/VL" \
 						"$projects_dir/VL/JSONConverter" \
 						"$projects_dir/DataModelBuilder/Core" \
+						"$projects_dir/DataModelBuilder/Core" \
+						"$cpptests_dir" \
+						"$util_tools_dir" \
+						"$nutrition_calculator_dir" \
+						
 	)
 
 	[ -z $1 ] && echo "[all_build_deps]: No job specified" && exit || job=$1
@@ -25,7 +41,7 @@ all_build_deps_job()
 	list_job ${#dir_list[@]} ${dir_list[@]} $job ${@:2}
 }
 
-job() 
+function job() 
 {
 	all_build_deps_job $@
 }
