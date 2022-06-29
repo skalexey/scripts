@@ -24,7 +24,7 @@ function all_build_deps_job()
 						"$projects_dir/VL" \
 						"$projects_dir/VL/JSONConverter" \
 						"$projects_dir/DataModelBuilder/Core" \
-						"$projects_dir/DataModelBuilder/Core" \
+						"$projects_dir/SkillBuilder" \
 						"$cpptests_dir" \
 						"$util_tools_dir" \
 						"$nutrition_calculator_dir" \
