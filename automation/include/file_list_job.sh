@@ -22,7 +22,7 @@ function file_list_job()
 	local list=()
 	local lines="$(cat "$fpath")"
 	for line in $lines; do
-		local list+=("$line")
+		list+=("$line")
 	done
 
 	# Run list_job
