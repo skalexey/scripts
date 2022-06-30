@@ -20,7 +20,7 @@ function git_ask_and_pull_job()
 	source git_check_update_job.sh
 	print_updates $@
 
-	if $2; then
+	if [ "$2" == "need_to_pull" ]; then
 		source ask_job.sh
 		ask_job "$dir" "Pull?" git_pull_job.sh
 	fi
