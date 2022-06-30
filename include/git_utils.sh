@@ -77,6 +77,12 @@ function git_check()
 		return 0
 	fi
 
+	local status_res=$(git status | grep "Untracked files:")
+	if [ ! -z "$status_res" ]; then
+		echo "need_to_commit"
+		return 0
+	fi
+
 	local s=$(git_status)
 	
 	[ $? -ne 0 ] && log_error "Error during checking repo status" && return 1
