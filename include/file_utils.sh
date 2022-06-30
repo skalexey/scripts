@@ -53,10 +53,10 @@ dir_full_path() {
 	[ -z "$1" ] && exit # directory path
 	[ ! -d "$1" ] && exit
 	
-	local cur_dir=${PWD}
+	local cur_dir="${PWD}"
 	cd "$1"
 	echo ${PWD}
-	cd $cur_dir
+	cd "$cur_dir"
 }
 
 file_full_path() {
@@ -65,10 +65,10 @@ file_full_path() {
 	
 	local file_dir=$(dirname "$1")
 	local file_name=$(basename "$1")
-	local cur_dir=${PWD}
+	local cur_dir="${PWD}"
 	cd "$file_dir"
 	echo ${PWD}/$file_name
-	cd $cur_dir
+	cd "$cur_dir"
 }
 
 file_extension() {
