@@ -47,8 +47,8 @@ function print_status()
 	local log_prefix="[git_check_job]: "
 	if [ "$2" != "clean" ]; then
 		log_info "$(git_check_msg "$2") in '$1'"
-	# else
-		# log_success "Clean in '$1'"
+	else
+		log_success "Clean in '$1'"
 	fi
 }
 
