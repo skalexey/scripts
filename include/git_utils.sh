@@ -70,43 +70,48 @@ function git_check()
 		cd "$path"
 	fi
 
-	verbose=false
-	[ "$2" == "verbose" ] && verbose=true
+	# Deprecated:
+	# [ "$2" == "verbose" ] && verbose=true
 
-	ret=false
+	local ret="clean"
 	local status_res=$(git status | grep "Changes not staged for commit")
 	if [ ! -z "$status_res" ]; then
-		if $verbose; then
-			log_info "uncommitted changes in '$path'"
-		fi
-		ret=true
-	elif $verbose; then
-		log "no changes in '$path'"
+		local ret="need_to_commit"
+	fi
+
+	local s=$(git_status)
+	
+	[ $? -ne 0 ] && log_error "Error during checking repo status" && return 1
+
+	if [ "$s" == "need_to_push" ]; then
+		local ret=s
 	fi
 	
 	[ ! -z cur_dir ] && cd "$cur_dir"
 
-	$ret
+	echo "$ret"
+
+	return 0
 }
 
-git_check_update_log=false
-function git_check_update()
+function git_check_msg()
 {
-	source log.sh
-	local log_prefix="[git_check_update]: "
+	[ -z "$1" ] && echo "No status provided" && return 1
 
-	# arguments
-	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
-		local path=$1
-		local cur_dir=${PWD}
-		cd "$path"
-		[ $? -ne 0 ] && log_error "Problem with directory '$path'" && return 1
+	if [ "$1" == "clean" ]; then
+		echo "Clean"
+	elif [ "$1" == "need_to_commit" ]; then
+		echo "Need to commit"
+	else
+		echo $(git_status_msg "$1")
 	fi
 
-	if $git_check_update_log; then
-		log_info "Check updates at '$path'"
-	fi
+	return 0
+}
 
+
+function git_status()
+{
 	git fetch
 
 	local UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)"
@@ -120,28 +125,54 @@ function git_check_update()
 	# echo "REMOTE: '$REMOTE'"
 	# echo "BASE: '$BASE'"
 
-	ret=false
+	ret="unknown"
 	if [ "$LOCAL" = "$REMOTE" ]; then
-		if $git_check_update_log; then
-			log_success "Up-to-date"
-		fi
+		ret="up_to_date"
 	elif [ "$LOCAL" = "$BASE" ]; then
-		if $git_check_update_log; then
-			log_info "Need to pull"
-		fi
-		ret=true
+		ret="need_to_pull"
 	elif [ "$REMOTE" = "$BASE" ]; then
-		if $git_check_update_log; then
-			log_info "Need to push"
-		fi
+		ret="need_to_push"
 	else
-		if $git_check_update_log; then
-			log_warning "Diverged"
-		fi
+		ret="diverged"
 	fi
 
 	[ ! -z "$cur_dir" ] && cd "$cur_dir"
 
-	$ret
+	echo "$ret"
+}
+
+function git_status_msg()
+{
+	[ -z "$1" ] && echo "No status provided" && return 1
+
+	if [ "$1" == "up_to_date" ]; then
+		echo "Up-to-date"
+	elif [ "$1" == "need_to_pull" ]; then
+		echo "Need to pull"
+	elif [ "$1" == "need_to_push" ]; then
+		echo "Need to push"
+	else
+		echo "Unknown status '$1'"
+	fi
+
+	return 0
+}
+
+function git_check_update()
+{
+	source log.sh
+	local log_prefix="[git_check_update]: "
+
+	# arguments
+	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
+		local path=$1
+		local cur_dir=${PWD}
+		cd "$path"
+		[ $? -ne 0 ] && log_error "Problem with directory '$path'" && return 1
+	fi
+
+	echo "$(git_status)"
+
+	return 0
 }
 

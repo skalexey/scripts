@@ -19,9 +19,12 @@ function git_ask_and_commit_job()
 	source git_check_job.sh
 	print_status $@
 
-	if $2; then
+	if [ "$2" == "need_to_commit" ]; then
 		source ask_job.sh
 		ask_job "$dir" "Commit?" git_commit_job.sh
+	elif [ "$2" == "need_to_push" ]; then
+		source ask_job.sh
+		ask_job "$dir" "Push?" git_push_job.sh
 	fi
 }
 
