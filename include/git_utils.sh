@@ -42,7 +42,7 @@ function git_pull()
 		git stash save "$stash_marker"
 		[ $? -eq 0 ] && log "Stashed" || (log_error "Error while stashing. Stop the job" && return 1)
 	fi
-	local branch=$(git rev-parse --abbrev-ref HEAD)
+	local branch=$(git_get_current_branch)
 	log "Current branch: '$branch'"
 	log "Pull command: git pull origin ${branch} --rebase"
 	git pull origin ${branch} --rebase
@@ -65,18 +65,16 @@ function git_check()
 
 	# arguments
 	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
-		local path=$1
-		local cur_dir=${PWD}
-		cd "$path"
+		cd "$1"
 	fi
 
 	# Deprecated:
 	# [ "$2" == "verbose" ] && verbose=true
 
-	local ret="clean"
 	local status_res=$(git status | grep "Changes not staged for commit")
 	if [ ! -z "$status_res" ]; then
-		local ret="need_to_commit"
+		echo "need_to_commit"
+		return 0
 	fi
 
 	local s=$(git_status)
@@ -84,13 +82,11 @@ function git_check()
 	[ $? -ne 0 ] && log_error "Error during checking repo status" && return 1
 
 	if [ "$s" == "need_to_push" ]; then
-		local ret=s
+		echo "$s"
+		return 0
 	fi
-	
-	[ ! -z cur_dir ] && cd "$cur_dir"
 
-	echo "$ret"
-
+	echo "clean"
 	return 0
 }
 
@@ -109,28 +105,39 @@ function git_check_msg()
 	return 0
 }
 
+function git_get_current_branch()
+{
+	echo $(git rev-parse --abbrev-ref HEAD)
+}
+
+function git_get_upstream()
+{
+	local ret="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)"
+	[ -z "$ret" ] && ret="origin/$(git_get_current_branch)"
+	echo "$ret"
+}
 
 function git_status()
 {
 	git fetch
 
-	local UPSTREAM="$(git rev-parse --abbrev-ref --symbolic-full-name "@{u}" 2>/dev/null)"
-	[ -z "$UPSTREAM" ] && UPSTREAM="origin/$(git rev-parse --abbrev-ref HEAD)"
-	local LOCAL=$(git rev-parse @)
-	local REMOTE=$(git rev-parse "$UPSTREAM")
-	local BASE=$(git merge-base @ "$UPSTREAM")
+	local upstream="$(git_get_upstream)"
+	[ -z "$upstream" ] && upstream="origin/$(git_get_current_branch)"
+	local local_b=$(git rev-parse @)
+	local remote=$(git rev-parse "$upstream")
+	local base=$(git merge-base @ "$upstream")
 
-	# echo "UPSTREAM: '$UPSTREAM'"
-	# echo "LOCAL: '$LOCAL'"
-	# echo "REMOTE: '$REMOTE'"
-	# echo "BASE: '$BASE'"
+	# echo "upstream: '$upstream'"
+	# echo "local_b: '$local_b'"
+	# echo "remote: '$remote'"
+	# echo "base: '$base'"
 
 	ret="unknown"
-	if [ "$LOCAL" = "$REMOTE" ]; then
+	if [ "$local_b" = "$remote" ]; then
 		ret="up_to_date"
-	elif [ "$LOCAL" = "$BASE" ]; then
+	elif [ "$local_b" = "$base" ]; then
 		ret="need_to_pull"
-	elif [ "$REMOTE" = "$BASE" ]; then
+	elif [ "$remote" = "$base" ]; then
 		ret="need_to_push"
 	else
 		ret="diverged"

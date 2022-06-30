@@ -24,7 +24,7 @@ function git_check_job()
 	log_info "Check status in '$dir'"
 
 	local check_result=$(git_check $@)
-	if [ "$check_result" == "need_to_commit" ]; then
+	if [ "$check_result" == "need_to_commit" ] || [ "$check_result" == "need_to_push" ]; then
 		local job1=$(extract_job $job1_path)
 		source $job1
 		local job1_name=$(extract_job_name $job1)

@@ -13,5 +13,5 @@ $THIS_DIR/../run.sh \
 	$THIS_DIR/../include/file_list_job.sh \
 		"$THIS_DIR/tmp/filtered_projects_to_check.txt" \
 		$THIS_DIR/../include/helpers/git_check_job.sh \
-			$THIS_DIR/../include/helpers/git_ask_and_commit_job.sh ${@:1}
+			$THIS_DIR/../include/helpers/git_ask_and_commit_or_push_job.sh ${@:1}
 
