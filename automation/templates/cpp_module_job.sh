@@ -5,12 +5,12 @@ function job()
     local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     source $THIS_DIR/automation_config.sh
     source $scripts_dir/include/log.sh
-    local log_prefix="[cpp_cmake_module_job]: "
+    local log_prefix="[cpp_module_job]: "
 
     [ -z $1 ] && log_error "No module name provided" && return 1 || local module_name=$1
     [ -z $2 ] && log_error "No target path provided" && return 2 || local target_path=$2
 
-    log "Create CMake C++ module '$module_name' in '$target_path'"
+    log "Create C++ module '$module_name' in '$target_path'"
 
     # set $module_path
     local h_name="$target_path/$module_name.h"
@@ -34,7 +34,7 @@ function job()
 
     log "Setup project directory ..."
 
-    cp -a $templates_dir/CMake/Module/. $target_path
+    cp -a $templates_dir/C++/Module/. $target_path
     [ $? -ne 0 ] && log_error "error while copying a module template" && return 4
 
     local cmd="mv $target_path/TplTitle.h $h_name"
@@ -55,7 +55,7 @@ function job()
     log_success "Template instantiated"
 }
 
-function cpp_cmake_module_job()
+function cpp_module_job()
 {
     job $@
 }
