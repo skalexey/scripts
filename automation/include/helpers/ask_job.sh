@@ -20,6 +20,7 @@ function ask_job()
 	source input.sh
 
 	if ask_user "$question"; then
+		# Run in new context because of a possible switching to a separated task
 		./run_local.sh "$job_path" "$data"
 	fi
 }
