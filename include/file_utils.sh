@@ -1,9 +1,9 @@
 #!/bin/bash
 
-file_insert_before() {
-	[ -z "$1" ] && exit # file name
-	[ -z "$2" ] && exit # string before which to insert
-	[ -z "$3" ] && exit # what to insert
+function file_insert_before() {
+	[ -z "$1" ] && return 1 # file name
+	[ -z "$2" ] && return 2 # string before which to insert
+	[ -z "$3" ] && return 3 # what to insert
 	#sed -i "" "s/$2/$3$2/" "$1"
 	# Use python due to platform independence
 	# use relative paths due to platform independence
@@ -11,16 +11,16 @@ file_insert_before() {
 	return $(python -c "from file_utils import*; insert_before(\"$fpath\", \"$2\", \"$3\");")
 }
 
-file_append_line() {
-	[ -z "$1" ] && exit # file name
-	[ -z "$2" ] && exit # string to append at the end of the file
+function file_append_line() {
+	[ -z "$1" ] && return 1 # file name
+	[ -z "$2" ] && return 2 # string to append at the end of the file
 	echo "$2" >> "$1"
 }
 
-file_replace() {
-	[ -z "$1" ] && exit # file name
-	[ -z "$2" ] && exit # regex to find
-	[ -z "$3" ] && exit # text to replace regex to
+function file_replace() {
+	[ -z "$1" ] && return 1 # file name
+	[ -z "$2" ] && return 2 # regex to find
+	[ -z "$3" ] && return 3 # text to replace regex to
 	#echo "s/$2/$3/g$4"
 	sed -i.bac -E "s/$2/$3/g$4" $1
 	[ -f "$1.bac" ] && rm $1.bac
@@ -30,9 +30,9 @@ file_replace() {
 	# return $(python -c "from file_utils import*; replace(\"$fpath\", \"$2\", \"$3\");")
 }
 
-file_search() {
-	[ -z "$1" ] && exit # file name
-	[ -z "$2" ] && exit # regex to find
+function file_search() {
+	[ -z "$1" ] && return 1 # file name
+	[ -z "$2" ] && return 2 # regex to find
 
 	#echo "in $1 find $2"
 	local contents=$(<$1)
@@ -43,15 +43,15 @@ file_search() {
 	#[[ $(cat $1) =~ .*$2* ]] && true || false
 }
 
-full_path() {
-	[ -z "$1" ] && exit # input path
+function full_path() {
+	[ -z "$1" ] && return 1 # input path
 	[ -d "$1" ] && dir_full_path $1
 	[ -f "$1" ] && file_full_path $1
 }
 
-dir_full_path() {
-	[ -z "$1" ] && exit # directory path
-	[ ! -d "$1" ] && exit
+function dir_full_path() {
+	[ -z "$1" ] && return 1 # directory path
+	[ ! -d "$1" ] && return 2
 	
 	local cur_dir="${PWD}"
 	cd "$1"
@@ -59,9 +59,9 @@ dir_full_path() {
 	cd "$cur_dir"
 }
 
-file_full_path() {
-	[ -z "$1" ] && exit # file path
-	[ ! -f "$1" ] && exit
+function file_full_path() {
+	[ -z "$1" ] && return 1 # file path
+	[ ! -f "$1" ] && return 2
 	
 	local file_dir=$(dirname "$1")
 	local file_name=$(basename "$1")
