@@ -3,7 +3,7 @@
 function run()
 {
 	# This script runs any job passed
-	[ -z $1 ] && echo "[run script]: No job specified" && exit # job
+	[ -z $1 ] && echo "[run script]: No job specified" && return 1 # job
 
 	# include invironment helper
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,13 +31,7 @@ function run()
 	# go to the environment directory and call the same script from there
 	cd $ENV_DIR
 
-	source $THIS_DIR/include/job.sh
-	local job=$(extract_job "$1")
-	source $ENV_DIR/$job
-
-	# call the job
-	local jobname=$(extract_job_name $job)
-	$jobname ${@:2}
+	source run_local.sh "$1" ${@:2}
 
 	return $?
 }
