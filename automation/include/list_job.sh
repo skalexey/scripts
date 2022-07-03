@@ -2,15 +2,15 @@
 
 # This job does other job on a given list of elements passed as an array
 
-list_job()
+function list_job()
 {
 	source log.sh
 	local log_prefix="[list_job]: "
 
 	# arguments 
-	[ -z "$1" ] && log_error "Too few arguments. 0 of 3. Provide list size, list and job script" && exit # list_size
-	[ -z "$2" ] && log_error "Too few arguments. 1 of 3. Provide list and job script" && exit # list
-	[ -z "$3" ] && log_error "Too few arguments. 2 of 3. Provide job script" && exit # job
+	[ -z "$1" ] && log_error "Too few arguments. 0 of 3. Provide list size, list and job script" && return 1 # list_size
+	[ -z "$2" ] && log_error "Too few arguments. 1 of 3. Provide list and job script" && return 2 # list
+	[ -z "$3" ] && log_error "Too few arguments. 2 of 3. Provide job script" && return 3 # job
 	# next all args for the job
 	# next to the automatically passed list element as a first argument
 	local list_size=$1
@@ -38,7 +38,7 @@ list_job()
 	done
 }
 
-job()
+function job()
 {
 	list_job $@
 }
