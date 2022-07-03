@@ -71,22 +71,28 @@ function file_full_path() {
 	cd "$cur_dir"
 }
 
-file_extension() {
-	[ -z "$1" ] && exit # file path
+function file_extension() {
+	[ -z "$1" ] && return 1 # file path
 	fname=$(basename "$1")
 	echo "${fname##*.}"
 }
 
-rename() {
-	[ -z "$1" ] && echo "No path specified" && exit # path
-	[ ! -d "$1" ] && [ ! -f "$1" ] && echo "No file or directory exists in the given path '$1'" && exit 1
-	[ -z "$2" ] && echo "No new name specified" && exit 2 # new name
+function rename() {
+	[ -z "$1" ] && echo "No path specified" && return 1 # path
+	[ ! -d "$1" ] && [ ! -f "$1" ] && echo "No file or directory exists in the given path '$1'" && return 2
+	[ -z "$2" ] && echo "No new name specified" && return 3 # new name
 	
 	local b=$(dirname "$1")
 	local new_path="$b/$2"
 	if [ -d "$new_path" ] || [ -f "$new_path" ]; then
 		echo "This name is already taken: '$new_path'"
-		exit 3
+		return 3
 	fi
 	mv "$1" "$new_path"
+}
+
+function file_newer() {
+	[ -z "$1" ] && echo "No file 1 provided" && return 1 || local file1="$1"
+	[ -z "$2" ] && echo "No file 2 provided" && return 2 || local file2="$2"
+	[ "$file2" -ot "$file1" ] && true || false
 }
