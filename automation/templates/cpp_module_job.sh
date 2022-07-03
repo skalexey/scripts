@@ -10,6 +10,8 @@ function job()
     [ -z $1 ] && log_error "No module name provided" && return 1 || local module_name=$1
     [ -z $2 ] && log_error "No target path provided" && return 2 || local target_path=$2
 
+    [ ! -d "$target_path" ] && log_error "Not existent directory provided: '$target_path'" && return 10
+
     log "Create C++ module '$module_name' in '$target_path'"
 
     # set $module_path
