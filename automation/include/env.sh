@@ -5,12 +5,12 @@ ENV_DIR=""
 # This function copies all the given files and directories contents
 # to the directory by the path from $ENV_DIR variable.
 # If the variable $ENV_DIR is not set then nothing happens
-env_include()
+function env_include()
 {
-	[ -z "$ENV_DIR" ] && echo "[env_include()]: no environment is setup" && exit
+	[ -z "$ENV_DIR" ] && echo "[env_include()]: no environment is setup" && return 1
 
 	#arguments
-	[ -z "$1" ] && exit || includes=$@ #includes
+	[ -z "$1" ] && return 2 || includes=$@ #includes
 
 	# do the work
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -59,7 +59,7 @@ env_include()
 # every file from the target directory to 'env'.
 # If the includes list is given as the third argument it then also call env_include
 # for the given list
-setup_environment()
+function setup_environment()
 {
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	source $THIS_DIR/../automation_config.sh
@@ -69,16 +69,16 @@ setup_environment()
 	local log_postfix="\033[0m"
 
 	# arguments 
-	[ -z "$1" ] && exit || ENV_TARGET_DIR=$(dir_full_path "$1") # ENV_TARGET_DIR
+	[ -z "$1" ] && return 1 || ENV_TARGET_DIR=$(dir_full_path "$1") # ENV_TARGET_DIR
 	[ ! -z "$2" ] && local where_dir=$(dir_full_path "$2") || local where_dir="$ENV_TARGET_DIR" # where
 	[ ! -z "$3" ] && local includes=${@:3} #includes
 
 	# check the directories exists
-	[ ! -d "$1" ] && log "No such directory passed in the first argument: '$1'" && exit
+	[ ! -d "$1" ] && log "No such directory passed in the first argument: '$1'" && return 2
 
 	# check the processed directories paths are not empty
-	[ -z "$ENV_TARGET_DIR" ] && exit
-	[ -z "$where_dir" ] && exit
+	[ -z "$ENV_TARGET_DIR" ] && return 3
+	[ -z "$where_dir" ] && return 4
 
 	# do the work
 	log "setup_environment in '$where_dir'"
@@ -98,6 +98,7 @@ setup_environment()
 	# copy some essential dependencies
 	cp "$automation_dir/automation_config.sh" "$env_dir/"
 	cp "$scripts_dir/include/log.sh" "$env_dir/"
+	cp "$automation_dir/run_local.sh" "$env_dir/"
 	
 	# copy include directories content to the env directory
 	[ ! -z "$includes" ] && env_include ${includes[@]}
