@@ -44,6 +44,7 @@ function git_check_job()
 function print_status()
 {
 	source log.sh
+	source git_utils.sh
 	local log_prefix="[git_check_job]: "
 	if [ "$2" != "clean" ]; then
 		log_info "$(git_check_msg "$2") in '$1'"
