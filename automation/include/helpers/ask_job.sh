@@ -6,7 +6,6 @@ function ask_job()
 	local includes=(
 		"$scripts_dir/include/git_utils.sh" \
 		"$scripts_dir/include/input.sh" \
-		"$automation_dir/include/job.sh" \
 	)
 	env_include ${includes[@]}
 	source log.sh
@@ -21,11 +20,7 @@ function ask_job()
 	source input.sh
 
 	if ask_user "$question"; then
-		source job.sh
-		job=$(extract_job "$job_path")
-		source "$job"
-		job_name=$(extract_job_name "$job")
-		$job_name "$data"
+		./run_local.sh "$job_path" "$data"
 	fi
 }
 
