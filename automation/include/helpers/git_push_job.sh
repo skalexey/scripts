@@ -12,13 +12,17 @@ function git_push_job()
 	local log_prefix="[git_push_job]: "
 
 	[ -z "$1" ] && log_error "No directory provided" && return 1 || local dir="$1"
+
+	source git_utils.sh
+
 	local tmp=${PWD}
 	cd "$dir"
-	source git_utils.sh
+
 	local branch=$(git_get_current_branch)
 	[ $? -ne 0 ] && log_error "Error during the current branch retrieving" && cd "$tmp" &&  return 2
 
 	git push origin $branch
+	
 	[ $? -ne 0 ] && log_error "Error during pushing" && cd "$tmp" && return 3
 	
 	cd "$tmp"
