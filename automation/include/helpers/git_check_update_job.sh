@@ -14,7 +14,6 @@ function git_check_update_job()
 	[ ! -z "$3" ] && local job2_path="$3" || local job2_path="$def_job1"
 
 	source git_utils.sh
-	source job.sh
 
 	log_info "Check update in '$dir'"
 
@@ -23,16 +22,10 @@ function git_check_update_job()
 	[ $? -ne 0 ] && log_error "Error during checking repo status" && return 2
 
 	if [ "$git_check_update_ret" != "up_to_date" ]; then
-		local job1=$(extract_job $job1_path)
-		source $job1
-		local job1_name=$(extract_job_name $job1)
-		$job1_name "$1" "$git_check_update_ret" ${@:4}
+		source run_local.sh "$job1_path" "$1" "$git_check_update_ret" ${@:4}
 	else
 		if [ ! -z "$job2_path" ]; then
-			local job2=$(extract_job $job2_path)
-			source $job2
-			local job2_name=$(extract_job_name $job2)
-			$job2_name "$1" "$git_check_update_ret" ${@:4}
+			source run_local.sh "$job2_path" "$1" "$git_check_update_ret" ${@:4}
 		fi
 	fi
 }

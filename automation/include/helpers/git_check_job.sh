@@ -19,22 +19,15 @@ function git_check_job()
 	[ ! -d "$dir" ] && log_error "Not existent directory passed: '$dir'" && return 2
 
 	source git_utils.sh
-	source job.sh
 
 	log_info "Check status in '$dir'"
 
 	local check_result=$(git_check $@)
 	if [ "$check_result" == "need_to_commit" ] || [ "$check_result" == "need_to_push" ]; then
-		local job1=$(extract_job $job1_path)
-		source $job1
-		local job1_name=$(extract_job_name $job1)
-		$job1_name "$1" "$check_result" ${@:4}
+		source run_local.sh "$job1_path" "$1" "$check_result" ${@:4}
 	else
 		if [ ! -z "$job2_path" ]; then
-			local job2=$(extract_job $job2_path)
-			source $job2
-			local job2_name=$(extract_job_name $job2)
-			$job2_name "$1" "$check_result" ${@:4}
+			source run_local.sh "$job2_path" "$1" "$check_result" ${@:4}
 		fi
 	fi
 

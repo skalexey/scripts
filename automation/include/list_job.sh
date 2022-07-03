@@ -19,11 +19,7 @@ function list_job()
 	local job_index=$((list_size+2))
 	#log "list_job: job_index: $job_index"
 	local job_path=${!job_index}
-	local job=$(basename $job_path)
-	source $job
-	local jobname=$(echo $job| cut -d. -f1)
-	#log "list_job: jobname: $jobname"
-	#log "list_job: list: ${list[@]}"
+	
 	local counter=1
 	for e in ${list[@]}; do
 		#log "list_job: e: $e"
@@ -33,7 +29,7 @@ function list_job()
 		if $list_job_log; then
 			log "command: $cmd"
 		fi
-		$jobname "$e" "${@:$((job_index+1))}"
+		source run_local.sh "$job_path" "$e" "${@:$((job_index+1))}"
 		[ $counter -ge $((list_size)) ] && break || ((counter++))
 	done
 }
