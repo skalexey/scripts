@@ -19,4 +19,3 @@ function commit()
 }
 
 commit $@
-[ $? -ne 0 ] && exit
