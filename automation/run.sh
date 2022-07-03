@@ -31,11 +31,12 @@ function run()
 	# go to the environment directory and call the same script from there
 	cd $ENV_DIR
 
-	local job=$(basename $1)
+	source $THIS_DIR/include/job.sh
+	local job=$(extract_job "$1")
 	source $ENV_DIR/$job
 
 	# call the job
-	local jobname=$(echo $job| cut -d. -f1)
+	local jobname=$(extract_job_name $job)
 	$jobname ${@:2}
 
 	return $?
