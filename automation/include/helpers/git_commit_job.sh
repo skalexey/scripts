@@ -1,5 +1,39 @@
 #!/bin/bash
 
+function _cycle_()
+{
+	while : ; do
+		if uncommitted_changes; then
+			git add --patch
+		fi
+
+		if need_to_commit; then
+			if [ ! -z "$2" ]; then
+				log_info "git commit -m \"$(echo "${@:2}")\""
+				git commit -m "$(echo "${@:2}")"
+			else
+				if ask_user "Commit?"; then
+					git commit
+				fi
+			fi
+		fi
+
+		if [ "$(git_status false)" == "need_to_push" ]; then
+			if ask_user "Push?"; then
+				git_push
+			fi
+		fi
+
+		if uncommitted_changes || need_to_commit || [ "$(git_status false)" == "need_to_push" ]; then
+			if ! ask_user "Something else?"; then
+				break
+			fi
+		else
+			break
+	    fi
+	done
+}
+
 function git_commit_job()
 {
 	source automation_config.sh
@@ -20,26 +54,7 @@ function git_commit_job()
 	log_success '\nHit [Ctrl]+[D] to exit this child shell.'
 	git status
 
-	if uncommitted_changes; then
-		git add --patch
-	fi
-
-	if need_to_commit; then
-		if [ ! -z "$2" ]; then
-			log_info "git commit -m \"$(echo "${@:2}")\""
-			git commit -m "$(echo "${@:2}")"
-		else
-			if ask_user "Commit?"; then
-				git commit
-			fi
-		fi
-	fi
-
-	if [ "$(git_status false)" == "need_to_push" ]; then
-		if ask_user "Push?"; then
-			git_push
-		fi
-	fi
+	_cycle_
 
 	exec bash
 	exit
