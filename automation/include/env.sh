@@ -81,6 +81,15 @@ function setup_global_variables()
 	return 0
 }
 
+function include_essential()
+{
+	local log_prefix="\033[1;37m	[Auto include]: "
+	local log_postfix="\033[0m"
+	[ -z "$1" ] && log_error "No file provided" && return 1
+	cp "$1" "$ENV_DIR/"
+	[ $? -ne 0 ] && log_error "Error while including '$1'" || log "'$1'"
+}
+
 function setup_environment()
 {
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -104,14 +113,17 @@ function setup_environment()
 	mkdir -p $ENV_DIR
 	# [ ! -d "$ENV_DIR" ] && mkdir -p $ENV_DIR
 
-	# copy some essential dependencies
-	cp "$automation_dir/automation_config.sh" "$ENV_DIR/"
-	cp "$scripts_dir/include/log.sh" "$ENV_DIR/"
-	cp "$scripts_dir/include/file_utils.sh" "$ENV_DIR/"
-	cp "$automation_dir/run_local.sh" "$ENV_DIR/"
+	[ ! -z "$3" ] && local includes=${@:3} #includes
+
+	# include some essential dependencies
+	include_essential "$automation_dir/automation_config.sh"
+	include_essential "$scripts_dir/include/log.sh"
+	include_essential "$scripts_dir/include/file_utils.sh"
+	include_essential "$automation_dir/include/job.sh"
+	include_essential "$automation_dir/run_local.sh"
 	
 	# copy include directories content to the env directory
-	[ ! -z "$3" ] && local includes=${@:3} #includes
+	
 	[ ! -z "$includes" ] && env_include ${includes[@]}
 
 	# copy the target directory content into the env
