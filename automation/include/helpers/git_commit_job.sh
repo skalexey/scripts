@@ -63,7 +63,7 @@ function git_commit_job()
 	log_success '\nHit [Ctrl]+[D] to exit this child shell.'
 	git status
 
-	_cycle_
+	_cycle_ $@
 
 	exec bash
 	exit
