@@ -18,12 +18,9 @@ function git_push_job()
 	local tmp=${PWD}
 	cd "$dir"
 
-	local branch=$(git_get_current_branch)
-	[ $? -ne 0 ] && log_error "Error during the current branch retrieving" && cd "$tmp" &&  return 2
-
-	git push origin $branch
+	git_push
 	
-	[ $? -ne 0 ] && log_error "Error during pushing" && cd "$tmp" && return 3
+	[ $? -ne 0 ] && log_error "Error during pushing" && cd "$tmp" && return 2
 	
 	cd "$tmp"
 	
