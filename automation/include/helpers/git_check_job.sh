@@ -23,7 +23,10 @@ function git_check_job()
 	log_info "Check status in '$dir'"
 
 	local check_result=$(git_check $@)
-	if [ "$check_result" == "need_to_commit" ] || [ "$check_result" == "need_to_push" ]; then
+	if [ "$check_result" == "need_to_commit" ] || \
+		[ "$check_result" == "need_to_push" ] || \
+		[ "$check_result" == "uncommitted_changes" ] \
+	; then
 		source run_local.sh "$job1_path" "$1" "$check_result" ${@:4}
 	else
 		if [ ! -z "$job2_path" ]; then

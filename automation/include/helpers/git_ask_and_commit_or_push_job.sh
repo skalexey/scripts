@@ -21,7 +21,7 @@ function git_ask_and_commit_or_push_job()
 	source git_check_job.sh
 	print_status $@
 
-	if [ "$2" == "need_to_commit" ]; then
+	if [ "$2" == "need_to_commit" ] || [ "$2" == "uncommitted_changes" ]; then
 		source ask_job.sh
 		ask_job "$dir" "Commit?" git_commit_job.sh
 	elif [ "$2" == "need_to_push" ] && ! $only_commit; then
