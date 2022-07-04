@@ -6,7 +6,7 @@ function ask_user() {
 	local res=false
 
 	while true; do
-		read -p "$(echo $@) (y/n)" yn
+		read -p "$(echo $@) (y/n) " yn
 		case $yn in 
 			[yY] ) res=true
 				break;;
