@@ -14,7 +14,8 @@ function commit()
     log "dir_full_path: $dir_full_path"
 	$THIS_DIR/../run.sh \
 		$automation_dir/include/helpers/git_commit_job.sh \
-			"$dir_full_path"
+			"$dir_full_path" \
+			"${@:2}"
 	return 0
 }
 

@@ -23,6 +23,14 @@ function git_check_stash()
 	$res
 }
 
+function git_push()
+{
+	local branch=$(git_get_current_branch)
+	[ $? -ne 0 ] && log_error "Error during the current branch retrieving" &&  return 1
+	git push origin $branch
+	return $?
+}
+
 function git_pull()
 {
 	source log.sh
@@ -58,6 +66,32 @@ function git_pull()
 	[ ! -z cur_dir ] && cd "$cur_dir"
 }
 
+function uncommitted_changes()
+{
+	local status_res=$(git status | grep "Changes not staged for commit")
+	if [ ! -z "$status_res" ]; then
+		true
+		return 0
+	else
+		local status_res=$(git status | grep "Untracked files:")
+		if [ ! -z "$status_res" ]; then
+			true
+			return 0
+		fi
+	fi
+	false
+}
+
+function need_to_commit()
+{
+	local status_res=$(git status | grep "Changes to be committed")
+	if [ ! -z "$status_res" ]; then
+		true
+	else
+		false
+	fi
+}
+
 function git_check()
 {
 	source log.sh
@@ -71,15 +105,13 @@ function git_check()
 	# Deprecated:
 	# [ "$2" == "verbose" ] && verbose=true
 
-	local status_res=$(git status | grep "Changes not staged for commit")
-	if [ ! -z "$status_res" ]; then
+	if need_to_commit; then
 		echo "need_to_commit"
 		return 0
 	fi
 
-	local status_res=$(git status | grep "Untracked files:")
-	if [ ! -z "$status_res" ]; then
-		echo "need_to_commit"
+	if uncommitted_changes; then
+		echo "uncommitted_changes"
 		return 0
 	fi
 
@@ -104,6 +136,8 @@ function git_check_msg()
 		echo "Clean"
 	elif [ "$1" == "need_to_commit" ]; then
 		echo "Need to commit"
+	elif [ "$1" == "uncommitted_changes" ]; then
+		echo "Uncommitted changes"
 	else
 		echo $(git_status_msg "$1")
 	fi
@@ -125,7 +159,9 @@ function git_get_upstream()
 
 function git_status()
 {
-	git fetch
+	if [ -z "$1" ] || $1; then
+		git fetch
+	fi
 
 	local upstream="$(git_get_upstream)"
 	[ -z "$upstream" ] && upstream="origin/$(git_get_current_branch)"

@@ -13,10 +13,34 @@ function git_commit_job()
 
 	[ -z "$1" ] && log_error "No directory provided" && return 1 || local dir="$1"
 
+	source git_utils.sh
+	source input.sh
+	local cur_dir="${PWD}"
 	cd "$dir"
 	log_success '\nHit [Ctrl]+[D] to exit this child shell.'
 	git status
-	git add --patch
+
+	if uncommitted_changes; then
+		git add --patch
+	fi
+
+	if need_to_commit; then
+		if [ ! -z "$2" ]; then
+			log_info "git commit -m \"$(echo "${@:2}")\""
+			git commit -m "$(echo "${@:2}")"
+		else
+			if ask_user "Commit?"; then
+				git commit
+			fi
+		fi
+	fi
+
+	if [ "$(git_status false)" == "need_to_push" ]; then
+		if ask_user "Push?"; then
+			git_push
+		fi
+	fi
+
 	exec bash
 	exit
 }
