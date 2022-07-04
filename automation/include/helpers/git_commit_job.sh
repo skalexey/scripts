@@ -3,8 +3,17 @@
 function _cycle_()
 {
 	while : ; do
-		if uncommitted_changes; then
+		if git_not_staged; then
 			git add --patch
+		fi
+
+		if git_untracked; then
+			local list=$(git_untracked_list)
+			for e in ${list[@]}; do
+				if ask_user "Add '$e' ?"; then
+					git add "$e"
+				fi
+			done
 		fi
 
 		if need_to_commit; then

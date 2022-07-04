@@ -23,6 +23,11 @@ function git_check_stash()
 	$res
 }
 
+function git_untracked_list()
+{
+	git ls-files --others --exclude-standard
+}
+
 function git_push()
 {
 	local branch=$(git_get_current_branch)
@@ -66,20 +71,33 @@ function git_pull()
 	[ ! -z cur_dir ] && cd "$cur_dir"
 }
 
-function uncommitted_changes()
+function git_not_staged()
 {
 	local status_res=$(git status | grep "Changes not staged for commit")
 	if [ ! -z "$status_res" ]; then
 		true
-		return 0
 	else
-		local status_res=$(git status | grep "Untracked files:")
-		if [ ! -z "$status_res" ]; then
-			true
-			return 0
-		fi
+		false
 	fi
-	false
+}
+
+function git_untracked()
+{
+	local status_res=$(git status | grep "Untracked files:")
+	if [ ! -z "$status_res" ]; then
+		true
+	else
+		false
+	fi
+}
+
+function uncommitted_changes()
+{
+	if git_not_staged || git_untracked; then
+		true
+	else
+		false
+	fi
 }
 
 function need_to_commit()
