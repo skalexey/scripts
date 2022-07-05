@@ -30,9 +30,10 @@ function deliver_build_scripts_job()
 		cp "$scripts_dir/build_sh/get_dependencies.sh" "$dir"
 	else
 		cp -a "$scripts_dir/build_sh/." "$dir"
-		rename $dir/build_config_example.sh build_config.sh
-		rename $dir/deps_config_example.sh deps_config.sh
-		rename $dir/deps_scenario_example.sh deps_scenario.sh
+		rename "$dir/build_config_example.sh" build_config.sh
+		rename "$dir/external_config_example.sh" external_config.sh
+		rename "$dir/deps_config_example.sh" deps_config.sh
+		rename "$dir/deps_scenario_example.sh" deps_scenario.sh
 		[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 5
 	fi
 

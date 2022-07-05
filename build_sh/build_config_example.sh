@@ -1,7 +1,9 @@
 #!/bin/bash
 
+source external_config.sh
+
 buildFolderPrefix="Build"
-extraArg=" -DDEPS=${depsLocationFull} -DINCLUDES=${HOME}/Projects/Utils/include"
+extraArg=" -DDEPS=${depsLocation} -DINCLUDES=${HOME}/Projects/Utils/include"
 extraArgWin=$extraArg
 extraArgMac=$extraArg
 buildConfig="Debug"
