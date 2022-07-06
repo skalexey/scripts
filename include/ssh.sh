@@ -5,14 +5,14 @@ function ssh_exists() {
 	[ -z "$2" ] && echo "[ssh_exists]: No host provided" && return 2 || local host="$2"
 	[ -z "$3" ] && echo "[ssh_exists]: No user name provided" && return 3 || local user="$3"
 
-	local USE_IP='-o StrictHostKeyChecking=no $user@$host'
+	local USE_IP="-o StrictHostKeyChecking=no $user@$host"
 	
 	if [ ! -z "$4" ]; then # pass
-		local ssh_pass='sshpass -p $4'
+		local ssh_pass="sshpass -p $4"
 		[ $? -ne 0 ] && echo "[ssh_exists]: Error while using sshpass" && false && return 4
 	fi
 
-	if $ssh_pass ssh $USE_IP stat $path \> /dev/null 2\>\&1; then
+	if $shh_pass ssh $USE_IP stat $path \> /dev/null 2\>\&1; then
 		true
 	else
 		false
@@ -25,7 +25,21 @@ function ssh_copy() {
 	[ -z "$3" ] && echo "[ssh_copy]: No host provided" && return 2 || local host="$3"
 	[ -z "$4" ] && echo "[ssh_copy]: No user name provided" && return 3 || local user="$4"
 
-	scp $local_path $user@$host:$remote_path
+	local copy_contents_modifier=""
+	for arg in "$@"; do
+		[ "$arg" == "-a" ] && echo "-a option passed. Copy contents" && local copy_contents_modifier="/*"
+	done
+
+	if [ -d "$local_path" ]; then
+		local cmd="scp -r"
+	elif [ -f "$local_path" ]; then
+		local cmd="scp"
+	else
+		echo "[ssh_copy]: Not existent local path provided"
+		return 4
+	fi
+
+	$cmd $local_path$copy_contents_modifier $user@$host:$remote_path
 }
 
 function ssh_rename()
@@ -36,12 +50,12 @@ function ssh_rename()
 	[ -z "$4" ] && echo "[ssh_rename]: No user name provided" && return 3 || local user="$4"
 
 	if [ ! -z "$5" ]; then # pass
-		local ssh_pass='sshpass -p $5'
+		local ssh_pass="sshpass -p $5"
 	fi
 
 	local containing_dir=$(dirname $path)
 	echo "Containing dir of '$path': '$containing_dir'"
-	$ssh_pass ssh $user@$host mv "$path" "$containing_dir/$new_name"
+	$shh_pass ssh $user@$host mv "$path" "$containing_dir/$new_name"
 }
 
 
