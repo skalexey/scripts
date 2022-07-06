@@ -3,8 +3,8 @@
 function job()
 {
     local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    source $THIS_DIR/automation_config.sh
-    source $scripts_dir/include/log.sh
+    source "$THIS_DIR/automation_config.sh"
+    source "$scripts_dir/include/log.sh"
     local log_prefix="[cpp_cmake_exe_job]: "
 
     [ -z $1 ] && log_error "No executable name provided" && return 1 || local exe_name=$1
@@ -21,6 +21,7 @@ function job()
     fi
 
     #process args
+    local includable=false
     local arg_index=0
     for arg in "$@" 
     do
@@ -47,28 +48,28 @@ function job()
     env_include ${includes[@]}
 
     # do the job
-    source $THIS_DIR/templates_config.sh
+    source "$THIS_DIR/templates_config.sh"
 
     if $includable; then
         local template_name=ExeIncludable
     else
-        local Exe
+        local template_name=Exe
     fi
-
-    local project_tpl_dir=$templates_dir/CMake/$template_name
 
     log "Setup project directory ..."
 
-    cp -R $project_tpl_dir $target_path
+    cp -R "$templates_dir/C++/$template_name" "$target_path"
+    [ $? -ne 0 ] && log_error "error while copying a subproject template" && return 5
+    cp -a "$templates_dir/CMake/C++/Exe/." "$target_path/$template_name"
     [ $? -ne 0 ] && log_error "error while copying a subproject template" && return 5
     local cmd="mv $target_path/Exe $exe_path"
     echo $cmd
     # return
-    mv $target_path/$template_name $exe_path
+    mv "$target_path/$template_name" "$exe_path"
 
-    source $scripts_dir/include/file_utils.sh
-    file_replace $exe_path/CMakeLists.txt "ExeTitle" "$exe_name"
-    file_replace $exe_path/main.cpp "ExeTitle" "$exe_name"
+    source "$scripts_dir/include/file_utils.sh"
+    file_replace "$exe_path/CMakeLists.txt" "ExeTitle" "$exe_name"
+    file_replace "$exe_path/main.cpp" "ExeTitle" "$exe_name"
     
     # rename includable module files
     if $includable; then

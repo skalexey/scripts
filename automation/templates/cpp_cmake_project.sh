@@ -40,7 +40,7 @@ done
 
 source $THIS_DIR/templates_config.sh
 
-project_tpl_dir=$templates_dir/CMake/Project 
+project_tpl_dir=$templates_dir/CMake/C++/Project 
 
 log "Setup project directory ..."
 
