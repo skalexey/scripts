@@ -39,7 +39,7 @@ function ssh_copy() {
 		return 4
 	fi
 
-	$cmd $local_path$copy_contents_modifier $user@$host:$remote_path
+	$cmd "$local_path$copy_contents_modifier" "$user@$host:$remote_path"
 }
 
 function ssh_rename()
