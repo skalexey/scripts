@@ -14,7 +14,7 @@ function update_cmake_subproject_job()
 	# Copy template
 	source $automation_dir/templates/templates_config.sh
 	fname="CMakeLists.txt"
-	local tpl_path=$templates_dir/CMake/ExeIncludable/$fname
+	local tpl_path=$templates_dir/CMake/C++/Exe/$fname
 	[ ! -f "$tpl_path" ] && log_error "No template found at '$tpl_path'" && exit
 	cp "$tpl_path" "$subproj_dir"
 	[ $? -ne 0 ] && log_error "Errors while copying template '$subproj_name'"
