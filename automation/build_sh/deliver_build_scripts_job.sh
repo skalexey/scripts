@@ -42,6 +42,8 @@ function deliver_build_scripts_job()
 	cp "$scripts_dir/include/file_utils.sh" "$dir"
 	[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 6
 
+	file_replace "$dir/external_config.sh" "\{TPL_NAME\}" $(dir_name "$dir")
+
 	log_success "Buld scripts delivered"
 }
 
