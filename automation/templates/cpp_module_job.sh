@@ -3,12 +3,11 @@
 function job()
 {
     local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    source $THIS_DIR/automation_config.sh
     source $scripts_dir/include/log.sh
     local log_prefix="[cpp_module_job]: "
 
-    [ -z $1 ] && log_error "No module name provided" && return 1 || local module_name=$1
-    [ -z $2 ] && log_error "No target path provided" && return 2 || local target_path=$2
+    [ -z "$1" ] && log_error "No module name provided" && return 1 || local module_name="$1"
+    [ -z "$2" ] && log_error "No target path provided" && return 2 || local target_path="$2"
 
     [ ! -d "$target_path" ] && log_error "Not existent directory provided: '$target_path'" && return 10
 
