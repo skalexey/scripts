@@ -133,7 +133,7 @@ function git_check()
 		return 0
 	fi
 
-	local s=$(git_status)
+	local s=$(git_status false)
 	
 	[ $? -ne 0 ] && log_error "Error during checking repo status" && return 1
 
