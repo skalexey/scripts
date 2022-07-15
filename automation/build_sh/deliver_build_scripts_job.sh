@@ -2,6 +2,19 @@
 
 # deliver_build_scripts_job.sh
 
+function deliver_config()
+{
+	[ ! -d "$1" ] && log_error "Not existent directory provided to deliver_config" && return 1 || local dir="$1"
+	local ex=$2
+
+	if [ ! -f "$dir/$ex.sh" ]; then
+		log "Deliver new config '$dir/$ex'"
+		cp "$scripts_dir/build_sh/${ex}_example.sh" "$dir/$ex.sh"
+	else
+		log "Config already exists '$dir/$ex.sh'"
+	fi
+}
+
 function deliver_build_scripts_job()
 {
 	source automation_config.sh
@@ -24,16 +37,15 @@ function deliver_build_scripts_job()
 		local no_config=true
 	fi
 
-	if $no_config; then
-		cp "$scripts_dir/build_sh/build.sh" "$dir"
-		cp "$scripts_dir/build_sh/dependencies.sh" "$dir"
-		cp "$scripts_dir/build_sh/get_dependencies.sh" "$dir"
-	else
-		cp -a "$scripts_dir/build_sh/." "$dir"
-		rename "$dir/build_config_example.sh" build_config.sh
-		rename "$dir/external_config_example.sh" external_config.sh
-		rename "$dir/deps_config_example.sh" deps_config.sh
-		rename "$dir/deps_scenario_example.sh" deps_scenario.sh
+	cp "$scripts_dir/build_sh/build.sh" "$dir"
+	cp "$scripts_dir/build_sh/dependencies.sh" "$dir"
+	cp "$scripts_dir/build_sh/get_dependencies.sh" "$dir"
+
+	if ! $no_config; then
+		deliver_config "$dir" build_config
+		deliver_config "$dir" deps_config
+		deliver_config "$dir" deps_scenario
+		deliver_config "$dir" external_config
 		[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 5
 	fi
 
