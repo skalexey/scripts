@@ -175,6 +175,11 @@ function git_get_upstream()
 	echo "$ret"
 }
 
+function need_to_push()
+{
+	[ "$(git_status false)" == "need_to_push" ] && true || false 
+}
+
 function git_status()
 {
 	if [ -z "$1" ] || $1; then
