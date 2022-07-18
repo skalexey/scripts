@@ -22,6 +22,8 @@ function deliver_build_scripts_job()
 		"$scripts_dir/include/file_utils.sh" \
 		"$scripts_dir/include/file_utils.py" \
 		"$scripts_dir/include/os.sh" \
+		"$scripts_dir/include/input.sh" \
+		"$scripts_dir/include/git_utils.sh" \
 	)
 	env_include ${includes[@]}
 	source log.sh
@@ -56,7 +58,29 @@ function deliver_build_scripts_job()
 
 	file_replace "$dir/external_config.sh" "\{TPL_NAME\}" $(dir_name "$dir")
 
-	log_success "Buld scripts delivered"
+	log_success "Build scripts delivered"
+	
+	# auto commit with user dialog
+	source git_utils.sh
+	source input.sh
+	local cur_dir=${PWD}
+	cd "$dir"
+	git status
+	git add *.sh --patch
+	git status
+	if need_to_commit; then
+		if ask_user "Commit?"; then
+			git commit -m "Auto update build scripts"
+		fi
+	fi
+	if need_to_push; then
+		if ask_user "Push?"; then
+			git_push
+		fi
+	fi
+	cd "$cur_dir"
+	
+
 }
 
 function job()
