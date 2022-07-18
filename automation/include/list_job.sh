@@ -27,7 +27,7 @@ function list_job()
 		cmd_args=("$e" "${@:$((job_index+1))}")
 		local cmd="$jobname ${cmd_args[@]}"
 		if $list_job_log; then
-			log "command: $cmd"
+			log_info "command: $cmd"
 		fi
 		source run_local.sh "$job_path" "$e" "${@:$((job_index+1))}"
 		[ $counter -ge $((list_size)) ] && break || ((counter++))
