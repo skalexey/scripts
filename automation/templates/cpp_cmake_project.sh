@@ -78,8 +78,9 @@ else
     rm -rf $project_path/lib
     rm -rf $project_path/Test
     file_replace $project_path/CMakeLists.txt "Project" "$project_name"
-    #file_replace $project_path/CMakeLists.txt "{TPL_CUSTOM_INCLUDES}" ""
 fi
+
+file_replace $project_path/CMakeLists.txt "\{TPL_CUSTOM_INCLUDES\}" ""
 
 log "Deliver build scripts ..."
 
@@ -94,7 +95,7 @@ rename $project_path/deps_config_example.sh deps_config.sh
 rename $project_path/deps_scenario_example.sh deps_scenario.sh
 [ $? -ne 0 ] && log_error "Error during build scripts delivery: $?" && exit 5
 
-log_success "Buld scripts delivered"
+log_success "Build scripts delivered"
 
 # $automation_dir/run.sh \
 #     $THIS_DIR/all_build_deps_job.sh \
