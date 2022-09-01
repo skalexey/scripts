@@ -18,6 +18,7 @@ function git_push_job()
 	local tmp=${PWD}
 	cd "$dir"
 
+	git_pull
 	git_push
 	
 	[ $? -ne 0 ] && log_error "Error during pushing" && cd "$tmp" && return 2
