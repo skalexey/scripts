@@ -24,6 +24,7 @@ function deliver_build_scripts_job()
 		"$scripts_dir/include/os.sh" \
 		"$scripts_dir/include/input.sh" \
 		"$scripts_dir/include/git_utils.sh" \
+		"$scripts_dir/include/net_utils.sh" \
 	)
 	env_include ${includes[@]}
 	source log.sh
