@@ -9,3 +9,5 @@ else
 	export {TPL_NAME}_deps="${HOME}/Projects"
 	# export {TPL_NAME}_asio_path="~/lib/asio-1.22.1/include"
 fi
+
+[ ! -z {TPL_NAME}_deps ] && build_deps=${TPL_NAME}_deps
