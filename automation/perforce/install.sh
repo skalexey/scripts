@@ -5,13 +5,13 @@ function install()
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	cd "$THIS_DIR"
 
-	source $THIS_DIR/../automation_config.sh
-	source $THIS_DIR/../../include/log.sh
+	source perforce_config.sh
+	source ../automation_config.sh
+	source ../../include/log.sh
 	local log_prefix="[install]: "
 	[ ! -d "$1" ] && log_error "No downloaded directory provided" && return 1 || local dir="$1"
 
 	local bin_dir=/usr/local/bin
-	local perforce_dir=/usr/local/perforce
 
 	# Move the p4d server and p4 CLI executables from the Downloads directory to the "$bin_dir" directory
 	log_info "Install '$dir/p4d' and p4 to '$bin_dir'"
@@ -38,13 +38,13 @@ function install()
 	p4 -V
 	[ $? -ne 0 ] && log_warning "Can't run. Check permissions..." && ls -lah "$bin_dir"/p4* && return 6
 	
-	log_info "Start the Perforce server"
-	p4d -r "$perforce_dir" -d -p 1666
+	log_info "Start the Perforce server on port '$perforce_port'"
+	p4d -r "$perforce_dir" -d -p $perforce_port
 
 	[ $? -ne 0 ] && log_error "Can't start the server" && return 7
 	
 	log_info "test the server"
-	p4 -p localhost:1666 info
+	p4 -p localhost:$perforce_port info
 	[ $? -ne 0 ] && log_error "Can't test the server" && return 8
 
 	log_success "Finished setting up"
@@ -53,5 +53,3 @@ function install()
 }
 
 install $@
-job_retcode=$?
-[ $job_retcode -ne 0 ] && exit $job_retcode
