@@ -7,12 +7,19 @@ function ssh_exists() {
 
 	local USE_IP="-o StrictHostKeyChecking=no $user@$host"
 	
+	local ssh_pass=""
 	if [ ! -z "$4" ]; then # pass
 		local ssh_pass="sshpass -p $4"
-		[ $? -ne 0 ] && echo "[ssh_exists]: Error while using sshpass" && false && return 4
 	fi
 
-	if $shh_pass ssh $USE_IP stat $path \> /dev/null 2\>\&1; then
+	local ssh_port=""
+	if [ ! -z "$5" ]; then # pass
+		local ssh_port="-p $5"
+	fi
+
+	# if $ssh_pass ssh $USE_IP $ssh_port stat $path \> /dev/null 2\>\&1; then
+	if ssh $user@$host $ssh_port stat $path \> /dev/null 2\>\&1; then
+		[ $? -ne 0 ] && echo "[ssh_exists]: Error while using sshpass" && false && return 4
 		true
 	else
 		false
@@ -27,7 +34,7 @@ function ssh_copy() {
 
 	local copy_contents_modifier=""
 	for arg in "$@"; do
-		[ "$arg" == "-a" ] && echo "-a option passed. Copy contents" && local copy_contents_modifier="/*"
+		[ "$arg" == "-a" ] && echo "-a option passed. Copy contents" && local copy_contents_modifier="/."
 	done
 
 	if [ -d "$local_path" ]; then
