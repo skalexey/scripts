@@ -1,3 +1,5 @@
+using module Rectangle
+Import-Module Rectangle -Force
 Import-Module ArrayUtils -Force
 
 $script:nativeMethods = @();
@@ -14,6 +16,7 @@ function Add-NativeMethods()
 
     Add-Type @"
         using System;
+		using System.Drawing;
         using System.Runtime.InteropServices;
 		using System.Collections.Generic;
 		using System.Text;
@@ -59,6 +62,48 @@ function Add-NativeMethods()
 			public int Right;       // x position of lower-right corner
 			public int Bottom;      // y position of lower-right corner
 		}
+
+		public struct POINT
+		{
+			public int X;
+			public int Y;
+
+			public POINT(int x, int y)
+			{
+				this.X = x;
+				this.Y = y;
+			}
+		}
+
+		public enum ShowWindowCommands
+		{
+			Hide = 0,
+			Normal = 1,
+			ShowMinimized = 2,
+			Maximize = 3, // is this the right value?
+			ShowMaximized = 3,
+			ShowNoActivate = 4,
+			Show = 5,
+			Minimize = 6,
+			ShowMinNoActive = 7,
+			ShowNA = 8,
+			Restore = 9,
+			ShowDefault = 10,
+			ForceMinimize = 11
+		}
+		
+		public struct WINDOWPLACEMENT
+		{
+			public int Length;
+			public int Flags;
+			public ShowWindowCommands ShowCmd;
+
+			public POINT MinPosition;
+
+			public POINT MaxPosition;
+
+			public RECT NormalPosition;
+		}
 "@
 }
 # Register native methods
@@ -70,6 +115,9 @@ Register-NativeMethod "user32.dll" "bool AnimateWindow(IntPtr hwnd, UInt32 dwTim
 Register-NativeMethod "user32.dll" "IntPtr FindWindow(IntPtr ZeroOnly, string lpWindowName)"
 Register-NativeMethod "user32.dll" "void keybd_event(Byte bVk, Byte bScan, UInt32 dwFlags, UInt32 dwExtraInfo)"
 Register-NativeMethod "user32.dll" "bool InvalidateRect(IntPtr hWnd, IntPtr ZeroOnly, bool bErase)"
+Register-NativeMethod "user32.dll" "IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex)";
+Register-NativeMethod "user32.dll" "IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong)";
+Register-NativeMethod "user32.dll" "bool GetWindowPlacement(IntPtr hWnd, ref WINDOWPLACEMENT lpwndpl)";
 
 # For Get-ChildWindow
 Register-NativeMethod "user32.dll" "int GetWindowText(IntPtr hwnd,StringBuilder lpString, int cch)"
@@ -82,17 +130,39 @@ Register-NativeMethod "user32.dll" "bool EnumChildWindows(IntPtr window, EnumWin
 Add-NativeMethods
 
 # Public functions
+
+function IsWindowMaximized {
+	param($handle)
+	$lptr = [NativeMethods]::GetWindowLongPtr($h, -16)
+	$lptr -band 0x01000000L
+}
+
+function DemaximizeWindow {
+	param($handle)
+	$lptr = [NativeMethods]::GetWindowLongPtr($h, -16)
+	$lptr = $lptr -band 0x10111111L
+	[NativeMethods]::SetWindowLongPtr($h, -16, $lptr)
+}
 function GetWindowBounds {
 	param($name, $index = -1)
+	# Log "GetWindowBounds($name)"
+	$h = $null
+	
 	if ($name -is [string]) {
-		Get-Process -Name $name
-		$h = (Get-Process -Name $name).MainWindowHandle
+		$r = $(Get-Process -Name $name -ErrorAction SilentlyContinue)
+		if (-not $r) {
+			# LogError "Can't find process $name"
+			$null
+			return
+		}
+		$h = $r.MainWindowHandle
 	}
 	else {
 		$h = $name
 	}
 	if (!$h) {
-		return
+		throw "Unexpected error: undefined handler while looking for process '$name'"
+		$null
 	}
 	$r = New-Object RECT
 	if ($h -is [array]) {
@@ -102,13 +172,22 @@ function GetWindowBounds {
 			$h = FindFirstNotEqual $h 0
 		}
 	}
-	if (-Not [NativeMethods]::GetWindowRect($h, [ref]$r)) {
-		$r = $null
+	if (IsWindowMaximized $h) {
+		# LogInfo "Window '$h' is maximized. Demaximize it"
+		DemaximizeWindow $h
+	} else {
+		# LogInfo "Window '$h' is not maximized"
 	}
-	$result = New-Object PSObject
-	$result | Add-Member -NotePropertyName Rect -NotePropertyValue $r
-	$result | Add-Member -NotePropertyName Handler -NotePropertyValue $h
-	$result
+	# Log "Try to get window bounds for process '$h'"
+	if (-Not [NativeMethods]::GetWindowRect($h, [ref]$r)) {
+		LogError "Can't get window bounds for process '$h'"
+		$null
+		return
+	}
+	[PSCustomObject]@{
+		Rect = [Rectangle]::new($r.Left, $r.Top, $r.Right - $r.Left, $r.Bottom - $r.Top)
+		Handle = $h
+	}
 }
 
 function Get-ChildWindow {
@@ -131,11 +210,15 @@ function Get-ChildWindow {
 	}
 	
 	PROCESS{
-		foreach ($child in ([NativeMethods]::GetChildWindows($MainWindowHandle))){
+		$a = ([NativeMethods]::GetChildWindows($MainWindowHandle));
+		if (-not $a -or $a.Count -eq 0) {
+			return
+		}
+		foreach ($child in $a){
 			Write-Output (,([PSCustomObject] @{
 				MainWindowHandle = $MainWindowHandle
 				ChildId = $child
-				ChildTitle = (Get-WindowName($child))
+				ChildTitle = $(Get-WindowName($child))
 			}))
 		}
 	}
@@ -143,7 +226,7 @@ function Get-ChildWindow {
 
 function IsProcessRunning {
 	param($name)
-	(Get-Process -Name $name -ErrorAction SilentlyContinue) -ne $null
+	$null -ne $(Get-Process -Name $name -ErrorAction SilentlyContinue)
 }
 
 Export-ModuleMember -Function * -Alias *

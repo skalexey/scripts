@@ -17,4 +17,12 @@ function LogError {
     Write-Host -ForegroundColor Red $msg
 }
 
+# Prints all errors in the passed list.
+# You can pass array named '$error' - the list of errors in the whole terminal session.
+function LogAllErrors {
+    param ($errorList)
+    for ($i = 0; $i -lt $errorList.Count; $i++) {
+        LogError "Error $($i): $($errorList[$i])\n"
+    }
+}
 Export-ModuleMember -Function * -Alias *
