@@ -136,7 +136,7 @@ RegisterWindow "chrome2" "chrome" "C:\Program Files\Google\Chrome\Application\ch
 	
 
 RegisterWindow "vs code" "code" '~\AppData\Local\Programs\Microsoft VS Code\Code' @(
-	'C:\Users\skoro\Projects\arkanoid'
+	'~\Projects\arkanoid'
 	) (ScreenRect 0.4 0 0.6 1.0) $null $function:startVSCode
 
 
