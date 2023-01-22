@@ -29,7 +29,7 @@ function log_info()
 }
 
 THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source $THIS_DIR/string_utils.sh
+[ -f $THIS_DIR/string_utils.sh ] && source $THIS_DIR/string_utils.sh
 
 function log_into_file()
 {
