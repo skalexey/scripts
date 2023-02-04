@@ -31,7 +31,7 @@ function job()
     env_include ${includes[@]}
 
     # do the job
-    source $THIS_DIR/templates_config.sh
+    source $scripts_dir/automation/templates/templates_config.sh
 
     log "Setup project directory ..."
 
@@ -49,9 +49,10 @@ function job()
     [ $? -ne 0 ] && log_error "error while moving a module template" && return 7
 
     source $scripts_dir/include/file_utils.sh
-    file_replace "$h_name" "\{TPL_NAME\}" "$module_name"
-    file_replace "$cpp_name" "\{TPL_NAME\}" "$module_name"
-    [ $? -ne 0 ] && log_error "Error during module temlate initialization: $?" && return 8
+    file_replace "$h_name" "{TPL_NAME}" "$module_name"
+    file_replace "$cpp_name" "{TPL_NAME}" "$module_name"
+    ec=$?
+    [ $ec -ne 0 ] && log_error "Error during module temlate initialization: $c" && return 8
 
     log_success "Template instantiated"
 }
