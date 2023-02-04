@@ -1,5 +1,6 @@
 Import-Module ArrayUtils -Force
 
+start-transcript -path "transcript-log.txt"
 # Helper functions for building the class
 ###########################################################################################
 $script:nativeMethods = @();
@@ -168,15 +169,20 @@ $r = GetWindowBounds "chrome"
 $r
 [NativeMethods]::MoveWindow($r.Handler, 0, 0, 800, 800, $true)
 
-#Get-Process | Where-Object {$_.ProcessName -eq 'powershell'} | Get-ChildWindow
-$a = Get-ChildWindow $r.Handler
-foreach ($e in $a) {
-	Write-Host "Child: $($e.ChildTitle):"
-	$r = GetWindowBounds $e.ChildId
-	$r.Rect
-	Get-Process | Where-Object {$_.Id -eq $e.ChildId}
-	if ($r.Rect.Left -eq 267) {
-		Write-Host "Move window $(e.ChildTitle)"
-		[NativeMethods]::MoveWindow($e.ChildId, 0, 0, 800, 800, $true)
-	}
-}
+"Waiting for chrome to start..."
+Start-Sleep 3
+"Done"
+Start-Sleep 3
+"Process"
+Get-Process | Where-Object {$_.ProcessName -eq 'chrome'} | Get-ChildWindow
+# $a = Get-ChildWindow $r.Handler
+# foreach ($e in $a) {
+# 	Write-Host "Child: $($e.ChildTitle):"
+# 	$r = GetWindowBounds $e.ChildId
+# 	$r.Rect
+# 	Get-Process | Where-Object {$_.Id -eq $e.ChildId}
+# 	if ($r.Rect.Left -eq 267) {
+# 		Write-Host "Move window $(e.ChildTitle)"
+# 		[NativeMethods]::MoveWindow($e.ChildId, 0, 0, 800, 800, $true)
+# 	}
+# }
