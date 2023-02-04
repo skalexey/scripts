@@ -8,7 +8,7 @@ function update_build_scripts()
 	source ../../include/log.sh
 	local log_prefix="[update_scripts]: "	
 	source ../automation_config.sh
-	[ ! -f "os.h" ] && cp ../../include/os.sh . && local os_included=true
+	[ ! -f "os.sh" ] && cp ../../include/os.sh . && local os_included=true
 	source "$automation_dir/templates/templates_config.sh"
 	if $os_included; then
 		rm os.sh
