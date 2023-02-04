@@ -8,8 +8,8 @@ def replace(fpath, where, what, count = -1):
 		contents = f.read()
 	pos = contents.find(where)
 	if (pos < 0):
-		print("-1")
-		return 1
+		print(-1)
+		return -1
 	
 	contents = contents.replace(where, what, count)
 
@@ -17,6 +17,7 @@ def replace(fpath, where, what, count = -1):
 		f.write(contents)
 
 	print(pos)
+	return pos
 
 def search(fpath, what, count = 1):
 	if (type(count) != int):

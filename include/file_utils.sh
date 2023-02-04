@@ -11,6 +11,14 @@ function file_insert_before() {
 	return $(python -c "from file_utils import*; insert_before(\"$fpath\", \"$2\", \"$3\");")
 }
 
+function file_insert_after() {
+	[ -z "$1" ] && return 1 # file name
+	[ -z "$2" ] && return 2 # string after which to insert
+	[ -z "$3" ] && return 3 # what to insert
+	file_replace "$1" "$2" "$2$3"
+	return $?
+}
+
 function file_append_line() {
 	[ -z "$1" ] && return 1 # file name
 	[ -z "$2" ] && return 2 # string to append at the end of the file
@@ -21,13 +29,14 @@ function file_replace() {
 	[ -z "$1" ] && return 1 # file name
 	[ -z "$2" ] && return 2 # regex to find
 	[ -z "$3" ] && return 3 # text to replace regex to
-	#echo "s/$2/$3/g$4"
-	sed -i.bac -E "s/$2/$3/g$4" $1
-	[ -f "$1.bac" ] && rm $1.bac
+	# Use sed
+	# sed -i.bac -E "s/$2/$3/g$4" $1
+	# [ -f "$1.bac" ] && rm $1.bac
 	# Use python due to platform independence
 	# use relative paths due to platform independence
-	# fpath=$(realpath --relative-to="${PWD}" "$1")
-	# return $(python -c "from file_utils import*; replace(\"$fpath\", \"$2\", \"$3\");")
+	fpath=$(realpath --relative-to="${PWD}" "$1")
+	res=$(python -c "from file_utils import*; replace(\"$fpath\", \"$2\", \"$3\");")
+	return $?
 }
 
 function file_search() {
