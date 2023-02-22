@@ -60,11 +60,11 @@ function full_path() {
 	[ -z "$1" ] && return 1 # input path
 	[ -d "$1" ] && dir_full_path $1
 	[ -f "$1" ] && file_full_path $1
+	return $?
 }
 
 function dir_full_path() {
 	[ -z "$1" ] && return 1 # directory path
-	[ ! -d "$1" ] && return 2
 	
 	local cur_dir="${PWD}"
 	cd "$1"
@@ -82,8 +82,6 @@ function dir_name() {
 
 function file_full_path() {
 	[ -z "$1" ] && return 1 # file path
-	[ ! -f "$1" ] && return 2
-	
 	local file_dir=$(dirname "$1")
 	local file_name=$(basename "$1")
 	local cur_dir="${PWD}"
