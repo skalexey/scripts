@@ -1,7 +1,8 @@
 import re
+import sys
 
 def insert_before(fpath, where, what):
-	replace(fpath, where, what + where, 1)
+	return replace(fpath, where, what + where, 1)
 
 def replace(fpath, where, what, count = -1):
 	with open(fpath, "r") as f:
@@ -30,3 +31,12 @@ def search(fpath, what, count = 1):
 		if (count <= 0):
 			return p
 	return -1
+
+if len(sys.argv) > 2:
+	arr = []
+	for i, a in enumerate(sys.argv):
+		if (i > 1):
+  			arr.append(a)
+	locals()[sys.argv[1]](*arr)
+elif len(sys.argv) == 2:
+	locals()[sys.argv[1]]()
