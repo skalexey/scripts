@@ -20,7 +20,7 @@ inject_arg_job()
 
 	[ -z "$1" ] && log_error "No agument provided 0 of 4" && exit
 	[ -z "$2" ] && log_error "No agument provided 1 of 4" && exit
-	[ -z "$3" ] && log_error "No job provided 2 of 4" && exit || job_path=$3
+	[ -z "$3" ] && log_error "No job provided 2 of 4" && exit || local job_path=$3
 	[ -z "$4" ] && log_error "No arg provided 3 of 4" && exit
 
 	local job=$(basename $job_path)

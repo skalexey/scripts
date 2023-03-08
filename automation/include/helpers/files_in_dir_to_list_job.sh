@@ -17,10 +17,10 @@ files_in_dir_to_list_job()
 	source log.sh
 	local log_prefix="[files_in_dir_to_list_job]: "
 
-	[ -z $1 ] && log_error "No dir list job specified" && exit || dir_list_job_path=$1
-	[ -z $2 ] && log_error "No input dir specified" && exit || input_dir=$2
-	[ -z $3 ] && log_error "No files list dir job specified" && exit || files_list_dir_job_path=$3
-	[ -z $4 ] && log_error "No final job specified" && exit || final_job_path=$4
+	[ -z $1 ] && log_error "No dir list job specified" && exit || local dir_list_job_path=$1
+	[ -z $2 ] && log_error "No input dir specified" && exit || local input_dir=$2
+	[ -z $3 ] && log_error "No files list dir job specified" && exit || local files_list_dir_job_path=$3
+	[ -z $4 ] && log_error "No final job specified" && exit || local final_job_path=$4
 
 	source $final_job_path
 

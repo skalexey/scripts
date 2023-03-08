@@ -14,17 +14,13 @@ function list_job()
 	# next all args for the job
 	# next to the automatically passed list element as a first argument
 	local list_size=$1
-	#log "list_job: list_size: $list_size"
 	local list=${@:2}
 	local job_index=$((list_size+2))
-	#log "list_job: job_index: $job_index"
 	local job_path=${!job_index}
-	
 	local counter=1
 	for e in ${list[@]}; do
-		#log "list_job: e: $e"
 		local log_prefix="[list_job] [$counter/$list_size]: "
-		cmd_args=("$e" "${@:$((job_index+1))}")
+		local cmd_args=("$e" "${@:$((job_index+1))}")
 		local cmd="$jobname ${cmd_args[@]}"
 		if $list_job_log; then
 			log_info "command: $cmd"

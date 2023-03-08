@@ -10,11 +10,12 @@ swap_args_job()
 	local log_prefix="[swap_args_job]: "
 	[ -z "$1" ] && log "No agument provided 0 of 3" && exit
 	[ -z "$2" ] && log "No agument provided 1 of 3" && exit
-	[ -z "$3" ] && log "No job provided 2 of 3" && exit || job_path=$3
+	[ -z "$3" ] && log "No job provided 2 of 3" && exit || local job_path=$3
 
 	local job=$(basename $job_path)
 	source $job
 	local jobname=$(echo $job| cut -d. -f1)
+	log_warning "Swapping arguments for job '$jobname'. New order is: $2 $1 ${@:4}"
 	$jobname "$2" "$1" ${@:4}
 }
 
