@@ -7,7 +7,7 @@ function switch_light_mode()
 	source $THIS_DIR/../../include/log.sh
 	local log_prefix="[set_light_mode]: "
 
-	[ -z "$1" ] && log_error "No mode provided (use light or dark)" && return || local mode=$(echo "${1,,}")
+	[ -z "$1" ] && log_error "No mode provided (use light or dark)" && return 1 || local mode=$(echo "${1,,}")
 
 	log_info "Switching to '$mode' mode"
 
@@ -24,13 +24,17 @@ function switch_light_mode()
 		return 2
 	fi
 
-	source $THIS_DIR/../../include/file_utils.sh
-	file_replace "C:\Users\skoro\AppData\Roaming\Code\User\settings.json" "$vscode_from" "$vscode_to" >> /dev/null
-	[ $? -ne 0 ] && log_error "Failed to switch VSCode theme" && return 1
-	powershell $THIS_DIR/win_theme_switch.ps1 "$win_theme"
+	log "vscode_from: '$vscode_from'"
+	log "vscode_to: '$vscode_to'"
 	
+	source $THIS_DIR/../../include/file_utils.sh
+	
+	file_replace "C:\Users\alexey.skorokhodov\AppData\Roaming\Code\User\settings.json" "$vscode_from" "$vscode_to"
+	[ $? -ne 0 ] && log_error "Failed to switch VSCode theme" && return 3
+
 	return 0
 }
 
 switch_light_mode $@
-[ $? -ne 0 ] && exit
+switch_light_mode_ret_code=$?
+[ $switch_light_mode_ret_code -ne 0 ] && exit $switch_light_mode_ret_code

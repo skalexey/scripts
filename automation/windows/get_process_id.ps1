@@ -1,0 +1,1 @@
+Get-Process $args[0] | select -expand Id
