@@ -79,29 +79,19 @@ function full_path() {
 
 function dir_full_path() {
 	[ -z "$1" ] && return 1 # directory path
-	
-	local cur_dir="${PWD}"
-	cd "$1"
-	echo ${PWD}
-	cd "$cur_dir"
+	echo "$(cd "$1" && pwd)"
 }
 
 function dir_name() {
 	[ -z "$1" ] && return 1 # directory path
 	[ ! -d "$1" ] && return 2
-	
-	local dp="$(dir_full_path "$1")"
-	echo $(basename "$dp")
+	echo $(basename "$(dirname "$1")")
 }
 
 function file_full_path() {
 	[ -z "$1" ] && return 1 # file path
-	local file_dir=$(dirname "$1")
 	local file_name=$(basename "$1")
-	local cur_dir="${PWD}"
-	cd "$file_dir"
-	echo ${PWD}/$file_name
-	cd "$cur_dir"
+	echo "$(cd "$(dirname "$1")" && pwd)/$file_name"
 }
 
 function file_extension() {
