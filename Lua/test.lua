@@ -37,3 +37,7 @@ if string.find( s, "", 1, true ) then
 else
 	print( "Not found" );
 end
+
+print("or test:");
+local id = nil;
+print(id or 0);
