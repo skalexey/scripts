@@ -248,3 +248,6 @@ function git_check_update()
 	return 0
 }
 
+if [ "$#" -gt 0 ]; then
+	$@
+fi
