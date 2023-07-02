@@ -14,7 +14,7 @@ function box()
 {
 	local THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 	cd "$THIS_DIR"
-	local fpath="C:\Users\skoro\Projects\tmp\python_test.txt"
+	local fpath="C:\Users\$USERNAME\Projects\tmp\python_test.txt"
 	if [ -f "$fpath" ]; then
 		rm "$fpath"
 	fi
