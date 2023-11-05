@@ -3,7 +3,7 @@
 function job()
 {
     local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    source "$THIS_DIR/automation_config.sh"
+    source "$THIS_DIR/../automation_config.sh"
     source "$scripts_dir/include/log.sh"
     local log_prefix="[cpp_cmake_exe_job]: "
 
@@ -68,6 +68,7 @@ function job()
     mv "$target_path/$template_name" "$exe_path"
 
     source "$scripts_dir/include/file_utils.sh"
+    log_warning "Replace '$exe_path/CMakeLists.txt' with '$exe_name'"
     file_replace "$exe_path/CMakeLists.txt" "ExeTitle" "$exe_name"
     file_replace "$exe_path/main.cpp" "ExeTitle" "$exe_name"
     
