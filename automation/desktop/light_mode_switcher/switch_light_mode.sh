@@ -25,15 +25,16 @@ function switch_light_mode()
 	fi
 
 	source $scripts_dir/include/file_utils.sh
-	home=$(powershell $scripts_dir/automation/windows/envar.ps1 "HOME")
+	local home=$(powershell $scripts_dir/automation/windows/envar.ps1 "HOME")
 	file_replace "$home\AppData\Roaming\Code\User\settings.json" "$vscode_from" "$vscode_to"
-	[ $? -ne 0 ] && log_error "Failed to switch VSCode theme" && return 3
+	[ $? -ne 0 ] && log_error "Failed to switch VSCode theme"
+
 	powershell $THIS_DIR/win_theme_switch.ps1 "$win_theme"
 
 	local plugins_dir="plugins"
 
-	for file in $(ls $THIS_DIR/$plugins_dir); do
-		source "$THIS_DIR/$plugins_dir/$file" $@
+	for file in $THIS_DIR/$plugins_dir/*; do
+		source "$file" $@
 	done
 
 	return 0

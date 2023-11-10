@@ -22,7 +22,8 @@ function switch_light_mode_perforce()
     log_info "Switching light mode to '$mode'"
     
     source $scripts_dir/include/file_utils.sh
-    home=$(powershell $scripts_dir/automation/windows/envar.ps1 "HOME")
+    
+    local home=$(powershell $scripts_dir/automation/windows/envar.ps1 "HOME")
     file_replace "$home\.p4qt\ApplicationSettings.xml" "\"DarkTheme\">$value_from" "\"DarkTheme\">$value_to"
     file_replace "$home\.p4merge\ApplicationSettings.xml" "\"DarkTheme\">$value_from" "\"DarkTheme\">$value_to"
 }
