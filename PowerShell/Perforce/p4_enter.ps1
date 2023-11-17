@@ -19,5 +19,3 @@ if ($args.Length -ge 4) {
     $hash = $args[3]
     p4 set P4PASSWD=$hash
 }
-
-p4 login -a
