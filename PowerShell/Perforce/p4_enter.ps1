@@ -1,5 +1,4 @@
 
-
 if ($args.Length -lt 2) {
     Write-Error -Message "Usage: p4_enter.ps1 <user> <workspace_name>" -ErrorAction Stop
 }
@@ -15,7 +14,14 @@ if ($args.Length -ge 3) {
     p4 set P4PORT=$addr
 }
 
+p4 set P4CONFIG=.p4config
+
 if ($args.Length -ge 4) {
-    $hash = $args[3]
-    p4 set P4PASSWD=$hash
+    $pass = $args[3]
+    # Uncomment in you need to use P4PASSWD parameter of the p4config
+    # $hash = & $PSScriptRoot\..\md5.ps1 $pass
+    # p4 set P4PASSWD=$hash
+    echo $pass | p4 login -a
+} else {
+    p4 login -a
 }
