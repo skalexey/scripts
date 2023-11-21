@@ -13,6 +13,13 @@ if (-Not $credLogin) {
     exit 1
 }
 
+$onlyGet = $false
+if ($args.Count -gt 1) {
+    if ($args[1] -eq "--get") {
+        $onlyGet = $true
+    }
+}
+
 function CredFPath {
     param ($login)
     "$credsDir\$login.xml"
@@ -32,14 +39,18 @@ function GetCred {
         LogInfo("No creds directory. Creating at '$credsDir'...")
         New-Item $credsDir -ItemType Directory *> $null
     } else {
-        LogSuccess("Creds directory OK")
+        if (-Not $onlyGet) {
+            LogSuccess("Creds directory OK")
+        }
     }
     $credFpath = CredFPath $login
     if (-Not (Test-Path -Path $credFpath -PathType Leaf)) {
         Log("Credentials for '$login' not found. Please enter them.")
         $cred = AskCredentials($login)
     } else {
-        LogSuccess("Credentials OK")
+        if (-Not $onlyGet) {
+            LogSuccess("Credentials OK")
+        }
         $cred = Import-Clixml -Path $credFpath
         if (-Not $cred) {
             LogInfo("Can't import credentials for '$login'. Please enter them.")
@@ -52,6 +63,13 @@ function GetCred {
     }
     $cred
 }
+
 $cred = GetCred($credLogin)
-Set-Clipboard -Value $cred.GetNetworkCredential().Password
+$pass = $cred.GetNetworkCredential().Password
+if ($onlyGet) {
+    $pass
+    exit 0
+}
+
+Set-Clipboard -Value $pass
 LogSuccess("Done")
