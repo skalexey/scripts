@@ -46,9 +46,28 @@ function file_replace() {
 	return $res
 }
 
+function file_convert() {
+	[ -z "$1" ] && return -10 # file name
+	[ -z "$2" ] && return -20 # source
+	[ -z "$3" ] && return -30 # target
+	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
+	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	local ret=$(python $THIS_DIR/file_utils.py convert "$fpath" "$2" "$3")
+	# echo "file_convert result: '$ret'"
+	local res=$?
+	return $res
+}
+
 function file_search() {
 	[ -z "$1" ] && return -10 # file name
 	[ -z "$2" ] && return -20 # regex to find
+
+	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
+	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	local ret=$(python $THIS_DIR/file_utils.py find "$fpath" "$2" "$3")
+	local res=$?
+	echo $ret
+	return $res
 
 	#echo "in $1 find $2"
 	local contents=$(<$1)
@@ -62,11 +81,11 @@ function file_search() {
 }
 
 function file_regex() {
-	fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
+	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	local ret=$(python $THIS_DIR/file_utils.py search "$fpath" "$2" "$3")
 	local res=$?
-	echo $ret
+	echo "ret: $ret"
 	return $res
 }
 
