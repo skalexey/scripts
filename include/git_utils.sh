@@ -248,6 +248,29 @@ function git_check_update()
 	return 0
 }
 
+function git_ask_add_untracked_files()
+{
+	source input.sh
+	if git_untracked; then
+		local list=$(git_untracked_list)
+		for e in ${list[@]}; do
+			if ask_user "Add '$e' ?"; then
+				git add "$e"
+			fi
+		done
+	fi
+}
+
+function git_commit()
+{
+	git commit -m "$*"
+}
+
+function git_add_patch()
+{
+	git add --patch
+}
+
 if [ "$#" -gt 0 ]; then
 	$@
 fi

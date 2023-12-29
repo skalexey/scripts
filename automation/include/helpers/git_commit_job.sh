@@ -7,14 +7,7 @@ function _cycle_()
 			git add --patch
 		fi
 
-		if git_untracked; then
-			local list=$(git_untracked_list)
-			for e in ${list[@]}; do
-				if ask_user "Add '$e' ?"; then
-					git add "$e"
-				fi
-			done
-		fi
+		git_ask_add_untracked_files
 
 		if need_to_commit; then
 			if [ ! -z "$2" ]; then
