@@ -13,10 +13,10 @@ function user_filter_job()
 	env_include ${includes[@]}
 	source log.sh
 	local log_prefix="[user_filter_job]: "
-	[ -z "$1" ] && log_error "No data provided" && return 1 || data="$1"
-	[ -z "$2" ] && log_error "No output file path provided" && return 2 || fpath="$2"
+	[ -z "$1" ] && log_error "No data provided" && return 1 || local data="$1"
+	[ -z "$2" ] && log_error "No output file path provided" && return 2 || local fpath="$2"
 
-	dir="$(dirname "$fpath")"
+	local dir="$(dirname "$fpath")"
 	[ ! -d "$dir" ] && log_error "Not existent directory of a given file passed: '$dir'" && return 3
 
 	log "Will store filtered data into '$fpath'"
