@@ -273,6 +273,19 @@ function git_add_patch()
 	git add --patch
 }
 
+function add_file_to_commit_interactively()
+{
+	local file="$1"
+	log_info "Add '$file' to commit"
+	local diff_result=$(git diff "$file")
+	if [ -z "$diff_result" ]; then
+		log_warning "No changes in '$file'"
+		git add "$file"
+	else
+		git add "$file" --patch
+	fi
+}
+
 if [ "$#" -gt 0 ]; then
 	$@
 fi
