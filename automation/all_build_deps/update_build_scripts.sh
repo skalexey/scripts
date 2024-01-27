@@ -6,7 +6,7 @@ function update_build_scripts()
 	cd "$THIS_DIR"
 
 	source ../../include/log.sh
-	local log_prefix="[update_scripts]: "	
+	local log_prefix="[update_build_scripts]: "	
 	source ../automation_config.sh
 	[ ! -f "os.sh" ] && cp ../../include/os.sh . && local os_included=true
 	source "$automation_dir/templates/templates_config.sh"

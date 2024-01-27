@@ -10,9 +10,11 @@ function deliver_config()
 	if [ ! -f "$dir/$ex.sh" ]; then
 		log "Deliver new config '$dir/$ex'"
 		cp "$scripts_dir/build_sh/${ex}_example.sh" "$dir/$ex.sh"
+		return $?
 	else
 		log "Config already exists '$dir/$ex.sh'"
 	fi
+	return 0
 }
 
 function deliver_build_scripts_job()
@@ -40,22 +42,36 @@ function deliver_build_scripts_job()
 		local no_config=true
 	fi
 
-	cp "$scripts_dir/build_sh/build.sh" "$dir"
-	cp "$scripts_dir/build_sh/dependencies.sh" "$dir"
-	cp "$scripts_dir/build_sh/get_dependencies.sh" "$dir"
-
-	if ! $no_config; then
-		deliver_config "$dir" build_config
-		deliver_config "$dir" deps_config
-		deliver_config "$dir" deps_scenario
-		deliver_config "$dir" external_config
-		[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 5
+	local files_to_deliver=(
+		"$scripts_dir/build_sh/build.sh" \
+		"$scripts_dir/build_sh/dependencies.sh" \
+		"$scripts_dir/build_sh/get_dependencies.sh" \
+		"$scripts_dir/include/log.sh" \
+		"$scripts_dir/include/os.sh" \
+		"$scripts_dir/include/file_utils.sh" \
+	)
+	if $no_config; then
+		local configs_to_deliver=( )
+	else
+		local configs_to_deliver=(
+			"build_config" \
+			"deps_config" \
+			"deps_scenario" \
+			"external_config" \
+		)
 	fi
 
-	cp "$scripts_dir/include/log.sh" "$dir"
-	cp "$scripts_dir/include/os.sh" "$dir"
-	cp "$scripts_dir/include/file_utils.sh" "$dir"
-	[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 6
+	for file in ${files_to_deliver[@]}; do
+		log_info "Deliver file '$file'"
+		[ ! -f "$file" ] && log_error "Not existent file to deliver: '$file'" && return 2
+		cp "$file" "$dir"
+	done
+
+	for config in ${configs_to_deliver[@]}; do
+		log_info "Deliver config '$config'"
+		deliver_config "$dir" $config
+		[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 3
+	done
 
 	file_replace "$dir/external_config.sh" "\{TPL_NAME\}" $(dir_name "$dir")
 
@@ -67,7 +83,12 @@ function deliver_build_scripts_job()
 	local cur_dir=${PWD}
 	cd "$dir"
 	git status
-	git add *.sh --patch
+	for file in ${files_to_deliver[@]}; do
+		add_file_to_commit_interactively $(basename "$file")
+	done
+	for config in ${configs_to_deliver[@]}; do
+		add_file_to_commit_interactively "$config.sh"
+	done
 	git status
 	if need_to_commit; then
 		if ask_user "Commit?"; then
