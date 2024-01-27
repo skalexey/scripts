@@ -26,6 +26,7 @@ function list_job()
 			log_info "command: $cmd"
 		fi
 		source run_local.sh "$job_path" "$e" "${@:$((job_index+1))}"
+		[ $? -ne 0 ] && log_error "Error while executing '$cmd'"
 		[ $counter -ge $((list_size)) ] && break || ((counter++))
 	done
 }
