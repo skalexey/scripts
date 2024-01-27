@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/log.sh"
+
 function git_check_stash()
 {
 	source log.sh
