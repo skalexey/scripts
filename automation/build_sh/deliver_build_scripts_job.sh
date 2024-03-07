@@ -73,7 +73,7 @@ function deliver_build_scripts_job()
 		[ $? -ne 0 ] && log_error "Error during build scripts delivery" && return 3
 	done
 
-	file_replace "$dir/external_config.sh" "\{TPL_NAME\}" $(dir_name "$dir")
+	file_replace "$dir/external_config.sh" "{TPL_NAME}" $(dir_name "$dir")
 
 	log_success "Build scripts delivered"
 	
