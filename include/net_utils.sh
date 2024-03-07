@@ -2,7 +2,7 @@
 
 function git_clone()
 {
-	git clone $1
+	git clone $@
 	local retval=$?
 	[[ $? -ne 0 ]] && return 1 || return 0
 }
@@ -34,10 +34,12 @@ function direct_download()
 
 function download()
 {
-	if [[ $1 =~ .*\.git ]]; then
-		git_clone $@
-	else
-		direct_download $@
-	fi
+	for i in $@; do
+		if [[ $i =~ .*\.git ]]; then
+			git_clone $@
+			return $?
+		fi
+	done
+	direct_download $@
 	return $?
 }
