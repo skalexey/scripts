@@ -54,18 +54,18 @@ function cpp_cmake_project_job()
     source $scripts_dir/include/file_utils.sh
     file_replace $project_path/CMakeLists.txt "Project" "$project_name"
 
-    if [ "${proj_type^^}" == "EXE" ]; then
-        log "'exe' option passed. Will create executable CMake project"
-        rm -rf $project_path/Test
-        rm -rf $project_path/exe/
-        file_replace $project_path/main.cpp "{PROJECT_NAME}" "$project_name"
-        [ $? -ne 0 ] && log_error "Error during project directory creation: $?" && exit 4
-        log_success "Project directory created"
-    else
+    if [ "${proj_type^^}" == "LIB" ]; then
         rm $project_path/main.cpp
         rm -rf $project_path/Test
         file_replace $project_path/CMakeLists.txt "module_add_executable" "module_add_library"
+    else
+        log "'exe' option passed. Will create executable CMake project"
+        rm -rf $project_path/Test
+        file_replace $project_path/main.cpp "{PROJECT_NAME}" "$project_name"
     fi
+
+    [ $? -ne 0 ] && log_error "Error during project directory creation: $?" && exit 4
+    log_success "Project directory created"
 
     file_replace $project_path/CMakeLists.txt "{{PROJECT_NAME}}" "$project_name"
 
