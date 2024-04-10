@@ -9,11 +9,17 @@ REM 	- If the first argument is a directory, create a symlink to it with the pat
 :symlink
 	REM Get the basename + extension of the first argument
 	set base_name=%~nx2
+	set what=%2
+	set where=%3
 	REM If the second argument exists, and it is a directory, create a symlink to the first argument in this directory
-	if EXIST %2\ set mklink_args= /D
-	REM Check if %3 is a directory
-	if EXIST %3 /A:-D EXIT /B 1
-	if EXIST %3\ (MKLINK%mklink_args% %3\%base_name% %2) ELSE (EXIT /B 2)
+	if EXIST %what%\ set mklink_args= /D
+	REM Ensure if there is no file pointing at %where
+	set where_complete=%where%
+	if EXIST %where% /A EXIT /B 1 else if EXIST %where% /D set where_complete=%where%\%base_name%
+	set cmd=MKLINK%mklink_args% %where_complete% %what% 
+	REM Call the cmd
+	REM echo Command: %cmd%
+	%cmd%
 EXIT /B 0
 
 REM Equivalent to bash's:

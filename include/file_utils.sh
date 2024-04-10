@@ -134,22 +134,25 @@ function symlink() {
 	[ -z "$1" ] && echo "No source file provided" && return 1 || local src="$1"
 	[ -z "$2" ] && echo "No destination file provided" && return 2 || local dest="$2"
 	local fname=$(basename "$src")
-	local dest_complete_path="$dest/$fname"
+	if [ -d $dest ]; then
+		local dest_complete_path="$dest/$fname"
+	elif [ -f $dest ]; then
+		local dest_complete_path="$dest"
+	fi
 	[ -L "$dest_complete_path" ] && echo "Destination file is already a symlink: '$dest_complete_path'" && return 3
 	[ -f "$dest_complete_path" ] && echo "Destination file already exists: '$dest_complete_path'" && return 4
 	[ -d "$dest_complete_path" ] && echo "Destination directory already exists: '$dest_complete_path'" && return 5
-	source os.sh
+	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	source $THIS_DIR/os.sh
 	[ $? -ne 0 ] && echo "Failed to include os.sh" && return 6
 	if is_windows; then
 		# Call symlink command trhough file_utils.bat
 		local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 		# if is full path:
 		local full_path_src=$(full_path "$src")
-		local full_path_dest=$(full_path "$dest")
+		local full_path_dest=$(file_full_path "$dest")
 		local win_path_src=$(cygpath -w $full_path_src)
 		local win_path_dest=$(cygpath -w $full_path_dest)
-		echo "Win path src: $win_path_src"
-		echo "Win path dest: $win_path_dest"
 		$THIS_DIR/file_utils.bat symlink $win_path_src $win_path_dest
 	else
 		ln -s "$src" "$dest"
