@@ -253,11 +253,8 @@ class Window(QMainWindow):
 		self.result.setText("Paused")
 
 
-# create pyqt5 app
 App = QApplication(sys.argv)
 
-# create the instance of our Window
 window = Window(App)
 
-# start the app
 sys.exit(App.exec())
