@@ -105,6 +105,7 @@ build()
 			return 1
 		else
 			log_success "Done with dependencies" " --"
+			# Return back to the initial directory since the scripts can change it
 			cd "$enterDirectory"
 		fi
 	fi

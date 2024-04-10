@@ -46,6 +46,12 @@ function file_replace() {
 	return $res
 }
 
+# Usage:
+# if [ $(file_search "$root_dir/.gitignore" "$key") -ne -1 ]; then
+# 	echo "Found"
+# else
+# 	echo "Not found"
+# fi
 function file_search() {
 	[ -z "$1" ] && return -10 # file name
 	[ -z "$2" ] && return -20 # regex to find
