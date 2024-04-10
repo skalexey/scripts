@@ -1,11 +1,7 @@
 #!/bin/bash
 
 is_windows() {
-	if [[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]]; then
-		true
-	else
-		false
-	fi
+	[[ "$OSTYPE" == "cygwin" ]] || [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "win32" ]] && return 0 || return 1
 }
 
 is_nix() {

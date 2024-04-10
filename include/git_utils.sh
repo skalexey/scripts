@@ -77,9 +77,9 @@ function git_not_staged()
 {
 	local status_res=$(git status | grep "Changes not staged for commit")
 	if [ ! -z "$status_res" ]; then
-		true
+		return 0
 	else
-		false
+		return 1
 	fi
 }
 
@@ -87,18 +87,18 @@ function git_untracked()
 {
 	local status_res=$(git status | grep "Untracked files:")
 	if [ ! -z "$status_res" ]; then
-		true
+		return 0
 	else
-		false
+		return 1
 	fi
 }
 
 function uncommitted_changes()
 {
 	if git_not_staged || git_untracked; then
-		true
+		return 0
 	else
-		false
+		return 1
 	fi
 }
 
@@ -106,9 +106,9 @@ function need_to_commit()
 {
 	local status_res=$(git status | grep "Changes to be committed")
 	if [ ! -z "$status_res" ]; then
-		true
+		return 0
 	else
-		false
+		return 1
 	fi
 }
 

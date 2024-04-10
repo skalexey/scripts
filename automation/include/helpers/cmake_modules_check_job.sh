@@ -33,9 +33,9 @@ function cmake_modules_check_job()
 function check_status()
 {
 	if [ -f "$1/update_cmake_modules.sh" ]; then
-		true
+		return 0
 	else
-		false
+		return 1
 	fi
 }
 
