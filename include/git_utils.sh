@@ -2,6 +2,16 @@
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/log.sh"
 
+function is_git_installed()
+{
+	! command -v git &> /dev/null && return 1 || return 0
+}
+
+function is_git_repo()
+{
+	[ -d ".git" ] && return 0 || return 1
+}
+
 function git_check_stash()
 {
 	source log.sh
