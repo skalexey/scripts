@@ -295,7 +295,3 @@ function add_file_to_commit_interactively()
 		git add "$file" --patch
 	fi
 }
-
-if [ "$#" -gt 0 ]; then
-	$@
-fi

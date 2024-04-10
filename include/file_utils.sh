@@ -160,7 +160,3 @@ function symlink() {
 	local code=$?
 	[ $code -ne 0 ] && echo "Failed to create the symlink. Error code: $code" && return 7
 }
-
-if [ "$#" -gt 0 ]; then
-	$@
-fi
