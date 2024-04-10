@@ -82,27 +82,33 @@ function deliver_build_scripts_job()
 	source input.sh
 	local cur_dir=${PWD}
 	cd "$dir"
-	git status
-	for file in ${files_to_deliver[@]}; do
-		add_file_to_commit_interactively $(basename "$file")
-	done
-	for config in ${configs_to_deliver[@]}; do
-		add_file_to_commit_interactively "$config.sh"
-	done
-	git status
-	if need_to_commit; then
-		if ask_user "Commit?"; then
-			git commit -m "Auto update build scripts"
+	if is_git_installed; then
+		if is_git_repo; then
+			git status
+			for file in ${files_to_deliver[@]}; do
+				add_file_to_commit_interactively $(basename "$file")
+			done
+			for config in ${configs_to_deliver[@]}; do
+				add_file_to_commit_interactively "$config.sh"
+			done
+			git status
+			if need_to_commit; then
+				if ask_user "Commit?"; then
+					git commit -m "Auto update build scripts"
+				fi
+			fi
+			if need_to_push; then
+				if ask_user "Push?"; then
+					git_push
+				fi
+			fi
+		else
+			log_warning "Not a git repository. These changes are stored locally."
 		fi
-	fi
-	if need_to_push; then
-		if ask_user "Push?"; then
-			git_push
-		fi
+	else
+		log_warning "Git is not installed. These changes are stored locally."
 	fi
 	cd "$cur_dir"
-	
-
 }
 
 function job()
