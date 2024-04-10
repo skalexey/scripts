@@ -262,7 +262,8 @@ function git_check_update()
 
 function git_ask_add_untracked_files()
 {
-	source input.sh
+	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	source $THIS_DIR/input.sh
 	if git_untracked; then
 		local list=$(git_untracked_list)
 		for e in ${list[@]}; do
