@@ -150,10 +150,13 @@ function symlink() {
 		local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 		# if is full path:
 		local full_path_src=$(full_path "$src")
+		[ $? -ne 0 ] && echo "Failed to get full path of the source" && return 7
+		mkdir -p "$dest"
+		[ $? -ne 0 ] && echo "Failed to create the destination directory" && return 8
 		local full_path_dest=$(file_full_path "$dest")
 		local win_path_src=$(cygpath -w $full_path_src)
 		local win_path_dest=$(cygpath -w $full_path_dest)
-		$THIS_DIR/file_utils.bat symlink $win_path_src $win_path_dest
+		$THIS_DIR/file_utils.bat symlink "$win_path_src" "$win_path_dest"
 	else
 		ln -s "$src" "$dest"
 	fi
