@@ -85,7 +85,9 @@ function full_path() {
 
 function dir_full_path() {
 	[ -z "$1" ] && return 1 # directory path
-	echo "$(cd "$1" && pwd)"
+	cd "$1"
+	[ $? -ne 0 ] && return 2
+	echo $(pwd)
 }
 
 function dir_name() {
@@ -97,7 +99,10 @@ function dir_name() {
 function file_full_path() {
 	[ -z "$1" ] && return 1 # file path
 	local file_name=$(basename "$1")
-	echo "$(cd "$(dirname "$1")" && pwd)/$file_name"
+	local dir_name=$(dirname "$1")
+	cd $dir_name
+	[ $? -ne 0 ] && return 2
+	echo "$(pwd)/$file_name"
 }
 
 function file_extension() {
