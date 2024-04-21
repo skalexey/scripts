@@ -38,6 +38,7 @@ class Line():
 		x3, y3 = line.points[0].data
 		x4, y4 = line.points[1].data
 		denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+		# When the two lines are parallel or coincident, the denominator is zero
 		return Point2(
 			((x1*y2 - y1*x2)*(x3 - x4) - (x1 - x2)*(x3*y4 - y3*x4)) / denominator,
 			((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denominator
