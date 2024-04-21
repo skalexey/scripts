@@ -15,11 +15,29 @@ class Point2(Point):
 		else:
 			raise ValueError("Invalid number of arguments")
 	
-	def x(self):
+	def _get_x(self):
 		return self.data[0]
-	
-	def y(self):
+
+	def _set_x(self, value):
+		self.data[0] = value
+
+	def _get_y(self):
 		return self.data[1]
+
+	def _set_y(self, value):
+		self.data[1] = value
+
+	x = property(
+		fget=_get_x,
+		fset=_set_x,
+		doc="The x coordinate property."
+	)
+
+	y = property(
+		fget=_get_y,
+		fset=_set_y,
+		doc="The y coordinate property."
+	)
 
 	def __repr__(self):
 		return f"Point2({self.data})"
