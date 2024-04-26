@@ -33,6 +33,8 @@ class Vector():
 		return this_class([a / value for a in self.data])
 	
 	def __eq__(self, value: object) -> bool:
+		if value is None:
+			return False
 		return self.data == value.data
 	
 	def square_distance(self, vec):
