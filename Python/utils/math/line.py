@@ -13,8 +13,12 @@ class Line():
 		# Check if the vectors formed by the lines are equal
 		return (self.points[0] - self.points[1]).dot(value.points[0] - value.points[1]) == 0
 	
-	def sqdistance(self, vec):
-		return sum((a - b) ** 2 for a, b in zip(self.data, vec.data))
+	def sqdistance(self, point):
+		# https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+		x1, y1 = self.points[0].data
+		x2, y2 = self.points[1].data
+		x3, y3 = point.data
+		return abs((y2 - y1) * x3 - (x2 - x1) * y3 + x2 * y1 - y2 * x1) ** 2 / ((y2 - y1) ** 2 + (x2 - x1) ** 2)
 	
 	def intersection(self, line):
 		# https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
