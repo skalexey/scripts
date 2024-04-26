@@ -3,6 +3,7 @@ from utils.math.point2 import Point2
 
 class Line():
 	def __init__(self, point1, point2):
+		assert(point1 != point2	)
 		self.points = [point1, point2]
 
 	def __repr__(self):
