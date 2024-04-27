@@ -12,6 +12,9 @@ class Point2(Point):
 			# If only one argument is provided, assume it is a list or tuple containing x and y coordinates
 			assert len(args[0]) == 2, "Data must contain exactly two elements"
 			self.data = list(args[0])
+		elif len(args) == 0:
+			# If no arguments are provided, assume the point is at the origin
+			self.data = [0, 0]
 		else:
 			raise ValueError("Invalid number of arguments")
 	
