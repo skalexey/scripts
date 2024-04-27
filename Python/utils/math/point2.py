@@ -1,5 +1,5 @@
 
-from utils.math.point import Point
+from utils.math.point import *
 
 class Point2(Point):
 	def __init__(self, *args):
