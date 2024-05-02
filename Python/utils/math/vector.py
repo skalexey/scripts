@@ -6,8 +6,8 @@ def iterate_components(any1, any2):
 	return zip(data1, data2)
 
 class Vector():
-	def __init__(self):
-		self.data = []
+	def __init__(self, data = []):
+		self.data = data
 
 	def __repr__(self):
 		return f"Vector({self.data})"
@@ -37,9 +37,19 @@ class Vector():
 			return False
 		return self.data == value.data
 	
-	def square_distance(self, vec):
+	def distance_squared(self, vec):
 		return sum((a - b) ** 2 for a, b in iterate_components(self, vec))
 	
 	def dot(self, vec):
 		return sum(a * b for a, b in iterate_components(self, vec))
 		
+	def normalize(self):
+		magnitude = self.magnitude()
+		return self / magnitude
+	
+	def magnitude_squared(self):
+		return sum(a ** 2 for a in self.data)
+	
+	def magnitude(self):
+		return math.sqrt(self.magnitude_squared())
+	
