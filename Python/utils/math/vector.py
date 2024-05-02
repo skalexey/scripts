@@ -37,7 +37,7 @@ class Vector():
 			return False
 		return self.data == value.data
 	
-	def distance_squared(self, vec):
+	def sqdistance(self, vec):
 		return sum((a - b) ** 2 for a, b in iterate_components(self, vec))
 	
 	def dot(self, vec):
@@ -47,9 +47,9 @@ class Vector():
 		magnitude = self.magnitude()
 		return self / magnitude
 	
-	def magnitude_squared(self):
+	def sqmagnitude(self):
 		return sum(a ** 2 for a in self.data)
 	
 	def magnitude(self):
-		return math.sqrt(self.magnitude_squared())
+		return math.sqrt(self.sqmagnitude())
 	
