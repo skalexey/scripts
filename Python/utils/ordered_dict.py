@@ -8,8 +8,9 @@ class OrderedDict:
 		if index is None:
 			return -1
 		return index
+	
 	def get(self, key, default=None):
-		value = self.get(key)
+		value = self[key]
 		if value is None:
 			return default
 		return value
