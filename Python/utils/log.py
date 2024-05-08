@@ -29,9 +29,9 @@ class LogLevel:
 		raise ValueError(f"Unknown log level when calling LogLevel.sign({level})")
 
 class Logger:
-	def __init__(self):
+	def __init__(self, title=None):
 		self.log_level = 0
-		self.log_title = None
+		self.log_title = title
 
 	def set_log_title(self, title):
 		self.log_title = title
