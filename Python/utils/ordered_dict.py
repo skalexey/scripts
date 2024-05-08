@@ -1,10 +1,11 @@
 class OrderedDict:
 	def __init__(self):
-		self.dict = {}
-		self.list = []
+		self._dict = {}
+		self._list = []
+		self._keys = []
 
 	def index(self, key):
-		index = self.dict.get(key)
+		index = self._dict.get(key)
 		if index is None:
 			return -1
 		return index
@@ -16,113 +17,135 @@ class OrderedDict:
 		return value
 		
 	def insert(self, index, key, value):
-		if key in self.dict:
+		if key in self._dict:
 			raise KeyError(f"Key '{key}' already exists")
-		if index < len(self.list):
-			for key, value in self.dict.items():
+		if index < len(self._list):
+			for key, value in self._dict.items():
 				if value >= index:
-					self.dict[key] += 1
-		self.dict[key] = index
-		self.list.insert(index, value)
+					self._dict[key] += 1
+		self._dict[key] = index
+		self._list.insert(index, value)
+		self._keys.insert(index, key)
 
 	def add(self, key, value):
-		if key not in self.dict:
+		if key not in self._dict:
 			self[key] = value
 			return True
 		return False
 
+	def at(self, index):
+		return (self._keys[index], self._list[index])
+	
+	def value_at(self, index):
+		return self._list[index]
+
+	def key_at(self, index):
+		return list(self._dict.keys())[index]
+
 	def popitem(self):
-		key = self.list.pop()
-		index = self.dict.pop(key)
-		value = self.list[index]
+		index = self._dict.pop(key)
+		key = self._keys.pop(index)
+		value = self._list.pop(index)
 		return (key, value)
 
 	def pop(self, key):
-		index = self.dict[key]
-		value = self.list.pop(index)
-		del self.dict[key]
+		index = self._dict[key]
+		value = self._list.pop(index)
+		self._keys.pop(index)
+		del self._dict[key]
 		return value
 
 	def keys(self):
-		return self.dict.keys()
+		return self._keys
 
 	def values(self):
-		return self.list.copy()
+		return self._list.copy()
 
 	def items(self):
-		return [(key, self[key]) for key in self.dict.keys()]
+		return zip(self._keys, self._list)
 	
+	def dictionary(self):
+		result = {}
+		for key, value in self.items():
+			result[key] = value
+		return result
+
 	def clear(self):
-		self.dict.clear()
-		self.list.clear()
+		self._dict.clear()
+		self._list.clear()
+		self._keys.clear()
 
 	def copy(self):
 		new = OrderedMap()
-		new.dict = self.dict.copy()
-		new.list = self.list.copy()
+		new._dict = self._dict.copy()
+		new._list = self._list.copy()
+		new.keys = self._keys.copy()
 		return new
 
 	def update(self, other):
-		self.dict.update(other.dict)
-		self.list.extend(other.list)
+		self._dict.update(other._dict)
+		self._list.extend(other._list)
+		self._keys.extend(other.keys)
 
 	def setdefault(self, key, default=None):
-		if key not in self.dict:
+		if key not in self._dict:
 			self[key] = default
 		return self[key]
 	
 	def __setitem__(self, key, value):
-		index = self.dict.get(key)
+		index = self._dict.get(key)
 		if index is None:
-			index = len(self.list)
-			self.list.append(value)
-			self.dict[key] = index
+			index = len(self._list)
+			self._list.append(value)
+			self._keys.append(key)
+			self._dict[key] = index
 		else:
-			self.list[index] = value
+			self._list[index] = value
 
 	def __getitem__(self, key):
-		index = self.dict.get(key)
-		return self.list[index] if index is not None else None
+		index = self._dict.get(key)
+		return self._list[index] if index is not None else None
 
 	def __delitem__(self, key):
-		index = self.dict.pop(key)
-		del self.list[index]
-		for key, value in self.dict.items():
+		index = self._dict.pop(key)
+		del self._list[index]
+		del self._keys[index]
+		for key, value in self._dict.items():
 			if value > index:
-				self.dict[key] -= 1
+				self._dict[key] -= 1
 
 	def __iter__(self):
-		return iter(self.list)
+		return iter(self._list)
 
 	def __len__(self):
-		return len(self.list)
+		return len(self._list)
 
 	def __contains__(self, key):
-		return key in self.dict
+		return key in self._dict
 
 	def __str__(self):
-		return str(self.dict)
+		return str(self._dict)
 
 	def __repr__(self):
-		return repr(self.dict)
+		return repr(self._dict)
 
 	def __eq__(self, other):
-		return self.dict == other.dict
+		return self._dict == other._dict
 
 	def __ne__(self, other):
-		return self.dict != other.dict
+		return self._dict != other._dict
 
 	def __lt__(self, other):
-		return self.dict < other.dict
+		return self._dict < other._dict
 
 	def __le__(self, other):
-		return self.dict <= other.dict
+		return self._dict <= other._dict
 
 	def __gt__(self, other):
-		return self.dict > other.dict
+		return self._dict > other._dict
 
 	def __ge__(self, other):
-		return self.dict >= other.dict
+		return self._dict >= other._dict
 
 	def __add__(self, other):
 		new = self.copy()
@@ -185,4 +208,4 @@ class OrderedDict:
 		return self
 	
 	def __reversed__(self):
-		return reversed(self.list)
+		return reversed(self._list)
