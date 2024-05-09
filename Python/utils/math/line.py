@@ -1,6 +1,9 @@
-import math
-from utils.math.point2 import *
-from utils.math.vector2 import *
+import os
+import sys
+this_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(1, this_dir)
+from point2 import *
+from vector2 import *
 
 class Line():
 	def __init__(self, point1, point2):
