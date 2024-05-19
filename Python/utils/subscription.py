@@ -20,3 +20,7 @@ class Subscription:
 	def notify(self, *args, **kwargs):
 		for cb in self._data.values():
 			cb(*args, **kwargs)
+
+	def __iadd__(self, callback):
+		self.subscribe(callback)
+		return self
