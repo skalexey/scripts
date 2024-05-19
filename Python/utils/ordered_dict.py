@@ -33,6 +33,13 @@ class OrderedDict:
 			return True
 		return False
 
+	def sort(self, pred):
+		items = list(self.items())
+		items.sort(key = pred)
+		self.clear()
+		for key, value in items:
+			self[key] = value
+
 	def at(self, index):
 		return (self._keys[index], self._list[index])
 	
