@@ -76,7 +76,7 @@ class OrderedDict:
 		self._keys.clear()
 
 	def copy(self):
-		new = OrderedMap()
+		new = OrderedDict()
 		new._dict = self._dict.copy()
 		new._list = self._list.copy()
 		new.keys = self._keys.copy()
@@ -177,7 +177,7 @@ class OrderedDict:
 		return self
 	
 	def __and__(self, other):
-		new = OrderedMap()
+		new = OrderedDict()
 		for key in self:
 			if key in other:
 				new[key] = self[key]
@@ -190,7 +190,7 @@ class OrderedDict:
 		return self
 	
 	def __xor__(self, other):
-		new = OrderedMap()
+		new = OrderedDict()
 		for key in self:
 			if key not in other:
 				new[key] = self[key]
