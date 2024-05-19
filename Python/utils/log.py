@@ -70,6 +70,20 @@ class Logger:
 	def log_verbose(self, message):
 		self.log(message, LogLevel.VERBOSE)
 
+	def log_expr(self, expression, globals = None, locals = None):
+		self.log(expression)
+		result = eval(expression, globals, locals)
+		return result
+	
+	def log_expr_val(self, expression, globals, locals):
+		result = eval(expression, globals, locals)
+		self.log(result)
+		return result
+
+	def log_expr_and_val(self, expression, globals = None, locals = None):
+		result = self.log_expr(expression, globals, locals)
+		self.log(f"{expression}: {result}")
+
 # Discouraged global monolite interface.
 # Prefer crating a logger object in the calling module.
 loggers = {}
