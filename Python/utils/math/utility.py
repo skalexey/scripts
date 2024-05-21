@@ -1,4 +1,5 @@
 import math
+import random
 
 class Range:
 	def __init__(self, min, max = None):
@@ -10,6 +11,9 @@ class Range:
 	def expand(self, min, max = None):
 		self.data[0] = min(min, self.min)
 		self.data[1] = max(max if max is not None else min, self.max)
+
+	def random(self):
+		return random.uniform(self.min, self.max)
 
 	@property
 	def min(self):
