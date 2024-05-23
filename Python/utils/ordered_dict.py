@@ -15,7 +15,7 @@ class OrderedDict:
 		if value is None:
 			return default
 		return value
-		
+
 	def insert(self, index, key, value):
 		if key in self._dict:
 			raise KeyError(f"Key '{key}' already exists")
@@ -43,11 +43,19 @@ class OrderedDict:
 	def at(self, index):
 		return (self._keys[index], self._list[index])
 	
+	def set_at(self, index, key, value):
+		if index < 0 or index >= len(self._list):
+			raise IndexError(f"OrderedDict: Index out of range({index})")
+		del self._dict[self._keys[index]]
+		self._keys[index] = key
+		self._list[index] = value
+		self._dict[key] = index
+		
 	def value_at(self, index):
 		return self._list[index]
 
 	def key_at(self, index):
-		return list(self._dict.keys())[index]
+		return list(self._dict._keys)[index]
 
 	def popitem(self):
 		index = self._dict.pop(key)
@@ -63,7 +71,7 @@ class OrderedDict:
 		return value
 
 	def keys(self):
-		return self._keys
+		return self._keys.copy()
 
 	def values(self):
 		return self._list.copy()
@@ -121,8 +129,18 @@ class OrderedDict:
 			if value > index:
 				self._dict[key] -= 1
 
+	def remove(self, key):
+		del self[key]
+
+	def remove_at(self, index):
+		key = self._keys[index]
+		del self[key]
+		
 	def __iter__(self):
-		return iter(self._list)
+		for index in range(len(self._list)):
+			key = self._keys[index]
+			value = self._list[index]
+			yield (key, value)
 
 	def __len__(self):
 		return len(self._list)
