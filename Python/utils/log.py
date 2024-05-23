@@ -81,7 +81,7 @@ class Logger:
 		return result
 
 	def log_expr_and_val(self, expression, globals = None, locals = None):
-		result = self.log_expr(expression, globals, locals)
+		result = eval(expression, globals, locals)
 		self.log(f"{expression}: {result}")
 
 # Discouraged global monolite interface.
