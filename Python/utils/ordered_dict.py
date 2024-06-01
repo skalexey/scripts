@@ -71,10 +71,10 @@ class OrderedDict:
 		return value
 
 	def keys(self):
-		return self._keys.copy()
+		return self._keys
 
 	def values(self):
-		return self._list.copy()
+		return self._list
 
 	def items(self):
 		return zip(self._keys, self._list)
