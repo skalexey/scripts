@@ -47,27 +47,40 @@ class Module(ABC):
 
 	def define_setting(self, name, default, getter=None, setter=None):
 		value = self.get_setting(name, default)
-		private_name = f"_{name}"
+		private_name = self._defined_setting_private_name(name)
 		# Generate the private variable
 		setattr(self, private_name, value)
 		
-		if getter is None:
-			# Define the getter
-			def getter_func(instance):
-				return getattr(instance, private_name)
-		else:
-			getter_func = getter
-		
-		if setter is None:
-			# Define the setter
-			def setter_func(instance, value):
-				setattr(instance, private_name, value)
-				instance.update_setting(name, value)
-		else:
-			setter_func = setter
+		getter_func = getter if getter is not None else self._defined_setting_getter(name)
+		setter_func = setter if setter is not None else self._defined_setting_setter(name)
 		
 		# Create a property with the getter and setter
 		prop = property(getter_func, setter_func)
 		
 		# Set the property to the class instance
 		setattr(self.__class__, name, prop)
+
+	def _defined_setting_private_name(self, name):
+		return f"_{name}"
+		
+	def _define_setting_private_name(self, name, value):
+		private_name = self._defined_setting_private_name(name)
+		setattr(self, private_name, value)
+
+	def _set_defined_setting(self, name, value):
+		self._define_setting_private_name(name, value)
+		self.update_setting(name, value)
+
+	def _defined_setting_setter(self, name):
+		def setter(self, value):
+			self._set_defined_setting(name, value)
+		return setter
+
+	def _get_defined_setting(self, name):
+		private_name = self._defined_setting_private_name(name)
+		return getattr(self, private_name)
+
+	def _defined_setting_getter(self, name):
+		def getter(self):
+			return self._get_defined_setting(name)
+		return getter
