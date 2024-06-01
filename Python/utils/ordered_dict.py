@@ -55,7 +55,7 @@ class OrderedDict:
 		return self._list[index]
 
 	def key_at(self, index):
-		return list(self._dict._keys)[index]
+		return self._keys[index]
 
 	def popitem(self):
 		index = self._dict.pop(key)
@@ -140,7 +140,7 @@ class OrderedDict:
 		for index in range(len(self._list)):
 			key = self._keys[index]
 			value = self._list[index]
-			yield (key, value)
+			yield key, value
 
 	def __len__(self):
 		return len(self._list)
