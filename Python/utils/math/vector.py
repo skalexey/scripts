@@ -37,6 +37,21 @@ class Vector():
 			return False
 		return self.data == value.data
 	
+	def __ne__(self, value: object) -> bool:
+		return not self.__eq__(value)
+	
+	def __lt__(self, value: object) -> bool:
+		return self.sqmagnitude() < value.sqmagnitude()
+	
+	def __le__(self, value: object) -> bool:
+		return self.sqmagnitude() <= value.sqmagnitude()
+	
+	def __gt__(self, value: object) -> bool:
+		return self.sqmagnitude() > value.sqmagnitude()
+	
+	def __ge__(self, value: object) -> bool:
+		return self.sqmagnitude() >= value.sqmagnitude()
+
 	def sqdistance(self, vec):
 		return sum((a - b) ** 2 for a, b in iterate_components(self, vec))
 	
