@@ -37,7 +37,7 @@ class Logger:
 		self.log_title = title
 
 	def set_log_level(self, level):
-		print(f"Setting log level to {level}")
+		self.log(f"Setting log level to {level}")
 		self.log_level = level
 
 	# Variadic arguments
