@@ -1,10 +1,13 @@
 import json
 from abc import ABC
 
+
 class Module(ABC):
 	def __init__(self, name, *args, **kwargs):
+		assert(isinstance(name, str))
 		self.name = name
 		self._settings = None
+
 	# Settings interface.
 	# Every module stores its settings in a dedicated object of the settings file under the key with module's name.
 	def module_settings(self):

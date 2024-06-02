@@ -1,6 +1,8 @@
 import asyncio
-import utils.asyncio
 from collections import deque
+
+import utils.asyncio_utils
+
 
 class FunctionTaskScheduler:
 	def __init__(self, *args, **kwargs):
@@ -68,7 +70,7 @@ class FunctionTaskScheduler:
 	def _run_next(self, function_info):
 		future = function_info.queue.popleft()
 		function_info.future = future
-		loop = utils.asyncio.get_event_loop()
+		loop = utils.asyncio_utils.get_event_loop()
 		task = loop.create_task(function_info.function())
 		task.add_done_callback(self._set_result)
 		self._tasks[task] = (future, function_info.function)

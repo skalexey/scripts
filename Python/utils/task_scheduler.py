@@ -1,6 +1,8 @@
 import asyncio
-import utils.asyncio
 from collections import deque
+
+import utils.asyncio_utils
+
 
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskScheduler():
@@ -48,7 +50,7 @@ class TaskScheduler():
 	def _run_next(self):
 		task_info = self._queue.popleft()
 		self._current_task_info = task_info
-		loop = utils.asyncio.get_event_loop()
+		loop = utils.asyncio_utils.get_event_loop()
 		task = loop.create_task(task_info.function())
 		task_info.task = task
 		task.add_done_callback(self._set_result)
