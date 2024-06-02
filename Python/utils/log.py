@@ -70,7 +70,7 @@ class Logger:
 	def log_verbose(self, message):
 		self.log(message, LogLevel.VERBOSE)
 
-	def log_expr(self, expression, globals = None, locals = None):
+	def log_expr(self, expression, globals = None, locals=None):
 		self.log(expression)
 		result = eval(expression, globals, locals)
 		return result
@@ -80,7 +80,7 @@ class Logger:
 		self.log(result)
 		return result
 
-	def log_expr_and_val(self, expression, globals = None, locals = None):
+	def log_expr_and_val(self, expression, globals = None, locals=None):
 		result = eval(expression, globals, locals)
 		self.log(f"{expression}: {result}")
 
@@ -90,6 +90,7 @@ loggers = {}
 
 def logger():
 	import inspect
+
 	# frame = inspect.currentframe().f_back
 	# module = inspect.getmodule(frame)
 	stack = inspect.stack()

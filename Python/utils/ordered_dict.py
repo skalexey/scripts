@@ -35,7 +35,7 @@ class OrderedDict:
 
 	def sort(self, pred):
 		items = list(self.items())
-		items.sort(key = pred)
+		items.sort(key=pred)
 		self.clear()
 		for key, value in items:
 			self[key] = value

@@ -1,9 +1,11 @@
 import os
 import sys
+
 this_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, this_dir)
 from point2 import *
 from vector2 import *
+
 
 class Line():
 	def __init__(self, point1, point2):
@@ -53,7 +55,7 @@ class Line():
 			((x1*y2 - y1*x2)*(y3 - y4) - (y1 - y2)*(x3*y4 - y3*x4)) / denominator
 		)
 	
-	def vec(self, point_traverse_direction = Vector2(1, 0)): # Default direction is right
+	def vec(self, point_traverse_direction=Vector2(1, 0)): # Default direction is right
 		if self.points[0] == self.points[1]:
 			raise ValueError("The contains 2 same points.")
 		result = (self.points[1] - self.points[0]) * point_traverse_direction.x

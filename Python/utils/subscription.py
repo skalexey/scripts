@@ -1,8 +1,11 @@
 import os
 import sys
+
 this_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, this_dir)
 from ordered_dict import *
+
+
 class Subscription:
 	def __init__(self):
 		self._data = OrderedDict()
@@ -22,7 +25,7 @@ class Subscription:
 		for cb in self._data.values().copy():
 			cb(*args, **kwargs)
 
-	def wait(self, timeout = None):
+	def wait(self, timeout=None):
 		event = threading.Event()
 		def on_notify(*args, **kwargs):
 			event.set()
@@ -31,7 +34,7 @@ class Subscription:
 		self.unsubscribe(cb_id)
 		return event.is_set()
 			
-	async def asyncio_wait(self, timeout = None):
+	async def asyncio_wait(self, timeout=None):
 		event = asyncio.Event()
 		def on_notify(*args, **kwargs):
 			event.set()

@@ -12,12 +12,12 @@ class FunctionTaskScheduler:
 		self._functions = {}
 
 	class FunctionInfo:
-		def __init__(self, function, future = None):
+		def __init__(self, function, future=None):
 			self.function = function
 			self.future = future
 			self.queue = deque()
 		
-	def schedule_task(self, async_function, max_queue_size = 0):
+	def schedule_task(self, async_function, max_queue_size=0):
 		future = None
 		function_info = self._functions.get(async_function)
 		if function_info is not None:

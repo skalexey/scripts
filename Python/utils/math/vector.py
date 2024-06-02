@@ -1,12 +1,13 @@
 import math
 
+
 def iterate_components(any1, any2):
 	data1 = any1.data if hasattr(any1, "data") else any1
 	data2 = any2.data if hasattr(any2, "data") else any2
 	return zip(data1, data2)
 
 class Vector():
-	def __init__(self, data = []):
+	def __init__(self, data=[]):
 		self.data = data
 
 	def __repr__(self):

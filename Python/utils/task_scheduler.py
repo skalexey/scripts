@@ -13,12 +13,12 @@ class TaskScheduler():
 		self._current_task_info = None
 
 	class TaskInfo:
-		def __init__(self, function, task = None, future = asyncio.Future()):
+		def __init__(self, function, task = None, future=asyncio.Future()):
 			self.function = function
 			self.task = task
 			self.future = future
 
-	def schedule_task(self, async_function, max_queue_size = 0):
+	def schedule_task(self, async_function, max_queue_size=0):
 		if 0 <= max_queue_size > len(self._queue) or self._current_task_info is None:
 			task_info = self._create_task_info(async_function)
 			self._queue.append(task_info)

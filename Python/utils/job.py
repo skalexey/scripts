@@ -1,5 +1,6 @@
-from utils.subscription import *
 from utils.math.utility import *
+from utils.subscription import *
+
 
 class Job:
 	def __init__(self, *args, **kwargs):
@@ -16,7 +17,7 @@ class Job:
 		self.on_cancel.notify()
 
 class TimedJob(Job):
-	def __init__(self, duration = None, duration_range = None):
+	def __init__(self, duration = None, duration_range=None):
 		super().__init__()
 		self.time_elapsed = 0
 		if duration is not None:

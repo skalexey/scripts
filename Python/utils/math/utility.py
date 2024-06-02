@@ -1,13 +1,14 @@
 import random
 
+
 class Range:
-	def __init__(self, min, max = None):
+	def __init__(self, min, max=None):
 		self.data = [min, max if max is not None else min]
 	
 	def size(self):
 		return abs(self.data[1] - self.data[0])
 
-	def expand(self, _min_, _max_ = None):
+	def expand(self, _min_, _max_=None):
 		self.data[0] = min(_min_, self.min)
 		self.data[1] = max(_max_ if _max_ is not None else _min_, self.max)
 
