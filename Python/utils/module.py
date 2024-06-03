@@ -50,12 +50,12 @@ class Module(ABC):
 
 	def define_setting(self, name, default, getter=None, setter=None):
 		value = self.get_setting(name, default)
-		private_name = self._defined_setting_private_name(name)
+		private_name = self._setting_private_variable_name(name)
 		# Generate the private variable
 		setattr(self, private_name, value)
 		
-		getter_func = getter if getter is not None else self._defined_setting_getter(name)
-		setter_func = setter if setter is not None else self._defined_setting_setter(name)
+		getter_func = getter if getter is not None else self._gen_setting_getter(name)
+		setter_func = setter if setter is not None else self._gen_setting_setter(name)
 		
 		# Create a property with the getter and setter
 		prop = property(getter_func, setter_func)
@@ -63,27 +63,32 @@ class Module(ABC):
 		# Set the property to the class instance
 		setattr(self.__class__, name, prop)
 
-	def _defined_setting_private_name(self, name):
-		return f"_{name}"
-		
-	def _define_setting_private_name(self, name, value):
-		private_name = self._defined_setting_private_name(name)
-		setattr(self, private_name, value)
-
-	def _set_defined_setting(self, name, value):
-		self._define_setting_private_name(name, value)
+	def _set_setting_by_name(self, name, value):
+		current_value = self._get_setting_by_name(name)
+		if current_value == value:
+			assert(current_value == self.get_setting(name))
+			return False
+		self._set_setting_private_variable(name, value)
 		self.update_setting(name, value)
+		return True
 
-	def _defined_setting_setter(self, name):
-		def setter(self, value):
-			self._set_defined_setting(name, value)
-		return setter
-
-	def _get_defined_setting(self, name):
-		private_name = self._defined_setting_private_name(name)
+	def _get_setting_by_name(self, name):
+		private_name = self._setting_private_variable_name(name)
 		return getattr(self, private_name)
 
-	def _defined_setting_getter(self, name):
+	def _setting_private_variable_name(self, name):
+		return f"_{name}"
+		
+	def _set_setting_private_variable(self, name, value):
+		private_name = self._setting_private_variable_name(name)
+		setattr(self, private_name, value)
+
+	def _gen_setting_setter(self, name):
+		def setter(self, value):
+			self._set_setting_by_name(name, value)
+		return setter
+
+	def _gen_setting_getter(self, name):
 		def getter(self):
-			return self._get_defined_setting(name)
+			return self._get_setting_by_name(name)
 		return getter
