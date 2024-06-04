@@ -1,6 +1,16 @@
 import os
+
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QSlider,
+    QWidget,
+)
+
 from utils.log import *
-from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 logger = Logger("pyside")
 

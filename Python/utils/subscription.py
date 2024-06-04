@@ -1,9 +1,4 @@
-import os
-import sys
-
-this_dir = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(1, this_dir)
-from ordered_dict import *
+from utils.ordered_dict import *
 
 
 class Subscription:
