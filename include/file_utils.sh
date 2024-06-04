@@ -105,6 +105,18 @@ function file_full_path() {
 	echo "$(pwd)/$file_name"
 }
 
+function normalize_path() {
+	local path="$1"
+	# Check if the path is just a file name
+	if [[ ! "$path" =~ / ]]; then
+		# Get the absolute path of the current directory and append the file name
+		echo "$(pwd -P)/$path"
+	else
+		# Normalize the path using cd and pwd
+		echo "$(cd "$(dirname "$path")" && cd "$(basename "$path")" && pwd -P)"
+	fi
+}
+
 function file_extension() {
 	[ -z "$1" ] && return 1 # file path
 	fname=$(basename "$1")
@@ -133,6 +145,18 @@ function file_newer() {
 
 function to_win_path() {
 	echo "$1" | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+}
+
+function system_path() {
+	if is_windows; then
+		to_win_path "$1"
+	else
+		echo "$1"
+	fi
+}
+
+function directory_tree() {
+	find $1 | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
 }
 
 function symlink() {
