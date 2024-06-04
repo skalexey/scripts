@@ -8,6 +8,8 @@ function job()
 	echo "Script name: $script_name"
 	source $THIS_DIR/automation_config.sh
 	source $scripts_dir/include/log.sh
+	source $scripts_dir/include/os.sh
+	source $scripts_dir/include/file_utils.sh
 	
 	local log_prefix="-- [$script_name]: "
 	local index_shift=0
@@ -41,13 +43,15 @@ function job()
 	done
 	log "Python args: '$python_args'"
 	log "Index shift: $index_shift"
-	source $scripts_dir/include/os.sh
 	if is_windows; then
 		python_path="/c/Python397/python.exe"
 	else
 		python_path="python3.7"
 	fi
-	local fpath=$(echo ${@:((2 + index_shift))})
+	local script_path=${@:((1 + index_shift)):1}
+	local data_fpath=$(echo ${@:((2 + index_shift))})
+	log_info "Script path: '$script_path'"
+	log_info "Data file path: '$data_fpath'"
 	if $log_on; then
 		# Create log file with data file name + current date and time
 		local python_script_name=$(echo ${@:((1 + index_shift)):1})
@@ -57,10 +61,17 @@ function job()
 		log "Log file path: '$log_fpath'"
 		local cmd_suffix=" > $log_fpath 2>&1"
 	fi
-	if [ ! -z "$fpath" ]; then
-		local fpath_arg=" \"$fpath\""
+	if [ ! -z "$data_fpath" ]; then
+		local data_fpath_arg=" \"$data_fpath\""
 	fi
-	local cmd="$python_path$python_args \"${@:((1 + index_shift)):1}\"$fpath_arg$cmd_suffix"
+	# Avoid converting symlinks paths to real
+	local abs_scirpt_path=$(full_path "$script_path")
+	log "Absolute script path: '$abs_scirpt_path'"
+	system_script_path=$(system_path "$abs_scirpt_path")
+	log "System path: '$system_script_path'"
+	echo "System path: '$system_script_path'"
+	# Run the python script
+	local cmd="$python_path$python_args \"$system_script_path\"$data_fpath_arg$cmd_suffix"
 	log_info "Run command: '$cmd'"
 	eval "$cmd"
 	local code=$?
