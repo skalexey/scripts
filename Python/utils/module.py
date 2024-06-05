@@ -3,9 +3,9 @@ from abc import ABC
 
 
 class Module(ABC):
-	def __init__(self, name, *args, **kwargs):
-		assert(isinstance(name, str))
-		self.name = name
+	def __init__(self, module_name, *args, **kwargs):
+		assert(isinstance(module_name, str))
+		self.module_name = module_name
 		self._settings = None
 
 	# No need to call this class on_* methods in derived classes. It is done automatically by the module manager.
@@ -24,7 +24,7 @@ class Module(ABC):
 		return module_settings.get(key, default)
 	
 	def settings_file_path(self):
-		return f"{self.name}_settings.json"
+		return f"{self.module_name}_settings.json"
 
 	def store_settings(self):
 		fpath = self.settings_file_path()
