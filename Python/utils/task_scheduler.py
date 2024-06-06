@@ -23,15 +23,18 @@ class TaskScheduler():
 			self.future = future or asyncio.Future()
 
 	def schedule_task(self, async_function, max_queue_size=0):
-		if 0 <= max_queue_size > len(self._queue) or self._current_task_info is None:
-			task_info = self._create_task_info(async_function)
-			self._queue.append(task_info)
-			if self._current_task_info is None:
-				return self._run_next()
-			else:
-				return task_info.future
-		# Don't fit by queue size
-		return None
+		queue_size = len(self._queue)
+		registered_task_count = queue_size + (1 if self._current_task_info is None else 0)
+		return self._schedule_task(async_function, registered_task_count, max_queue_size)
+	
+	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
+	def schedule_function(self, async_function, max_queue_size=0):
+		enqueued_function_count = self.queue_size(async_function)
+		registered_function_count = enqueued_function_count + (1 if self._current_task_info is not None and self._current_task_info.function == async_function else enqueued_function_count)
+		return self._schedule_task(async_function, registered_function_count, max_queue_size)
+
+	def run_parallel_task(self, async_function):
+		raise "Not implemented yet."
 
 	def wait_all_tasks(self):
 		for task_info in list(self._tasks.values()):
@@ -47,6 +50,7 @@ class TaskScheduler():
 		self._queue.clear()
 		for task_info in list(self._tasks.values()):
 			task_info.task.cancel()
+
 	# Use this method in a loop if your application doesn't have an event loop running
 	def update(self, dt):
 		if len(self._tasks) > 0:
@@ -54,6 +58,30 @@ class TaskScheduler():
 			async def update_task():
 				await asyncio.sleep(self.update_interval)
 			future.get_loop().run_until_complete(update_task())
+
+	def registered_task_count(self, function=None):
+		return self.task_in_work_count(function) + self.queue_size(function)
+	
+	def queue_size(self, function=None):
+		if function is not None:
+			return sum(1 for task_info in self._queue if task_info.function == function)
+		return len(self._queue)
+
+	def task_in_work_count(self, function=None):
+		if function is not None:
+			return sum(1 for task_info in self._tasks.values() if task_info.function == function)
+		return len(self._tasks)
+
+	def _schedule_task(self, async_function, registered_task_count, max_queue_size=0):
+		if 0 <= max_queue_size >= registered_task_count:
+			task_info = self._create_task_info(async_function)
+			self._queue.append(task_info)
+			if self._current_task_info is None:
+				return self._run_next()
+			else:
+				return task_info.future
+		# Don't fit by queue size
+		return None
 
 	def _create_task_info(self, async_function):
 		task_info = self.TaskInfo(async_function)
@@ -67,6 +95,7 @@ class TaskScheduler():
 		task = loop.create_task(task_info.function())
 		task_info.task = task
 		self._tasks[task] = task_info
+		assert(len(self._tasks) == 1)
 		task.add_done_callback(self._set_result)
 		future = task_info.future
 		def future_done(future):
