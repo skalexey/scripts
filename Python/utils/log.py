@@ -31,10 +31,10 @@ class LogLevel:
 		raise ValueError(f"Unknown log level when calling LogLevel.sign({level})")
 
 class Logger:
-	def __init__(self, title=None):
+	def __init__(self, title=None, title_stack_level=1):
 		self.log_level = 0
 		# Take the caller script name from the stack
-		self.log_title = title if title is not None else os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
+		self.log_title = title if title is not None else os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0]
 
 	def set_log_title(self, title):
 		self.log_title = title
@@ -73,18 +73,34 @@ class Logger:
 	def log_verbose(self, message):
 		self.log(message, LogLevel.VERBOSE)
 
+	def _exec(self, expression, globals=None, locals=None):
+		try:
+			result = exec(expression, globals, locals)
+			return result
+		except Exception as e:
+			self.log_error(f"Error evaluating expression: '{expression}'. Exception: '{e}'")
+			return None
+
 	def log_expr(self, expression, globals = None, locals=None):
+		# Take the globals from the stack
+		if globals is None or locals is None:
+			frame = inspect.stack()[1].frame
+			globals_to_take = frame.f_globals
+			locals_to_take = frame.f_locals
+		else:
+			globals_to_take = globals
+			locals_to_take = locals
 		self.log(expression)
-		result = eval(expression, globals, locals)
+		result = self._exec(expression, globals_to_take, locals_to_take)
 		return result
 	
 	def log_expr_val(self, expression, globals, locals):
-		result = eval(expression, globals, locals)
+		result = self._exec(expression, globals, locals)
 		self.log(result)
 		return result
 
 	def log_expr_and_val(self, expression, globals = None, locals=None):
-		result = eval(expression, globals, locals)
+		result = self._exec(expression, globals, locals)
 		self.log(f"{expression}: {result}")
 
 # Discouraged global monolite interface.
