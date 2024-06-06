@@ -1,0 +1,26 @@
+import inspect
+import sys
+
+import utils.log
+import utils.profiler
+import utils.string
+from utils.subscription import *
+
+# Caller script name from the stack
+logger = utils.log.Logger(title_stack_level=2)
+profiler = utils.profiler.TimeProfiler()
+profiler.set_print_function(logger.log)
+
+def title(text):
+	return utils.string.title(text, "=", 60)
+
+# Define the test function in your script
+
+def run():
+	function_name = sys.argv[1] if len(sys.argv) > 1 else 'test'
+	caller_frame = inspect.stack()[1].frame
+
+	# Get the caller's globals from the frame
+	caller_globals = caller_frame.f_globals
+	function_to_call = caller_globals[function_name]
+	function_to_call()
