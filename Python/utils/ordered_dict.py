@@ -58,16 +58,21 @@ class OrderedDict:
 		return self._keys[index]
 
 	def popitem(self):
-		index = self._dict.pop(key)
-		key = self._keys.pop(index)
-		value = self._list.pop(index)
-		return (key, value)
+		key = self._keys.pop()
+		value = self._list.pop()
+		del self._dict[key]
+		return key, value
 
 	def pop(self, key):
-		index = self._dict[key]
-		value = self._list.pop(index)
-		self._keys.pop(index)
+		index = self._dict.get(key)
+		if index is None:
+			return None
+		del self._keys[index]
 		del self._dict[key]
+		value = self._list.pop(index)
+		for key, value in self._dict.items():
+			if value > index:
+				self._dict[key] -= 1
 		return value
 
 	def keys(self):
@@ -122,12 +127,7 @@ class OrderedDict:
 		return self._list[index] if index is not None else None
 
 	def __delitem__(self, key):
-		index = self._dict.pop(key)
-		del self._list[index]
-		del self._keys[index]
-		for key, value in self._dict.items():
-			if value > index:
-				self._dict[key] -= 1
+		self.pop(key)
 
 	def remove(self, key):
 		del self[key]
