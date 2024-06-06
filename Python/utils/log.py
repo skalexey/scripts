@@ -1,4 +1,6 @@
-# Allow calls like this: set_log_level(LogLevel.DEBUG)
+import inspect
+import os
+
 
 class LogLevel:
 	VERBOSE = 0
@@ -31,7 +33,8 @@ class LogLevel:
 class Logger:
 	def __init__(self, title=None):
 		self.log_level = 0
-		self.log_title = title
+		# Take the caller script name from the stack
+		self.log_title = title if title is not None else os.path.splitext(os.path.basename(inspect.stack()[1].filename))[0]
 
 	def set_log_title(self, title):
 		self.log_title = title
