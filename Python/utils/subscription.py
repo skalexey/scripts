@@ -20,12 +20,16 @@ class Subscription:
 
 	def __init__(self):
 		self._data = OrderedDict()
+		self._lock = threading.RLock()
 
 	class CallableInfo:
-		def __init__(self, callable_ref, subscriber_ref, id):
+		def __init__(self, callable_ref, subscriber_ref, id, max_call_count=None, unsubscribe_on_false=False):
 			self.callable_ref = callable_ref
 			self.subscriber_ref = subscriber_ref
 			self.id = id
+			self.max_call_count = max_call_count
+			self._call_count = 0
+			self.unsubscribe_on_false = unsubscribe_on_false
 		
 		def __repr__(self):
 			return f"CallableInfo(id={self.id})"
@@ -48,12 +52,24 @@ class Subscription:
 		def subscriber(self):
 			return self.subscriber_ref() if self.subscriber_ref is not None else None
 
-		# Call operator
+		# Call operator. Returns False if the callable should be unsubscribed
 		def __call__(self, *args, **kwargs):
-			if self.subscriber_ref is not None:
-				assert(self.subscriber_ref is None or self.subscriber is not None)
-				return self.callable(*args, **kwargs)
-			return self.callable(*args, **kwargs)
+			if self.subscriber_ref is not None and self.subscriber is None:
+				logger.log_error(f"Subscriber is deleted, but not unsubscribed. Unsubscribing the callable {self}")
+				return False
+			if self.max_call_count is not None:
+				if self._call_count >= self.max_call_count:
+					logger.log_error(f"Trying to call a callable '{self}' that has reached ({self._call_count}) its max call count {self.max_call_count}, but has not unsubscribed yet for some reason. Unsubscribing it ignoring this call.")
+					return False
+			result = self.callable(*args, **kwargs)
+			self._call_count += 1
+			if result is False:
+				if self.unsubscribe_on_false:
+					return False
+			if self.max_call_count is not None:
+				if self._call_count >= self.max_call_count:
+					return False
+			return True
 
 		def __eq__(self, other):
 			if isinstance(other, Callable):
@@ -65,15 +81,12 @@ class Subscription:
 			return self.callable == other
 
 	# Any callable can be passed including another subscription
-	def subscribe(self, callable, subscriber=None):
+	def subscribe(self, callable, subscriber=None, max_call_count=None, unsubscribe_on_false=False):
 		cb_id = self._next_cb_id()
 		logger.log_debug(f"subscribe({callable}, {subscriber}) -> {cb_id}")
 		assert(cb_id not in self._data.keys())
 		# Detect if callable is a bound method
-		_subscriber = subscriber
-		if _subscriber is None and hasattr(callable, '__self__') and callable.__self__ is not None:
-			_subscriber = callable.__self__
-			logger.log_debug(f"Bound method detected. It contains the subscriber: {subscriber}")
+		_subscriber = subscriber if subscriber is not None else utils.lang.extract_self(callable)
 		def on_callable_destroyed(ref):
 			logger.log_debug(f"on_callable_destroyed({cb_id})")
 			assert ref() is None
@@ -88,28 +101,36 @@ class Subscription:
 			subscriber_ref = weakref.ref(_subscriber)
 		else:
 			subscriber_ref = None
-		self._data[cb_id] = self.CallableInfo(callable_ref, subscriber_ref, cb_id)
+		with self._lock:
+			self._data[cb_id] = self.CallableInfo(callable_ref, subscriber_ref, cb_id, max_call_count, unsubscribe_on_false)
 		return cb_id
 	
 	def is_subscribed(self, cb_or_id):
-		if isinstance(cb_or_id, int):
-			return cb_or_id in self._data.keys()
-		return any(cb == cb_or_id for cb in self._data.values())
+		with self._lock:
+			if isinstance(cb_or_id, int):
+				return cb_or_id in self._data.keys()
+			return any(cb == cb_or_id for cb in self._data.values())
 	
 	def unsubscribe(self, cb_or_id, subscriber=None):
 		result = False
-		if isinstance(cb_or_id, int):
-			cb = self._data.pop(cb_or_id)
-			if cb is not None:
-				result = True
-		else:
-			result = self._unsubscribe_callable(cb_or_id, subscriber)
+		with self._lock:
+			if isinstance(cb_or_id, int):
+				cb = self._data.pop(cb_or_id)
+				if cb is not None:
+					result = True
+			else:
+				result = self._unsubscribe_callable(cb_or_id, subscriber)
 		logger.log_debug(f"{f'Unsubscribed' if result else 'Already unsubscribed'} callable {cb_or_id}")
 		return result
 
 	def notify(self, *args, **kwargs):
-		for cb in self._data.values().copy():
-			cb(*args, **kwargs)
+		with self._lock:
+			to_unsubscribe = []
+			for cb in self._data.values().copy():
+				if cb(*args, **kwargs) is False:
+					to_unsubscribe.append(cb)
+			for cb in to_unsubscribe:
+				self.unsubscribe(cb)
 
 	def wait(self, timeout=None):
 		event = threading.Event()
@@ -132,10 +153,12 @@ class Subscription:
 	def _unsubscribe_callable(self, callable, subscriber=None):
 		unsubscribe_ids = []
 		result = False
-		for cb_id, cb in self._data.items():
-			if cb.callable == callable and cb.subscriber == subscriber:
-				unsubscribe_ids.append(cb_id)
-				result = True
+		with self._lock:
+			for cb_id, cb in self._data.items():
+				_subscriber = subscriber if subscriber is not None else utils.lang.extract_self(callable)
+				if cb.callable == callable and cb.subscriber == _subscriber:
+					unsubscribe_ids.append(cb_id)
+					result = True
 		for cb_id in unsubscribe_ids:
 			self.unsubscribe(cb_id)
 		return result
