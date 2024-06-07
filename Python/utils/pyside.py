@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from utils.log import *
+from utils.log.logger import *
 
 logger = Logger("pyside")
 

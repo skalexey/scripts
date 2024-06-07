@@ -1,10 +1,11 @@
 import threading
 import weakref
 
-import utils.log
+import utils.lang
+from utils.log.logger import *
 from utils.ordered_dict import *
 
-logger = utils.log.Logger()
+logger = Logger()
 
 class Subscription:
 	_cb_id = 0

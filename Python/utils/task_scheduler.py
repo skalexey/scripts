@@ -4,7 +4,7 @@ import asyncio
 from collections import deque
 
 import utils.asyncio_utils
-from utils.log import *
+from utils.log.logger import *
 
 logger = Logger("task_scheduler")
 
