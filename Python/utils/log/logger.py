@@ -1,8 +1,9 @@
 import inspect
 import os
+from enum import IntEnum
 
 
-class LogLevel:
+class LogLevel(IntEnum):
 	VERBOSE = 0
 	DEBUG = 1
 	INFO = 2
@@ -12,23 +13,20 @@ class LogLevel:
 	PRINT = 6
 
 	def sign(level):
-		if level == LogLevel.PRINT:
-			return None
-		if level == LogLevel.PRINT:
-			return "P"
-		if level == LogLevel.VERBOSE:
-			return "V"
-		if level == LogLevel.DEBUG:
-			return "D"
-		if level == LogLevel.INFO:
-			return "I"
-		if level == LogLevel.WARNING:
-			return "W"
-		if level == LogLevel.ERROR:
-			return "E"
-		if level == LogLevel.CRITICAL:
-			return "C"
-		raise ValueError(f"Unknown log level when calling LogLevel.sign({level})")
+		level_str = level.name
+		return level_str[0]
+
+	@classmethod
+	def items(cls):
+		return cls.__members__.items()
+
+	@classmethod
+	def values(cls):
+		return cls.__members__.values()
+
+	@classmethod
+	def keys(cls):
+		return cls.__members__.keys()
 
 class Logger:
 	def __init__(self, title=None, title_stack_level=1):
@@ -53,25 +51,9 @@ class Logger:
 			level_sign = LogLevel.sign(level)
 			level_prefix = f"[{level_sign}] " if level_sign is not None else "    "
 			log_title_addition = f"[{self.log_title}]: " if self.log_title is not None else ""
-			print(f"{level_prefix}[{current_time}] {log_title_addition}{message}")
-
-	def log_debug(self, message):
-		self.log(message, LogLevel.DEBUG)
-
-	def log_info(self, message):
-		self.log(message, LogLevel.INFO)
-
-	def log_warning(self, message):
-		self.log(message, LogLevel.WARNING)
-
-	def log_error(self, message):
-		self.log(message, LogLevel.ERROR)
-
-	def log_critical(self, message):
-		self.log(message, LogLevel.CRITICAL)
-
-	def log_verbose(self, message):
-		self.log(message, LogLevel.VERBOSE)
+			msg = f"{level_prefix}[{current_time}] {log_title_addition}{message}"
+			print(msg)
+			return msg, message, level, self.log_title, current_time
 
 	def _exec(self, expression, globals=None, locals=None):
 		try:
@@ -102,7 +84,21 @@ class Logger:
 	def log_expr_and_val(self, expression, globals = None, locals=None):
 		result = self._exec(expression, globals, locals)
 		self.log(f"{expression}: {result}")
+		return result
 
+# Generate log_<level_name> functions
+def _init():
+	def log_fn(level_name, level_value):
+		def log_level(self, msg):
+			result = self.log(msg, level_value)
+			# result: (msg, message, level, self.log_title, current_time)
+			return result
+		return log_level
+	for key, value in LogLevel.items():
+		name = key.lower()
+		setattr(Logger, f"log_{name}", log_fn(name, value))
+
+_init()
 # Discouraged global monolite interface.
 # Prefer crating a logger object in the calling module.
 loggers = {}

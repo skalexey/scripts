@@ -1,4 +1,4 @@
-from utils.log import *
+from utils.log.logger import *
 
 logger = Logger("inetanceof_test")
 

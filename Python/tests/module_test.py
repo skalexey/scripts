@@ -1,9 +1,9 @@
 import sys
 
-import utils.log
 import utils.module
+from utils.log.logger import *
 
-logger = utils.log.Logger("test_module")
+logger = Logger("test_module")
 
 class Module(utils.module.Module):
 	def __init__(self):

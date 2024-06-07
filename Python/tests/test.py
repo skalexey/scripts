@@ -1,13 +1,13 @@
 import inspect
 import sys
 
-import utils.log
 import utils.profiler
 import utils.string
+from utils.log.logger import *
 from utils.subscription import *
 
 # Caller script name from the stack
-logger = utils.log.Logger(title_stack_level=2)
+logger = Logger(title_stack_level=2)
 profiler = utils.profiler.TimeProfiler()
 profiler.set_print_function(logger.log)
 

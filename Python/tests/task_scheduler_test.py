@@ -1,11 +1,11 @@
 import sys
 
-import utils.log
 import utils.profiler
 import utils.string
+from utils.log.logger import *
 from utils.task_scheduler import *
 
-logger = utils.log.Logger()
+logger = Logger()
 profiler = utils.profiler.TimeProfiler()
 profiler.set_print_function(logger.log)
 
