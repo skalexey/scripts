@@ -15,7 +15,7 @@ class AbstractTextSpinner(ABC):
 		self.frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 		self.frame_index = 0
 		self.frame_period = 0.1
-		self._last_frame_time = 0
+		self._time_since_last_frame = 0
 
 	@property
 	def frame_index(self):
@@ -30,10 +30,10 @@ class AbstractTextSpinner(ABC):
 		self.frame_index = 0
 
 	def update(self, dt):
-		time_since_last_frame = self._last_frame_time + dt
-		if time_since_last_frame >= self.frame_period:
+		self._time_since_last_frame += dt
+		if self._time_since_last_frame >= self.frame_period:
 			self.update_frame()
-			self._last_frame_time = time_since_last_frame - self.frame_period
+		
 
 	@property
 	def text(self):
@@ -41,6 +41,7 @@ class AbstractTextSpinner(ABC):
 
 	def update_frame(self):
 		self.frame_index = (self.frame_index + 1) % len(self.frames)
+		self._time_since_last_frame -= self.frame_period
 
 class TextSpinner(AbstractTextSpinner):
 	def __init__(self):
