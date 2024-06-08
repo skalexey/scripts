@@ -60,9 +60,9 @@ class A(TaskScheduler):
 		enqueued_task_count = self.queue_size()
 		tasks_in_work_count = self.task_in_work_count()
 		log(f"Tasks registered: {registered_task_count}, enqueued: {enqueued_task_count}, in work: {tasks_in_work_count}")
-		assert(registered_task_count == registered)
-		assert(enqueued_task_count == enqueued)
-		assert(tasks_in_work_count == in_work)
+		assert registered_task_count == registered
+		assert enqueued_task_count == enqueued
+		assert tasks_in_work_count == in_work
 		 
 	def function_test(self):
 		log("=== Function test ===")

@@ -70,7 +70,7 @@ def create_line_input_widget(parent_layout, label, default_value=None, on_change
 	line_edit = QLineEdit()
 	if default_value is not None:
 		t = type(default_value)
-		assert(t is str or t is int or t is float or t is bool)
+		assert t is str or t is int or t is float or t is bool
 		line_edit.setText(str(default_value))
 	if input_fixed_width is not None:
 		line_edit.setFixedWidth(input_fixed_width)

@@ -57,20 +57,20 @@ class A(TaskScheduler):
 		log("Integrity test started")
 		log("Schedule 1st task")
 		f1 = self.schedule_task(self.async_method_1s_1)
-		assert(len(self._tasks) == 1)
+		assert len(self._tasks) == 1
 		log("Waiting for 1st task")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
-		assert(len(self._tasks) == 0)
+		assert len(self._tasks) == 0
 		log("Schedule 2nd task")
 		f2 = self.schedule_task(self.async_method_1s_1)
-		assert(len(self._tasks) == 1)
+		assert len(self._tasks) == 1
 		log("Waiting for 2nd task")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
-		assert(len(self._tasks) == 0)
+		assert len(self._tasks) == 0
 		log("Integrity test completed")
 
 	async def async_method_1s_1(self):
@@ -132,30 +132,30 @@ class A(TaskScheduler):
 		log("Waiting")
 		self.measure_time()
 		self.wait_all_tasks()
-		assert(self.time_since_last_measurement() >= 1)
+		assert self.time_since_last_measurement() >= 1
 		self.print_time_since_last_measurement()
 		log("Waiting 2")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
-		assert(self.time_since_last_measurement() < 0.01)
+		assert self.time_since_last_measurement() < 0.01
 		log("Place a task and wait 3rd time")
-		assert(len(self._tasks) == 0)
+		assert len(self._tasks) == 0
 		self.schedule_task(self.async_method_1s_3)
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
-		assert(self.time_since_last_measurement() >= 1)
+		assert self.time_since_last_measurement() >= 1
 		log("Wait through a future")
 		f5 = self.schedule_task(self.async_method_1s_1)
 		self.measure_time()
 		self.wait(f5)
 		self.print_time_since_last_measurement()
-		assert(self.time_since_last_measurement() >= 1)
+		assert self.time_since_last_measurement() >= 1
 		log("Cancel test completed")
 		loop = utils.asyncio_utils.get_event_loop()
 		tasks = asyncio.all_tasks(loop)
-		assert(len(tasks) == 0)
+		assert len(tasks) == 0
 
 	def simple_cancel_test(self):
 		log("Simple cancel test started")
@@ -165,10 +165,10 @@ class A(TaskScheduler):
 		log("Waiting")
 		self.wait_all_tasks()
 		log("Simple cancel test completed")
-		assert(len(self._tasks) == 0)
+		assert len(self._tasks) == 0
 		loop = utils.asyncio_utils.get_event_loop()
 		tasks = asyncio.all_tasks(loop)
-		assert(len(tasks) == 0)
+		assert len(tasks) == 0
 
 	def cancel_future_test(self):
 		log("Cancel future test started")
@@ -178,7 +178,7 @@ class A(TaskScheduler):
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
-		assert(self.time_since_last_measurement() < 0.01)
+		assert self.time_since_last_measurement() < 0.01
 		# f2 = self.schedule_task(self.async_method_1s_2, 1)
 		# self.wait(f2)
 		loop = utils.asyncio_utils.get_event_loop()
@@ -187,12 +187,12 @@ class A(TaskScheduler):
 			log.warning(f"Tasks still exist in the loop after cancelling: {tasks}")
 		for task in tasks:
 			# Run until complete
-			# assert(task.done())
-			# assert(task.cancelled())
+			# assert task.done()
+			# assert task.cancelled()
 			if not task.cancelled():
 				loop.run_until_complete(task)
 		tasks = asyncio.all_tasks(loop)
-		assert(len(tasks) == 0)
+		assert len(tasks) == 0
 		log("Cancel future test completed")
 
 def main():

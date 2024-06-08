@@ -27,9 +27,9 @@ class A:
 
 	def subscribe_dependent(self):
 		self.cb_id = self.on_call.subscribe(self._on_call)
-		assert(self.on_call.is_subscribed(self.cb_id))
+		assert self.on_call.is_subscribed(self.cb_id)
 		self.cb_id2 = self.on_call.subscribe(self._on_call)
-		assert(self.on_call.is_subscribed(self.cb_id2))
+		assert self.on_call.is_subscribed(self.cb_id2)
 
 	def _on_call(self):
 		log("A._on_call()")
@@ -66,20 +66,20 @@ def test_independent_cb_no_subscriber():
 	log(title("test_independent_cb_no_subscriber()"))
 	log.expr("a = A()")
 	log.expr("a.subscribe_independent_no_subscriber()")
-	log.expr("assert(a.on_call.unsubscribe(a.cb_id) == False)")
+	log.expr("assert a.on_call.unsubscribe(a.cb_id) == False)"
 	log(title("End of test_independent_cb_no_subscriber()"))
 
 def test_independent_cb_with_subscriber():
 	log(title("test_independent_cb_with_subscriber()"))
 	log.expr("a = A()")
 	log.expr("a.subscribe_independent_with_self()")
-	log.expr("assert(a.on_call.is_subscribed(a.cb_id))")
-	log.expr("assert(a.on_call.is_subscribed(a.cb_id2))")
+	log.expr("assert a.on_call.is_subscribed(a.cb_id))"
+	log.expr("assert a.on_call.is_subscribed(a.cb_id2))"
 	log.expr("a()")
 	log.expr("b = B()")
 	log.expr("b.subscribe_independent_with_self(a)")
-	log.expr("assert(a.on_call.is_subscribed(b.cb_id))")
-	log.expr("assert(a.on_call.is_subscribed(b.cb_id2))")
+	log.expr("assert a.on_call.is_subscribed(b.cb_id))"
+	log.expr("assert a.on_call.is_subscribed(b.cb_id2))"
 	log.expr("a()")
 	log(title("End of test_independent_cb_with_subscriber()"))
 
@@ -87,11 +87,11 @@ def test_dependent_cb():
 	log(title("test_dependent_cb()"))
 	log.expr("a = A()")
 	log.expr("a.subscribe_dependent()")
-	log.expr("assert(a.on_call.is_subscribed(a.cb_id))")
+	log.expr("assert a.on_call.is_subscribed(a.cb_id))"
 	log.expr("a()")
 	log.expr("b = B()")
 	log.expr("b.subscribe_dependent(a)")
-	log.expr("assert(a.on_call.is_subscribed(b.cb_id))")
+	log.expr("assert a.on_call.is_subscribed(b.cb_id))"
 	log.expr("a()")
 	log(title("End of test_dependent_cb()"))
 

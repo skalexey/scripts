@@ -4,7 +4,7 @@ from abc import ABC
 
 class Module(ABC):
 	def __init__(self, module_name, *args, **kwargs):
-		assert(isinstance(module_name, str))
+		assert isinstance(module_name, str)
 		self.module_name = module_name
 		self._settings = None
 

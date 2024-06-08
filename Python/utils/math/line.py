@@ -4,7 +4,7 @@ from .vector2 import *
 
 class Line():
 	def __init__(self, point1, point2):
-		assert(point1 != point2	)
+		assert point1 != point2	
 		self.points = [point1, point2]
 
 	def __repr__(self):

@@ -8,7 +8,7 @@ def _init():
 	_globals = globals()
 	for key, value in LogLevel.items():
 		level_name = key.lower()
-		assert(f"g_on_log_{level_name}" not in _globals)
+		assert f"g_on_log_{level_name}" not in _globals
 		subscription = Subscription()
 		_globals[f"g_on_log_{level_name}"] = subscription
 		g_on_log_level[value] = subscription

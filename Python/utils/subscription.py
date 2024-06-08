@@ -84,7 +84,7 @@ class Subscription:
 	def subscribe(self, callable, subscriber=None, max_call_count=None, unsubscribe_on_false=False):
 		cb_id = self._next_cb_id()
 		log.debug(f"subscribe({callable}, {subscriber}) -> {cb_id}")
-		assert(cb_id not in self._data.keys())
+		assert cb_id not in self._data.keys()
 		# Detect if callable is a bound method
 		_subscriber = subscriber if subscriber is not None else utils.lang.extract_self(callable)
 		def on_callable_destroyed(ref):

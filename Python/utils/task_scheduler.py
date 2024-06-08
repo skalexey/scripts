@@ -89,13 +89,13 @@ class TaskScheduler():
 
 	def _run_next(self):
 		task_info = self._queue.popleft()
-		assert(task_info.task is None)
+		assert task_info.task is None
 		self._current_task_info = task_info
 		loop = utils.asyncio_utils.get_event_loop()
 		task = loop.create_task(task_info.function())
 		task_info.task = task
 		self._tasks[task] = task_info
-		assert(len(self._tasks) == 1)
+		assert len(self._tasks) == 1
 		task.add_done_callback(self._set_result)
 		future = task_info.future
 		def future_done(future):
@@ -106,7 +106,7 @@ class TaskScheduler():
 
 	def _set_result(self, task):
 		task_info = self._tasks.pop(task)
-		assert(task_info == self._current_task_info)
+		assert task_info == self._current_task_info
 		task, future = task_info.task, task_info.future
 		if task.cancelled():
 			if not future.done():
