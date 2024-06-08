@@ -7,9 +7,9 @@ from utils.log.logger import *
 from utils.subscription import *
 
 # Caller script name from the stack
-logger = Logger(title_stack_level=2)
+log = Logger(title_stack_level=2)
 profiler = utils.profiler.TimeProfiler()
-profiler.set_print_function(logger.log)
+profiler.set_print_function(log.log)
 
 def title(text):
 	return utils.string.title(text, "=", 60)

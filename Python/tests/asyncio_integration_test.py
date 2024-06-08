@@ -6,7 +6,7 @@ from utils.asyncio_utils import *
 from utils.log.logger import *
 from utils.task_scheduler import *
 
-logger = Logger("asyncio_integration_test")
+log = Logger("asyncio_integration_test")
 
 class A(TaskScheduler):
 	def __init__(self):
@@ -25,7 +25,7 @@ class A(TaskScheduler):
 
 	def print_time_since_last_measurement(self):
 		# Print seconds + milliseconds
-		logger.log(f"Time since last measurement: {self.time_since_last_measurement()}")
+		log(f"Time since last measurement: {self.time_since_last_measurement()}")
 
 	def test(self):
 		self.cancel_future_test()
@@ -37,7 +37,7 @@ class A(TaskScheduler):
 		self.simple_cancel_test()
 		self.simple_cancel_test()
 		return
-		logger.log("Test started")
+		log("Test started")
 		f1 = self.schedule_task(self.async_method_1s_1)
 		f2 = self.schedule_task(self.async_method_1s_2)
 		f3 = self.schedule_task(self.async_method_1s_3)
@@ -50,131 +50,131 @@ class A(TaskScheduler):
 		# 	f.get_loop().run_until_complete(f)
 		# Higher-level waiting
 		self.wait_all_tasks()
-		logger.log("Test completed")
+		log("Test completed")
 		# loop.run_forever()
 
 	def integrity_test(self):
-		logger.log("Integrity test started")
-		logger.log("Schedule 1st task")
+		log("Integrity test started")
+		log("Schedule 1st task")
 		f1 = self.schedule_task(self.async_method_1s_1)
 		assert(len(self._tasks) == 1)
-		logger.log("Waiting for 1st task")
+		log("Waiting for 1st task")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
 		assert(len(self._tasks) == 0)
-		logger.log("Schedule 2nd task")
+		log("Schedule 2nd task")
 		f2 = self.schedule_task(self.async_method_1s_1)
 		assert(len(self._tasks) == 1)
-		logger.log("Waiting for 2nd task")
+		log("Waiting for 2nd task")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
 		assert(len(self._tasks) == 0)
-		logger.log("Integrity test completed")
+		log("Integrity test completed")
 
 	async def async_method_1s_1(self):
-		logger.log("Task 1 started")
+		log("Task 1 started")
 		await asyncio.sleep(1)
-		logger.log("Task 1 completed")
+		log("Task 1 completed")
 		return "Success 1"
 
 	async def async_method_1s_2(self):
-		logger.log("Task 2 started")
+		log("Task 2 started")
 		await asyncio.sleep(1)
-		logger.log("Task 2 completed")
+		log("Task 2 completed")
 		return "Success 2"
 
 	async def async_method_1s_3(self):
-		logger.log("Task 3 started")
+		log("Task 3 started")
 		await asyncio.sleep(1)
-		logger.log("Task 3 completed")
+		log("Task 3 completed")
 		return "Success 3"
 	
 	async def async_method_no_wait(self):
-		logger.log("Task 4 started")
-		logger.log("Task 4 completed")
+		log("Task 4 started")
+		log("Task 4 completed")
 		return "Success 4"
 	
 	async def sleep_task(self):
-		logger.log("Enter sleep task")
+		log("Enter sleep task")
 		await asyncio.sleep(3)
-		logger.log("Exit sleep task")
+		log("Exit sleep task")
 
 	def async_test(self):
 		async def test():
-			logger.log("Async test started")
+			log("Async test started")
 			self.schedule_task(self.async_method_1s_1)
 			await asyncio.sleep(2)
-			logger.log("Async test completed")
-		logger.log("Async test started")
+			log("Async test completed")
+		log("Async test started")
 		loop = utils.asyncio.get_event_loop()
 		loop.run_until_complete(test())
-		logger.log("Async test completed")
+		log("Async test completed")
 
 	def sync_async_test(self):
-		logger.log("Sync async test started")
+		log("Sync async test started")
 		loop = asyncio.new_event_loop()
 		asyncio.set_event_loop(loop)
 		loop.run_until_complete(self.async_test())
 		loop.close()
-		logger.log("Sync async test completed")
+		log("Sync async test completed")
 
 	def cancel_test(self):
-		logger.log("Cancel test started")
+		log("Cancel test started")
 		f1 = self.schedule_task(self.async_method_1s_1)
 		f2 = self.schedule_task(self.async_method_1s_2)
 		f3 = self.schedule_task(self.async_method_1s_3)
 		f4 = self.schedule_task(self.async_method_no_wait)
 		time.sleep(0.5)
-		logger.log("Cancelling all tasks")
+		log("Cancelling all tasks")
 		# self.cancel_all_tasks()
-		logger.log("Waiting")
+		log("Waiting")
 		self.measure_time()
 		self.wait_all_tasks()
 		assert(self.time_since_last_measurement() >= 1)
 		self.print_time_since_last_measurement()
-		logger.log("Waiting 2")
+		log("Waiting 2")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
 		assert(self.time_since_last_measurement() < 0.01)
-		logger.log("Place a task and wait 3rd time")
+		log("Place a task and wait 3rd time")
 		assert(len(self._tasks) == 0)
 		self.schedule_task(self.async_method_1s_3)
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
 		assert(self.time_since_last_measurement() >= 1)
-		logger.log("Wait through a future")
+		log("Wait through a future")
 		f5 = self.schedule_task(self.async_method_1s_1)
 		self.measure_time()
 		self.wait(f5)
 		self.print_time_since_last_measurement()
 		assert(self.time_since_last_measurement() >= 1)
-		logger.log("Cancel test completed")
+		log("Cancel test completed")
 		loop = utils.asyncio_utils.get_event_loop()
 		tasks = asyncio.all_tasks(loop)
 		assert(len(tasks) == 0)
 
 	def simple_cancel_test(self):
-		logger.log("Simple cancel test started")
+		log("Simple cancel test started")
 		f1 = self.schedule_task(self.async_method_1s_1)
-		logger.log("Cancelling the task")
+		log("Cancelling the task")
 		self.cancel_all_tasks()
-		logger.log("Waiting")
+		log("Waiting")
 		self.wait_all_tasks()
-		logger.log("Simple cancel test completed")
+		log("Simple cancel test completed")
 		assert(len(self._tasks) == 0)
 		loop = utils.asyncio_utils.get_event_loop()
 		tasks = asyncio.all_tasks(loop)
 		assert(len(tasks) == 0)
 
 	def cancel_future_test(self):
-		logger.log("Cancel future test started")
+		log("Cancel future test started")
 		f = self.schedule_task(self.async_method_1s_1)
 		f.cancel()
-		logger.log("Waiting")
+		log("Waiting")
 		self.measure_time()
 		self.wait_all_tasks()
 		self.print_time_since_last_measurement()
@@ -184,7 +184,7 @@ class A(TaskScheduler):
 		loop = utils.asyncio_utils.get_event_loop()
 		tasks = asyncio.all_tasks(loop)
 		if len(tasks) > 0:
-			logger.log_warning(f"Tasks still exist in the loop after cancelling: {tasks}")
+			log.warning(f"Tasks still exist in the loop after cancelling: {tasks}")
 		for task in tasks:
 			# Run until complete
 			# assert(task.done())
@@ -193,7 +193,7 @@ class A(TaskScheduler):
 				loop.run_until_complete(task)
 		tasks = asyncio.all_tasks(loop)
 		assert(len(tasks) == 0)
-		logger.log("Cancel future test completed")
+		log("Cancel future test completed")
 
 def main():
 	a = A()

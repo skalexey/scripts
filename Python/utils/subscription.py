@@ -5,7 +5,7 @@ import utils.lang
 from utils.log.logger import *
 from utils.ordered_dict import *
 
-logger = Logger()
+log = Logger()
 
 class Subscription:
 	_cb_id = 0
@@ -35,14 +35,14 @@ class Subscription:
 			return f"CallableInfo(id={self.id})"
 
 		def __del__(self):
-			logger.log_debug(f"__del__({self})")
+			log.debug(f"__del__({self})")
 			subscriber = self.subscriber
 			if subscriber is not None:
 				subscriber.__subscriptions__.remove(self.id)
-				logger.log_debug(f"CallableInfo {self.id} detached from the subscriber")
+				log.debug(f"CallableInfo {self.id} detached from the subscriber")
 				if len(subscriber.__subscriptions__) == 0:
 					del subscriber.__subscriptions__
-					logger.log_debug(f"__subscriptions__ attribute removed from the subscriber")
+					log.debug(f"__subscriptions__ attribute removed from the subscriber")
 			
 		@property
 		def callable(self):
@@ -55,11 +55,11 @@ class Subscription:
 		# Call operator. Returns False if the callable should be unsubscribed
 		def __call__(self, *args, **kwargs):
 			if self.subscriber_ref is not None and self.subscriber is None:
-				logger.log_error(f"Subscriber is deleted, but not unsubscribed. Unsubscribing the callable {self}")
+				log.error(f"Subscriber is deleted, but not unsubscribed. Unsubscribing the callable {self}")
 				return False
 			if self.max_call_count is not None:
 				if self._call_count >= self.max_call_count:
-					logger.log_error(f"Trying to call a callable '{self}' that has reached ({self._call_count}) its max call count {self.max_call_count}, but has not unsubscribed yet for some reason. Unsubscribing it ignoring this call.")
+					log.error(f"Trying to call a callable '{self}' that has reached ({self._call_count}) its max call count {self.max_call_count}, but has not unsubscribed yet for some reason. Unsubscribing it ignoring this call.")
 					return False
 			result = self.callable(*args, **kwargs)
 			self._call_count += 1
@@ -83,15 +83,15 @@ class Subscription:
 	# Any callable can be passed including another subscription
 	def subscribe(self, callable, subscriber=None, max_call_count=None, unsubscribe_on_false=False):
 		cb_id = self._next_cb_id()
-		logger.log_debug(f"subscribe({callable}, {subscriber}) -> {cb_id}")
+		log.debug(f"subscribe({callable}, {subscriber}) -> {cb_id}")
 		assert(cb_id not in self._data.keys())
 		# Detect if callable is a bound method
 		_subscriber = subscriber if subscriber is not None else utils.lang.extract_self(callable)
 		def on_callable_destroyed(ref):
-			logger.log_debug(f"on_callable_destroyed({cb_id})")
+			log.debug(f"on_callable_destroyed({cb_id})")
 			assert ref() is None
 			if self.unsubscribe(cb_id):
-				logger.log_debug(f"Unsubscribed a deleted subscriber. Callable id: {cb_id}")
+				log.debug(f"Unsubscribed a deleted subscriber. Callable id: {cb_id}")
 		callable_ref = weakref.ref(callable, on_callable_destroyed)
 		if _subscriber is not None:
 			# Add __subscriptions__ attribute as a list of callables to the subscriber if not present
@@ -120,7 +120,7 @@ class Subscription:
 					result = True
 			else:
 				result = self._unsubscribe_callable(cb_or_id, subscriber)
-		logger.log_debug(f"{f'Unsubscribed' if result else 'Already unsubscribed'} callable {cb_or_id}")
+		log.debug(f"{f'Unsubscribed' if result else 'Already unsubscribed'} callable {cb_or_id}")
 		return result
 
 	def notify(self, *args, **kwargs):

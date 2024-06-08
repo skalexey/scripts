@@ -41,6 +41,9 @@ class Logger:
 		self.log(f"Setting log level to {level}")
 		self.log_level = level
 
+	def __call__(self, message, level=LogLevel.PRINT):
+		self.log(message, level)
+
 	# Variadic arguments
 	def log(self, message, level=LogLevel.PRINT):
 		if level >= self.log_level:
@@ -96,7 +99,7 @@ def _init():
 		return log_level
 	for key, value in LogLevel.items():
 		name = key.lower()
-		setattr(Logger, f"log_{name}", log_fn(name, value))
+		setattr(Logger, f"{name}", log_fn(name, value))
 
 _init()
 # Discouraged global monolite interface.

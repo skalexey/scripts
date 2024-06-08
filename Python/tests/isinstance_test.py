@@ -1,6 +1,6 @@
 from utils.log.logger import *
 
-logger = Logger("inetanceof_test")
+log = Logger("inetanceof_test")
 
 class A:
 	pass
@@ -15,19 +15,19 @@ class D:
 	pass
 
 if __name__ == "__main__":
-	logger.log_expr_and_val("issubclass(C, A)", globals(), locals())
-	logger.log_expr_and_val("issubclass(C, B)", globals(), locals())
-	logger.log_expr_and_val("issubclass(C, C)", globals(), locals())
-	logger.log_expr_and_val("issubclass(C, object)", globals(), locals())
-	logger.log_expr_and_val("issubclass(D, A)", globals(), locals())
+	log.expr_and_val("issubclass(C, A)", globals(), locals())
+	log.expr_and_val("issubclass(C, B)", globals(), locals())
+	log.expr_and_val("issubclass(C, C)", globals(), locals())
+	log.expr_and_val("issubclass(C, object)", globals(), locals())
+	log.expr_and_val("issubclass(D, A)", globals(), locals())
 
 	# isinstance test
-	# logger.log_expr("c=C()", globals(), locals())
+	# log.expr("c=C()", globals(), locals())
 	c = C()
-	logger.log_expr_and_val("isinstance(c, A)", globals(), locals())
-	logger.log_expr_and_val("isinstance(c, B)", globals(), locals())
-	logger.log_expr_and_val("isinstance(c, C)", globals(), locals())
-	logger.log_expr_and_val("isinstance(c, object)", globals(), locals())
-	logger.log_expr_and_val("isinstance(c, D)", globals(), locals())
+	log.expr_and_val("isinstance(c, A)", globals(), locals())
+	log.expr_and_val("isinstance(c, B)", globals(), locals())
+	log.expr_and_val("isinstance(c, C)", globals(), locals())
+	log.expr_and_val("isinstance(c, object)", globals(), locals())
+	log.expr_and_val("isinstance(c, D)", globals(), locals())
 
-	logger.log_expr_and_val("isinstance(None, A)", globals(), locals())
+	log.expr_and_val("isinstance(None, A)", globals(), locals())

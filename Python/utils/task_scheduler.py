@@ -6,7 +6,7 @@ from collections import deque
 import utils.asyncio_utils
 from utils.log.logger import *
 
-logger = Logger("task_scheduler")
+log = Logger("task_scheduler")
 
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskScheduler():
@@ -41,7 +41,7 @@ class TaskScheduler():
 			try:
 				task_info.future.get_loop().run_until_complete(task_info.future)
 			except asyncio.CancelledError:
-				logger.log_info(f"Task has been cancelled (tas_info: {task_info})")
+				log.info(f"Task has been cancelled (tas_info: {task_info})")
 
 	def wait(self, future):
 		future.get_loop().run_until_complete(future)

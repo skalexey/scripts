@@ -3,7 +3,7 @@ import sys
 import utils.module
 from utils.log.logger import *
 
-logger = Logger("test_module")
+log = Logger("test_module")
 
 class Module(utils.module.Module):
 	def __init__(self):
@@ -26,22 +26,22 @@ class Module2(utils.module.Module):
 		print(f"test_setting={value}")
 	
 def test1():
-	logger.log("Test 1")
+	log("Test 1")
 	m = Module()
-	logger.log(m.test_setting)
+	log(m.test_setting)
 	m.test_setting = 5
-	logger.log(m.test_setting)
-	# logger.log_expr("m=Module()", globals(), locals())
-	# logger.log_expr("print(m.test_setting)", globals(), locals())
-	# logger.log_expr("m.test_setting=5", globals(), locals())
-	# logger.log_expr("print(m.test_setting)", globals(), locals())
+	log(m.test_setting)
+	# log.expr("m=Module()", globals(), locals())
+	# log.expr("print(m.test_setting)", globals(), locals())
+	# log.expr("m.test_setting=5", globals(), locals())
+	# log.expr("print(m.test_setting)", globals(), locals())
 
 def test2():
-	logger.log("Test 2")
+	log("Test 2")
 	m = Module2()
-	logger.log(m.test_setting_2)
+	log(m.test_setting_2)
 	m.test_setting_2 = 5
-	logger.log(m.test_setting_2)
+	log(m.test_setting_2)
 
 def test():
 	test1()

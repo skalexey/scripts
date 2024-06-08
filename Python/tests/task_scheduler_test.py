@@ -5,33 +5,33 @@ import utils.string
 from utils.log.logger import *
 from utils.task_scheduler import *
 
-logger = Logger()
+log = Logger()
 profiler = utils.profiler.TimeProfiler()
-profiler.set_print_function(logger.log)
+profiler.set_print_function(log.log)
 
 def title(text):
 	return utils.string.title(text, "=", 60)
 class A(TaskScheduler):
 	async def async_method1(self):
-		logger.log("Task 1 started")
+		log("Task 1 started")
 		await asyncio.sleep(1)
-		logger.log("Task 1 completed")
+		log("Task 1 completed")
 		return "Success 1"
 
 	async def async_method2(self):
-		logger.log("Task 2 started")
+		log("Task 2 started")
 		await asyncio.sleep(1)
-		logger.log("Task 2 completed")
+		log("Task 2 completed")
 		return "Success 2"
 
 	async def async_method3(self):
-		logger.log("Task 3 started")
+		log("Task 3 started")
 		await asyncio.sleep(1)
-		logger.log("Task 3 completed")
+		log("Task 3 completed")
 		return "Success 3"
 
 	def parallel_test(self):
-		logger.log(title("Parallel test", "=", 60))
+		log(title("Parallel test", "=", 60))
 		result_future = self.run_parallel_task(self.async_method1)
 		result_future = self.run_parallel_task(self.async_method2)
 		result_future = self.run_parallel_task(self.async_method3)
@@ -39,10 +39,10 @@ class A(TaskScheduler):
 		profiler.start()
 		self.wait_all_tasks()
 		profiler.print_measure()
-		logger.log(title("Parallel test completed"))
+		log(title("Parallel test completed"))
 
 	def queue_test(self):
-		logger.log(title("Queue test"))
+		log(title("Queue test"))
 		result_future = self.schedule_task(self.async_method1, 6)
 		result_future = self.schedule_task(self.async_method1, 6)
 		result_future = self.schedule_task(self.async_method1, 6)
@@ -53,19 +53,19 @@ class A(TaskScheduler):
 		profiler.start()
 		self.wait_all_tasks()
 		profiler.print_measure()
-		logger.log(title("Queue test completed"))
+		log(title("Queue test completed"))
 
 	def validate_task_count(self, registered, enqueued, in_work):
 		registered_task_count = self.registered_task_count()
 		enqueued_task_count = self.queue_size()
 		tasks_in_work_count = self.task_in_work_count()
-		logger.log(f"Tasks registered: {registered_task_count}, enqueued: {enqueued_task_count}, in work: {tasks_in_work_count}")
+		log(f"Tasks registered: {registered_task_count}, enqueued: {enqueued_task_count}, in work: {tasks_in_work_count}")
 		assert(registered_task_count == registered)
 		assert(enqueued_task_count == enqueued)
 		assert(tasks_in_work_count == in_work)
 		 
 	def function_test(self):
-		logger.log("=== Function test ===")
+		log("=== Function test ===")
 		result_future = self.schedule_function(self.async_method1, 1)
 		result_future = self.schedule_function(self.async_method1, 1)
 		result_future = self.schedule_function(self.async_method1, 1)
@@ -79,13 +79,13 @@ class A(TaskScheduler):
 		profiler.start()
 		self.wait_all_tasks()
 		profiler.print_measure()
-		logger.log(title("Function test completed"))
+		log(title("Function test completed"))
 
 	def test(self):
-		logger.log(title("Start the tests"))
+		log(title("Start the tests"))
 		self.queue_test()
 		self.function_test()
-		logger.log(title("Tests completed"))
+		log(title("Tests completed"))
 
 def main():
 	a = A()
