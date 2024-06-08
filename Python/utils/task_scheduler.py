@@ -1,6 +1,6 @@
 # TODO: Wait for the task utilization after cancelling through a future
-
 import asyncio
+import threading
 from collections import deque
 
 import utils.asyncio_utils
@@ -15,23 +15,37 @@ class TaskScheduler():
 		self._tasks = {}
 		self._queue = deque()
 		self._current_task_info = None
+		self._loop = None
+		self._thread_id = None
+		self._lock = threading.Lock()
+
+	@property
+	def loop(self):
+		with self._lock:
+			if self._loop is None:
+				self._loop = utils.asyncio_utils.get_event_loop()
+				self._thread_id = threading.current_thread().ident
+		return self._loop
 
 	class TaskInfo:
 		def __init__(self, function, task = None, future=None):
 			self.function = function
 			self.task = task
-			self.future = future or asyncio.Future()
+			self.future = future or utils.asyncio_utils.get_event_loop().create_future()
+			# self.future = future or asyncio.Future()
 
 	def schedule_task(self, async_function, max_queue_size=0):
-		queue_size = len(self._queue)
-		registered_task_count = queue_size + (1 if self._current_task_info is None else 0)
-		return self._schedule_task(async_function, registered_task_count, max_queue_size)
+		with self._lock:
+			queue_size = len(self._queue)
+			registered_task_count = queue_size + (1 if self._current_task_info is None else 0)
+			return self._schedule_task(async_function, registered_task_count, max_queue_size)
 	
 	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
 	def schedule_function(self, async_function, max_queue_size=0):
-		enqueued_function_count = self.queue_size(async_function)
-		registered_function_count = enqueued_function_count + (1 if self._current_task_info is not None and self._current_task_info.function == async_function else enqueued_function_count)
-		return self._schedule_task(async_function, registered_function_count, max_queue_size)
+		with self._lock:
+			enqueued_function_count = self.queue_size(async_function)
+			registered_function_count = enqueued_function_count + (1 if self._current_task_info is not None and self._current_task_info.function == async_function else enqueued_function_count)
+			return self._schedule_task(async_function, registered_function_count, max_queue_size)
 
 	def run_parallel_task(self, async_function):
 		raise "Not implemented yet."
@@ -53,6 +67,9 @@ class TaskScheduler():
 
 	# Use this method in a loop if your application doesn't have an event loop running
 	def update(self, dt):
+		# Create the loop from the updating thread if it doesn't exist
+		self.loop
+		# Update the tasks
 		if len(self._tasks) > 0:
 			future = self._tasks[0][0]
 			async def update_task():
@@ -73,6 +90,7 @@ class TaskScheduler():
 		return len(self._tasks)
 
 	def _schedule_task(self, async_function, registered_task_count, max_queue_size=0):
+		# Locked by the caller method
 		if 0 <= max_queue_size >= registered_task_count:
 			task_info = self._create_task_info(async_function)
 			self._queue.append(task_info)
@@ -84,18 +102,21 @@ class TaskScheduler():
 		return None
 
 	def _create_task_info(self, async_function):
-		task_info = self.TaskInfo(async_function)
+		future = self.loop.create_future()
+		task_info = self.TaskInfo(async_function, future=future)
 		return task_info
 
 	def _run_next(self):
-		task_info = self._queue.popleft()
-		assert task_info.task is None
-		self._current_task_info = task_info
-		loop = utils.asyncio_utils.get_event_loop()
-		task = loop.create_task(task_info.function())
-		task_info.task = task
-		self._tasks[task] = task_info
-		assert len(self._tasks) == 1
+		thread_id = threading.current_thread().ident
+		assert(thread_id == self._thread_id)
+		with self._lock:
+			task_info = self._queue.popleft()
+			assert task_info.task is None
+			self._current_task_info = task_info
+			task = loop.call_soon_threadsafe(self.loop.create_task, task_info.function())
+			task_info.task = task
+			self._tasks[task] = task_info
+			assert len(self._tasks) == 1
 		task.add_done_callback(self._set_result)
 		future = task_info.future
 		def future_done(future):
