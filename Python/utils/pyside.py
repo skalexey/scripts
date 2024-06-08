@@ -1,5 +1,6 @@
 import os
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from utils.log.logger import *
+from utils.text import AbstractTextSpinner
 
 log = Logger("pyside")
 
@@ -80,3 +82,20 @@ def create_line_input_widget(parent_layout, label, default_value=None, on_change
 			on_changed(text)
 		line_edit.textChanged.connect(on_text_changed)
 	return widget, line_edit
+
+class CombinedMeta(type(QLabel), type(AbstractTextSpinner)):
+	pass
+		
+class TextSpinner(AbstractTextSpinner, QLabel, metaclass=CombinedMeta):
+	def __init__(self, parent=None):
+		QLabel.__init__(self, parent=parent)
+		self.setAlignment(Qt.AlignCenter)
+		AbstractTextSpinner.__init__(self)
+
+	@AbstractTextSpinner.text.getter
+	def text(self):
+		return self.text()
+
+	@AbstractTextSpinner.text.setter
+	def text(self, value):
+		self.setText(value)

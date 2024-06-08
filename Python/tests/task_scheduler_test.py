@@ -1,7 +1,7 @@
 import sys
 
 import utils.profiler
-import utils.string
+import utils.text
 from utils.log.logger import *
 from utils.task_scheduler import *
 
@@ -10,7 +10,7 @@ profiler = utils.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 
 def title(text):
-	return utils.string.title(text, "=", 60)
+	return utils.text.title(text, "=", 60)
 class A(TaskScheduler):
 	async def async_method1(self):
 		log("Task 1 started")

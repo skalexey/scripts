@@ -2,7 +2,7 @@ import inspect
 import sys
 
 import utils.profiler
-import utils.string
+import utils.text
 from utils.log.logger import *
 from utils.subscription import *
 
@@ -12,7 +12,7 @@ profiler = utils.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 
 def title(text):
-	return utils.string.title(text, "=", 60)
+	return utils.text.title(text, "=", 60)
 
 # Define the test function in your script
 
