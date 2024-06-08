@@ -30,6 +30,7 @@ class Subscription:
 			self.max_call_count = max_call_count
 			self._call_count = 0
 			self.unsubscribe_on_false = unsubscribe_on_false
+			self._is_valid = True
 		
 		def __repr__(self):
 			return f"CallableInfo(id={self.id})"
@@ -52,27 +53,43 @@ class Subscription:
 		def subscriber(self):
 			return self.subscriber_ref() if self.subscriber_ref is not None else None
 
+		def _invalidate(self):
+			# Keep internal data unchanged for debugging purposes
+			self._is_valid = False
+
+		def is_valid(self):
+			return self._is_valid
+
 		# Call operator. Returns False if the callable should be unsubscribed
 		def __call__(self, *args, **kwargs):
+			if not self.is_valid():
+				return False
 			if self.subscriber_ref is not None and self.subscriber is None:
+				self._invalidate()
+				# Invalidate before logging to avoid infinite recursion since there are subscriptions on logs
 				log.error(f"Subscriber is deleted, but not unsubscribed. Unsubscribing the callable {self}")
 				return False
 			if self.max_call_count is not None:
 				if self._call_count >= self.max_call_count:
+					self._invalidate()
+					# Invalidate before logging to avoid infinite recursion since there are subscriptions on logs
 					log.error(f"Trying to call a callable '{self}' that has reached ({self._call_count}) its max call count {self.max_call_count}, but has not unsubscribed yet for some reason. Unsubscribing it ignoring this call.")
 					return False
 			result = self.callable(*args, **kwargs)
 			self._call_count += 1
 			if result is False:
 				if self.unsubscribe_on_false:
+					# Invalidate since other subscribers in the list can do whatever they want
+					self._invalidate()
 					return False
 			if self.max_call_count is not None:
 				if self._call_count >= self.max_call_count:
+					self._invalidate()
 					return False
 			return True
 
 		def __eq__(self, other):
-			if isinstance(other, Callable):
+			if isinstance(other, Subscription.CallableInfo):
 				if self.callable == other.callable:
 					if self.subscriber_ref is not None:
 						return self.subscriber_ref() == other.subscriber_ref()
