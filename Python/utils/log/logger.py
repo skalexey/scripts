@@ -66,12 +66,12 @@ class Logger:
 			self.log_error(f"Error evaluating expression: '{expression}'. Exception: '{e}'")
 			return None
 
-	def log_expr(self, expression, globals = None, locals=None):
+	def expr(self, expression, globals = None, locals=None):
 		# Take the globals from the stack
 		if globals is None or locals is None:
 			frame = inspect.stack()[1].frame
-			globals_to_take = frame.f_globals
-			locals_to_take = frame.f_locals
+			globals_to_take = frame.f_globals if globals is None else globals
+			locals_to_take = frame.f_locals if locals is None else locals
 		else:
 			globals_to_take = globals
 			locals_to_take = locals
@@ -79,12 +79,12 @@ class Logger:
 		result = self._exec(expression, globals_to_take, locals_to_take)
 		return result
 	
-	def log_expr_val(self, expression, globals, locals):
+	def expr_val(self, expression, globals, locals):
 		result = self._exec(expression, globals, locals)
 		self.log(result)
 		return result
 
-	def log_expr_and_val(self, expression, globals = None, locals=None):
+	def expr_and_val(self, expression, globals = None, locals=None):
 		result = self._exec(expression, globals, locals)
 		self.log(f"{expression}: {result}")
 		return result
