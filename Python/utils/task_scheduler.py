@@ -6,7 +6,8 @@ from collections import deque
 import utils.asyncio_utils
 from utils.log.logger import *
 
-log = Logger("task_scheduler")
+log = Logger()
+
 
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskScheduler():
@@ -17,7 +18,7 @@ class TaskScheduler():
 		self._current_task_info = None
 		self._loop = None
 		self._thread_id = None
-		self._lock = threading.Lock()
+		self._lock = threading.RLock()
 
 	@property
 	def loop(self):
@@ -71,7 +72,7 @@ class TaskScheduler():
 		self.loop
 		# Update the tasks
 		if len(self._tasks) > 0:
-			future = self._tasks[0][0]
+			future = next(iter(self._tasks.values())).future
 			async def update_task():
 				await asyncio.sleep(self.update_interval)
 			future.get_loop().run_until_complete(update_task())
@@ -108,22 +109,35 @@ class TaskScheduler():
 
 	def _run_next(self):
 		thread_id = threading.current_thread().ident
-		assert(thread_id == self._thread_id)
+		# assert(thread_id == self._thread_id)
 		with self._lock:
 			task_info = self._queue.popleft()
 			assert task_info.task is None
 			self._current_task_info = task_info
-			task = loop.call_soon_threadsafe(self.loop.create_task, task_info.function())
-			task_info.task = task
-			self._tasks[task] = task_info
-			assert len(self._tasks) == 1
-		task.add_done_callback(self._set_result)
-		future = task_info.future
-		def future_done(future):
-			if future.cancelled():
-				task.cancel()
-		future.add_done_callback(future_done)
-		return future
+
+			# Define a function to create the task
+			def create_task():
+				task = self.loop.create_task(task_info.function())
+				task_info.task = task
+				self._tasks[task] = task_info
+				assert len(self._tasks) == 1
+				task.add_done_callback(self._set_result)
+
+				future = task_info.future
+
+				def future_done(future):
+					if future.cancelled():
+						task.cancel()
+
+				future.add_done_callback(future_done)
+				return future
+
+			# Schedule the task creation in a thread-safe manner
+			loop = self.loop
+			log.debug("Acquired the loop")
+			# future = asyncio.run_coroutine_threadsafe(create_task(), loop).result()
+			future = create_task()
+			return future
 
 	def _set_result(self, task):
 		task_info = self._tasks.pop(task)
