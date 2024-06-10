@@ -1,8 +1,10 @@
 import json
 from abc import ABC
 
+from utils.debug.trackable_resource import *
 
-class Module(ABC):
+
+class Module(TrackableResource, ABC):
 	def __init__(self, module_name, *args, **kwargs):
 		assert isinstance(module_name, str)
 		self.module_name = module_name
