@@ -7,11 +7,14 @@ from enum import IntEnum
 class LogLevel(IntEnum):
 	VERBOSE = 0
 	DEBUG = 1
-	INFO = 2
-	WARNING = 3
-	ERROR = 4
-	CRITICAL = 5
-	PRINT = 6
+	LOOP_VERBOSE = 2 # Loop iterations that spam significantly
+	LOOP = 3 # Loop iterations
+	INFO = 4
+	SUCCESS = 5
+	WARNING = 6
+	ERROR = 7
+	CRITICAL = 8
+	PRINT = 9
 
 	def sign(level):
 		level_str = level.name
