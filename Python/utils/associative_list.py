@@ -1,5 +1,6 @@
 from utils.ordered_dict import *
 
+
 class AssociativeList():
 	def __init__(self):
 		self._data = OrderedDict()
@@ -54,6 +55,12 @@ class AssociativeList():
 	def value_at(self, index):
 		return self._data.value_at(index)
 	
+	def remove(self, key):
+		self._tata.remove(key)
+
+	def remove_at(self, index):
+		self._data.remove_at(index)
+
 	def add(self, value):
 		key = self._id
 		self._data[key] = value
