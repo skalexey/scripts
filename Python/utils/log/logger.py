@@ -1,5 +1,6 @@
 import inspect
 import os
+import threading
 from enum import IntEnum
 
 
@@ -29,6 +30,7 @@ class LogLevel(IntEnum):
 		return cls.__members__.keys()
 
 class Logger:
+	_lock = threading.Lock()
 	def __init__(self, title=None, title_stack_level=1):
 		self.log_level = 0
 		# Take the caller script name from the stack
@@ -55,7 +57,8 @@ class Logger:
 			level_prefix = f"[{level_sign}] " if level_sign is not None else "    "
 			log_title_addition = f"[{self.log_title}]: " if self.log_title is not None else ""
 			msg = f"{level_prefix}[{current_time}] {log_title_addition}{message}"
-			print(msg)
+			with Logger._lock:
+				print(msg)
 			return msg, message, level, self.log_title, current_time
 
 	def _exec(self, expression, globals=None, locals=None):
