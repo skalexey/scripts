@@ -6,8 +6,8 @@ import weakref
 from collections import deque
 
 import utils.asyncio_utils
-from utils.debug.trackable_resource import *
 from utils.log.logger import *
+from utils.profile.trackable_resource import *
 from utils.subscription import Subscription
 
 log = Logger()

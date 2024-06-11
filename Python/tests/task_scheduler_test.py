@@ -1,12 +1,12 @@
 import sys
 
-import utils.profiler
+import utils.profile.profiler
 import utils.text
 from utils.log.logger import *
 from utils.task_scheduler import *
 
 log = Logger()
-profiler = utils.profiler.TimeProfiler()
+profiler = utils.profile.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 
 def title(text):

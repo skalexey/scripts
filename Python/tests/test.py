@@ -1,14 +1,14 @@
 import inspect
 import sys
 
-import utils.profiler
+import utils.profile.profiler
 import utils.text
 from utils.log.logger import *
 from utils.subscription import *
 
 # Caller script name from the stack
 log = Logger(title_stack_level=2)
-profiler = utils.profiler.TimeProfiler()
+profiler = utils.profile.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 
 def title(text):

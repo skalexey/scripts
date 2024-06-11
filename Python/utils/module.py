@@ -1,7 +1,7 @@
 import json
 from abc import ABC
 
-from utils.debug.trackable_resource import *
+from utils.profile.trackable_resource import *
 
 
 class Module(TrackableResource, ABC):
