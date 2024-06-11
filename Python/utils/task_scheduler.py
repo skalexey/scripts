@@ -1,17 +1,23 @@
 # TODO: Wait for the task utilization after cancelling through a future
 import asyncio
 import threading
+import time
+import weakref
 from collections import deque
-from datetime import datetime
 
 import utils.asyncio_utils
+from utils.debug.trackable_resource import *
 from utils.log.logger import *
+from utils.subscription import Subscription
 
 log = Logger()
 
 
 # This class runs any async function passed to it and returns a future that can be awaited on
-class TaskScheduler():
+class TaskScheduler(TrackableResource):
+	instances = []
+	on_update = Subscription()
+
 	def __init__(self, *args, **kwargs):
 		self.update_interval = kwargs.get("update_interval", 0.1)
 		self._tasks = {}
@@ -20,6 +26,11 @@ class TaskScheduler():
 		self._loop = None
 		self._thread_id = None
 		self._lock = threading.RLock()
+		self.on_update = Subscription()
+		def on_destroyed(ref):
+			TaskScheduler.instances.remove(ref)
+		ref = weakref.ref(self, on_destroyed)
+		TaskScheduler.instances.append(ref)
 
 	@property
 	def loop(self):
@@ -76,7 +87,11 @@ class TaskScheduler():
 			future = next(iter(self._tasks.values())).future
 			async def update_task():
 				await asyncio.sleep(self.update_interval)
+			cur = time.time()
 			future.get_loop().run_until_complete(update_task())
+			taken_time = time.time() - cur
+			self.on_update.notify(taken_time)
+			TaskScheduler.on_update.notify(self, taken_time)
 
 	def registered_task_count(self, function=None):
 		return self.task_in_work_count(function) + self.queue_size(function)
