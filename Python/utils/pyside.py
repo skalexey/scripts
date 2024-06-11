@@ -17,11 +17,11 @@ from utils.text import AbstractTextSpinner
 
 log = Logger("pyside")
 
-def select_data_file():
+def select_data_file(from_path=None):
 	file_dialog = QFileDialog()
 	file_dialog.setFileMode(QFileDialog.ExistingFiles)
 	file_dialog.setNameFilter("CSV files (*.csv)")
-	file_dialog.setDirectory("data")
+	file_dialog.setDirectory(from_path)
 	if file_dialog.exec():
 		selected_files = file_dialog.selectedFiles()
 		current_directory = os.getcwd()
