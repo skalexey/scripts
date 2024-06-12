@@ -11,10 +11,11 @@ class LogLevel(IntEnum):
 	LOOP = 3 # Loop iterations
 	INFO = 4
 	SUCCESS = 5
-	WARNING = 6
-	ERROR = 7
-	CRITICAL = 8
-	PRINT = 9
+	ATTENTION = 6
+	WARNING = 7
+	ERROR = 8
+	CRITICAL = 9
+	PRINT = 10
 
 	def sign(level):
 		level_str = level.name
