@@ -14,3 +14,7 @@ else:
 # Universal approach:
 # def find_first(iterable, condition):
 # 	return next((x for x in iterable if condition(x)), None)
+
+def fetch_dict(data, keys=None, ignore=[]):
+	_keys = keys or data.keys()
+	return {key: data[key] for key in _keys if key in data and key not in ignore}
