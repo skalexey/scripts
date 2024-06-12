@@ -4,6 +4,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -38,6 +39,11 @@ def select_data_file(from_path=None):
 def show_message(title, message):
 	log.info(f"Show message: {title}, {message}")
 	QMessageBox.information(None, title, message)
+
+def show_input_dialog(title, message, on_answer):
+	text, ok = QInputDialog.getText(None, title, message)
+	if ok:
+		on_answer(text)
 
 def create_slider_input_widget(parent_layout, label, min_value, max_value, default_value, on_changed, slider_fixed_width=None):
 	widget = QWidget()
