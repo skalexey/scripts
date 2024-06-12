@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 from utils.log.logger import *
 from utils.text import AbstractTextSpinner
 
-log = Logger("pyside")
+log = Logger()
 
 def select_data_file(from_path=None):
 	file_dialog = QFileDialog()

@@ -6,7 +6,7 @@ from utils.asyncio_utils import *
 from utils.log.logger import *
 from utils.task_scheduler import *
 
-log = Logger("asyncio_integration_test")
+log = Logger()
 
 class A(TaskScheduler):
 	def __init__(self):

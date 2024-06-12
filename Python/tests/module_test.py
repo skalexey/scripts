@@ -3,7 +3,7 @@ import sys
 import utils.module
 from utils.log.logger import *
 
-log = Logger("test_module")
+log = Logger()
 
 class Module(utils.module.Module):
 	def __init__(self):

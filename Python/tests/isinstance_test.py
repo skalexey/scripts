@@ -1,6 +1,6 @@
 from utils.log.logger import *
 
-log = Logger("inetanceof_test")
+log = Logger()
 
 class A:
 	pass

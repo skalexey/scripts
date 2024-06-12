@@ -5,7 +5,7 @@ from utils.log.logger import *
 from utils.ordered_dict import *
 from utils.plugin import *
 
-log = Logger("plugin_manager")
+log = Logger()
 class PluginManager:
 	def __init__(self, plugins_dir, app_context):
 		self.plugins_dir = plugins_dir
