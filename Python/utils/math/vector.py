@@ -33,24 +33,24 @@ class Vector():
 		# Instantiate a new object of the same class
 		return this_class([a / value for a in self.data])
 	
-	def __eq__(self, value: object) -> bool:
+	def __eq__(self, value) -> bool:
 		if value is None:
 			return False
 		return self.data == value.data
 	
-	def __ne__(self, value: object) -> bool:
+	def __ne__(self, value) -> bool:
 		return not self.__eq__(value)
 	
-	def __lt__(self, value: object) -> bool:
+	def __lt__(self, value) -> bool:
 		return self.sqmagnitude() < value.sqmagnitude()
 	
-	def __le__(self, value: object) -> bool:
+	def __le__(self, value) -> bool:
 		return self.sqmagnitude() <= value.sqmagnitude()
 	
-	def __gt__(self, value: object) -> bool:
+	def __gt__(self, value) -> bool:
 		return self.sqmagnitude() > value.sqmagnitude()
 	
-	def __ge__(self, value: object) -> bool:
+	def __ge__(self, value) -> bool:
 		return self.sqmagnitude() >= value.sqmagnitude()
 
 	def sqdistance(self, vec):
