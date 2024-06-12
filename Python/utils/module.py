@@ -1,6 +1,7 @@
 import json
 from abc import ABC
 
+from utils.decorators import no_return
 from utils.profile.trackable_resource import *
 
 
@@ -56,7 +57,7 @@ class Module(TrackableResource, ABC):
 			return False
 		return self.store_settings()
 
-	def define_setting(self, name, default, getter=None, setter=None):
+	def define_setting(self, name, default, getter=None, setter=None) -> None:
 		value = self.get_setting(name, default)
 		private_name = self._setting_private_variable_name(name)
 		# Generate the private variable
