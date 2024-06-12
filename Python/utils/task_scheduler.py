@@ -19,6 +19,7 @@ class TaskScheduler(TrackableResource):
 	on_update = Subscription()
 
 	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.update_interval = kwargs.get("update_interval", 0.1)
 		self._tasks = {}
 		self._queue = deque()
