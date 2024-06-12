@@ -12,6 +12,7 @@ class TrackableResource:
 		log.verbose(f"TrackableResource: {self}.__init__()")
 
 	def __del__(self):
-		log.verbose(f"TrackableResource: {self}.__del__()")
+		object_info = super(object, self).__str__()
+		log.verbose(f"TrackableResource: {object_info}.__del__()")
 		# Clear all resources stored in the object's attributes since overriding __del__ method changes the behavior of garbage collection
 		utils.lang.clear_resources(self)
