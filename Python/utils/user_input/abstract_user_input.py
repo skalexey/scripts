@@ -1,3 +1,8 @@
+input_function = input
+def set_input_function(func):
+	global input_function
+	input_function = func
+
 def message(title, message):
 	print(f"{title}: {message}")
 	# Wait for any key press
