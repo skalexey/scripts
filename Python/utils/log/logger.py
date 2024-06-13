@@ -19,7 +19,9 @@ class LogLevel(IntEnum):
 
 	def sign(level):
 		level_str = level.name
-		return level_str[0]
+		# Find the first letter of each part separated by _
+		split = level_str.split("_")
+		return "".join([s[0] for s in split])
 
 	@classmethod
 	def items(cls):
