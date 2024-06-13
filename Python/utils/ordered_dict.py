@@ -99,7 +99,7 @@ class OrderedDict:
 		new = OrderedDict()
 		new._dict = self._dict.copy()
 		new._list = self._list.copy()
-		new.keys = self._keys.copy()
+		new._keys = self._keys.copy()
 		return new
 
 	def update(self, other):
@@ -123,8 +123,12 @@ class OrderedDict:
 			self._list[index] = value
 
 	def __getitem__(self, key):
-		index = self._dict.get(key)
-		return self._list[index] if index is not None else None
+		if isinstance(key, slice):
+			keys = self._keys[key]
+			return [self.__getitem__(k) for k in keys]
+		else:
+			index = self._dict.get(key)
+			return self._list[index] if index is not None else None
 
 	def __delitem__(self, key):
 		self.pop(key)
