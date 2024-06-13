@@ -56,7 +56,7 @@ class AssociativeList():
 		return self._data.value_at(index)
 	
 	def remove(self, key):
-		self._tata.remove(key)
+		self._data.remove(key)
 
 	def remove_at(self, index):
 		self._data.remove_at(index)
