@@ -2,6 +2,7 @@ from utils.log.logger import *
 from utils.subscription import *
 
 g_on_log_level = [Subscription() for _ in range(len(LogLevel))]
+g_on_log = Subscription()
 
 # Generate global subscriptions g_on_<log_level> for each log level and override the log_<log_level> methods to notify the subscription
 def _init():
@@ -17,6 +18,7 @@ def _init():
 	def log(self, msg, level=LogLevel.PRINT):
 		result = base_log(self, msg, level)
 		g_on_log_level[level.value].notify(result)
+		g_on_log.notify(result)
 		return result
 	Logger.log = log
 _init()
