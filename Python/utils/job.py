@@ -8,6 +8,9 @@ class Job:
 		self.on_cancel = Subscription()
 
 	def update(self, dt):
+		if self.is_done():
+			self.on_done.notify()
+			return True
 		return False
 
 	def is_done(self):
@@ -31,7 +34,4 @@ class TimedJob(Job):
 
 	def update(self, dt):
 		self.time_elapsed += dt
-		if self.is_done():
-			self.on_done.notify()
-			return True
-		return False
+		return super().update(dt)
