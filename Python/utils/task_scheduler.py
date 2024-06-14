@@ -15,7 +15,7 @@ log = Logger()
 
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskScheduler(TrackableResource):
-	instances = []
+	instances: list[weakref.ref] = []
 	on_update = Subscription()
 
 	def __init__(self, *args, **kwargs):
