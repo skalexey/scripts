@@ -140,6 +140,8 @@ class TaskScheduler(TrackableResource):
 				assert len(self._tasks) == 1
 				task.add_done_callback(self._set_result)
 
+				# log.attention(f"Added a new task {task} to the loop")
+
 				future = task_info.future
 
 				def future_done(future):
