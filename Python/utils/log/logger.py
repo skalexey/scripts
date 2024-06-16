@@ -73,7 +73,7 @@ class Logger:
 			result = exec(expression, globals, locals)
 			return result
 		except Exception as e:
-			self.log_error(f"Error evaluating expression: '{expression}'. Exception: '{e}'")
+			self.error(f"Error evaluating expression: '{expression}'. Exception: '{e}'")
 			return None
 
 	def expr(self, expression, globals = None, locals=None):
