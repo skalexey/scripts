@@ -61,13 +61,14 @@ def insert_dict(data, table_name, db_name, connection=None, cursor=None):
 	conn.commit()
 	conn.close()
 
-def create_or_alter_table_from_dict(db_name, data, table_name, primary_keys=None, connection=None, cursor=None):
+def create_or_alter_table_from_dict(db_name, data, table_name, primary_keys=None, composite_indexes=None, connection=None, cursor=None):
 	"""
 	Function to create or alter a SQLite table based on a given JSON object.
 	- data: JSON object (dictionary)
 	- table_name: Name of the SQLite table
 	- db_name: SQLite database file name
 	- primary_keys: Set of primary key fields (columns)
+	- composite_indexes: Array of arrays where each inner array specifies fields for a composite index (optional)
 	"""
 	# Backup the database first
 	backup_database(db_name)
@@ -90,13 +91,13 @@ def create_or_alter_table_from_dict(db_name, data, table_name, primary_keys=None
 
 	# Add new columns
 	for column_name in columns_to_add:
+		log.attention(f"Altering table '{table_name}': Added column '{column_name}'")
 		cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} TEXT")
-		log.attention(f"Added column: {column_name}")
 
 	# Drop columns
 	for column_name in columns_to_drop:
+		log.attention(f"Altering table '{table_name}': Dropped column '{column_name}'")
 		cur.execute(f"ALTER TABLE {table_name} DROP COLUMN {column_name}")
-		log.attention(f"Dropped column: {column_name}")
 
 	# Handle primary keys
 	if primary_keys:
@@ -111,13 +112,22 @@ def create_or_alter_table_from_dict(db_name, data, table_name, primary_keys=None
 		cur.execute(f"DROP TABLE {table_name}_backup")
 		cur.execute(f"COMMIT")
 
+	# Handle composite indexes
+	if composite_indexes:
+		for index_fields in composite_indexes:
+			index_name = '_'.join(index_fields)
+			cur.execute(f"PRAGMA index_list({table_name})")
+			indexes = cur.fetchall()
+			index_exists = any(index[1] == f"idx_{index_name}" for index in indexes)
+			if not index_exists:
+				log.attention(f"create_or_alter_table_from_dict(): Creating index 'idx_{index_name}' on table '{table_name}' ({', '.join(index_fields)})")
+				cur.execute(f"CREATE UNIQUE INDEX idx_{index_name} ON {table_name} ({', '.join(index_fields)})")
+
 	# Commit changes and close connection
 	conn.commit()
 	conn.close()
 
-	log.attention(f"Table '{table_name}' has been updated.")
-
-def query_rows(db_name, table_name, where_clause=None, params=None, connection=None, cursor=None):
+def query_rows(db_name, table_name, where_clause=None, params=None, columns=None, connection=None, cursor=None):
 	"""
 	Function to query rows from the SQLite database.
 	- db_name: SQLite database file name
@@ -130,7 +140,7 @@ def query_rows(db_name, table_name, where_clause=None, params=None, connection=N
 	conn = connection or sqlite3.connect(db_name)
 	cur = cursor or conn.cursor()
 
-	query = f"SELECT * FROM {table_name}"
+	query = f"SELECT {', '.join(columns) or '*'} FROM {table_name}"
 	if where_clause:
 		query += f" WHERE {where_clause}"
 
@@ -142,7 +152,7 @@ def query_rows(db_name, table_name, where_clause=None, params=None, connection=N
 
 	return rows, cur, conn
 
-def query_row(db_name, table_name, id, params=None, connection=None, cursor=None):
+def query_row(db_name, table_name, id, columns=None, connection=None, cursor=None):
 	"""
 	Function to query a single row from the SQLite database.
 	- db_name: SQLite database file name
@@ -152,10 +162,10 @@ def query_row(db_name, table_name, id, params=None, connection=None, cursor=None
 	- connection: Optional SQLite connection object
 	- cursor: Optional SQLite cursor object
 	"""
-	rows, cur, conn = query_rows(db_name, table_name, f"id = ?", [id], connection, cursor)
+	rows, cur, conn = query_rows(db_name, table_name, f"id = ?", [id], columns, connection, cursor)
 	return rows[0] if rows else None
 
-def query_data(db_name, table_name, where_clause=None, params=None, connection=None, cursor=None):
+def query_data(db_name, table_name, where_clause=None, params=None, columns=None, connection=None, cursor=None):
 	"""
 	Function to query data in the form of a list of dictionaries from the SQLite database.
 	- db_name: SQLite database file name
@@ -165,12 +175,12 @@ def query_data(db_name, table_name, where_clause=None, params=None, connection=N
 	- connection: Optional SQLite connection object
 	- cursor: Optional SQLite cursor object
 	"""
-	rows, cur, conn = query_rows(db_name, table_name, where_clause, params, connection, cursor)
+	rows, cur, conn = query_rows(db_name, table_name, where_clause, params, columns, connection, cursor)
 	column_names = [desc[0] for desc in cur.description]
 	data = [dict(zip(column_names, row)) for row in rows]
 	return data
 
-def query_dict(db_name, table_name, id, params=None, connection=None, cursor=None):
+def query_dict(db_name, table_name, id, columns=None, connection=None, cursor=None):
 	"""
 	Function to query a single entry from the SQLite database in the form of a dictionary.
 	- db_name: SQLite database file name
@@ -180,7 +190,7 @@ def query_dict(db_name, table_name, id, params=None, connection=None, cursor=Non
 	- connection: Optional SQLite connection object
 	- cursor: Optional SQLite cursor object
 	"""
-	data = query_data(db_name, table_name, f"id = ?", [id], connection, cursor)
+	data = query_data(db_name, table_name, f"id = ?", [id], columns, connection, cursor)
 	return data[0] if data else None
 
 class Connection:
@@ -199,10 +209,10 @@ class DictInterface(Connection):
 	def __init__(self, db_fname):
 		super().__init__(db_fname)
 
-	def create_or_alter_table(self, data, table_name):
-		create_or_alter_table_from_dict(self.db_fname, data, table_name, primary_keys, self.connection, self.cursor)
+	def create_or_alter_table(self, data, table_name, primary_keys=None, composite_indexes=None):
+		create_or_alter_table_from_dict(self.db_fname, data, table_name, primary_keys, composite_indexes, self.connection, self.cursor)
 
-	def insert(self, data):
+	def insert(self, data, table_name):
 		insert_dict(data, table_name, self.db_fname, self.connection, self.cursor)
 
 	def query(self, table_name, where_clause=None, params=None):
