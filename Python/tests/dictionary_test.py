@@ -11,6 +11,8 @@ def keys_test():
 	keys_copy = list(dictionary.keys())
 	keys_copy.append("country")
 	log(keys_copy)
+	keys = dictionary.keys()
+	log("Here" if "name" in keys else "Not Here")
 	log(title("End of Dictionary Keys Test"))
 
 def test():
