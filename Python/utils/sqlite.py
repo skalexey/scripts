@@ -47,12 +47,12 @@ def construct_where(where, params, **kwargs):
 			keys = condition_keys(where)
 			_where = dict(zip(keys, params or []))
 	elif isinstance(where, dict):
-		if params is None:
+		if params is not None:
 			raise Exception("Params must not be provided if where is a dictionary")
 	if kwargs:
 		_where = _where.update(kwargs) if _where else kwargs
-		_params = list(_where.values())
 	if isinstance(_where, dict):
+		_params = list(_where.values())
 		_where = ' AND '.join(f"{key} = ?" for key in _where.keys())
 	return _where, _params or []
 
@@ -124,9 +124,9 @@ def update(table_name, data, where=None, params=None, db_name=None, connection=N
 	- connection: Optional SQLite connection object
 	- cursor: Optional SQLite cursor object
 	"""
-	update_query, _params = update_query(table_name, data, where, params)
+	query, _params = update_query(table_name, data, where, params)
 	conn, cur = get_or_alloc_conn_cur(db_name, connection, cursor)
-	cur.execute(update_query, _params)
+	cur.execute(query, _params)
 	conn.commit()
 	if connection is None and cursor is None:
 		conn.close()
@@ -271,6 +271,7 @@ def query_rows(table_name, where=None, params=None, columns=None, statement="SEL
 		query += f" WHERE {_where}"
 
 	cur.execute(query, _params)
+	conn.commit()
 
 	if statement == 'SELECT':
 		result = cur.fetchall()
@@ -360,30 +361,30 @@ class Connection:
 		backup_database(self.db_fname, addition, datetime_format)
 
 	def query(self, table_name, where=None, params=None, statement="SELECT", **kwargs):
-		return query_rows(table_name, where, params, statement, cursor=self.cursor(), **kwargs)[0]
+		return query_rows(table_name, where, params, statement, connection=self.connection, cursor=self.cursor(), **kwargs)[0]
 	
 	def delete(self, table_name, where=None, params=None, **kwargs):
-		return query_rows(table_name, where, params, statement="DELETE", cursor=self.cursor(), **kwargs)[0]
+		return query_rows(table_name, where, params, statement="DELETE", connection=self.connection, cursor=self.cursor(), **kwargs)[0]
 
 	def query_row(self, table_name, id, columns=None, statement="SELECT"):
-		return query_row(table_name, id, columns, statement, cursor=self.cursor())[0]
+		return query_row(table_name, id, columns, statement, connection=self.connection, cursor=self.cursor())[0]
 
 	def insert(self, data, table_name, **kwargs):
 		return insert(data, table_name, self.db_fname, connection=self.connection, cursor=self.cursor(), **kwargs)
 
-	def update(self, data, table_name, where=None, params=None):
-		return update(table_name, where, params, cursor=self.cursor())[0]
+	def update(self, table_name, data, where=None, params=None):
+		return update(table_name, data, where, params, connection=self.connection, cursor=self.cursor())
 
 
 class DictInterface(Connection):
-	def __init__(self, db_fname):
-		super().__init__(db_fname)
+	def __init__(self, db_fname, *args, **kwargs):
+		super().__init__(db_fname, *args, **kwargs)
 
 	def create_or_alter_table(self, table_name, data, addition=None, primary_keys=None, composite_indexes=None):
 		create_or_alter_table_from_dict(self.db_fname, table_name, data, addition, primary_keys, composite_indexes, connection=self.connection, cursor=self.cursor())
 
 	def query(self, table_name, where=None, params=None, columns=None, statement="SELECT", **kwargs):
-		return query_data(table_name, where, params, columns, statement, cursor=self.cursor(), **kwargs)[0]
+		return query_data(table_name, where, params, columns, statement, connection=self.connection, cursor=self.cursor(), **kwargs)[0]
 
 	def query_dict(self, table_name, rowid=None, where=None, params=None, statement="SELECT", **kwargs):
-		return query_dict(table_name, rowid, where, params, statement=statement, cursor=self.cursor(), **kwargs)[0]
+		return query_dict(table_name, rowid, where, params, statement=statement, connection=self.connection, cursor=self.cursor(), **kwargs)[0]
