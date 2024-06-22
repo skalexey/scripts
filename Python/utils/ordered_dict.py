@@ -1,8 +1,24 @@
-class OrderedDict:
-	def __init__(self):
-		self._dict = {}
-		self._list = []
-		self._keys = []
+import collections
+from functools import total_ordering
+
+from utils.serialize import Serializable
+
+
+@total_ordering
+class OrderedDict(Serializable):
+	def __init__(self, list=None, keys=None):
+		self._list = list or []
+		self._keys = keys or []
+		self._dict = {key: index for index, key in enumerate(self._keys)}
+		super().__init__(assign_attrs=False) # Assign manually, since assigning algorithm uses collection, an can be configured with OrderedDict
+
+	def _serialize_mapping(self):
+		mapping = super()._serialize_mapping()
+		mapping.update({
+			"list": "_list",
+			"keys": "_keys"
+		})
+		return mapping
 
 	def index(self, key):
 		index = self._dict.get(key)
@@ -10,28 +26,63 @@ class OrderedDict:
 			return -1
 		return index
 	
-	def get(self, key, default=None):
-		value = self[key]
-		if value is None:
-			return default
-		return value
-
 	def insert(self, index, key, value):
 		if key in self._dict:
 			raise KeyError(f"Key '{key}' already exists")
 		if index < len(self._list):
-			for key, value in self._dict.items():
-				if value >= index:
-					self._dict[key] += 1
+			for k, v in self._dict.items():
+				if v >= index:
+					self._dict[k] += 1
 		self._dict[key] = index
 		self._list.insert(index, value)
 		self._keys.insert(index, key)
+
+	def set_at(self, index, key, value):
+		if index < 0 or index >= len(self._list):
+			raise IndexError(f"OrderedDict: Index out of range({index})")
+		self._keys[index] = key
+		self._list[index] = value
+		self._dict[key] = index
+
+	def __setitem__(self, key, value):
+		index = self._dict.get(key)
+		if index is None:
+			index = len(self._list)
+			self._list.append(value)
+			self._keys.append(key)
+			self._dict[key] = index
+		else:
+			self._list[index] = value
 
 	def add(self, key, value):
 		if key not in self._dict:
 			self[key] = value
 			return True
 		return False
+
+	def setdefault(self, key, default=None):
+		if key not in self._dict:
+			self[key] = default
+		return self[key]
+
+	def update(self, other):
+		if isinstance(other, OrderedDict):
+			self._dict.update(other._dict)
+			self._list.extend(other._list)
+			self._keys.extend(other.keys)
+		elif isinstance(other, (dict, collections.OrderedDict)):
+			for key, value in other.items():
+				self[key] = value
+		else:
+			for key, value in other:
+				self[key] = value
+
+	def copy(self):
+		new = OrderedDict()
+		new._dict = self._dict.copy()
+		new._list = self._list.copy()
+		new._keys = self._keys.copy()
+		return new
 
 	def sort(self, pred):
 		items = list(self.items())
@@ -43,14 +94,6 @@ class OrderedDict:
 	def at(self, index):
 		return (self._keys[index], self._list[index])
 	
-	def set_at(self, index, key, value):
-		if index < 0 or index >= len(self._list):
-			raise IndexError(f"OrderedDict: Index out of range({index})")
-		del self._dict[self._keys[index]]
-		self._keys[index] = key
-		self._list[index] = value
-		self._dict[key] = index
-		
 	def value_at(self, index):
 		return self._list[index]
 
@@ -63,10 +106,10 @@ class OrderedDict:
 		del self._dict[key]
 		return key, value
 
-	def pop(self, key):
+	def pop(self, key, default=None):
 		index = self._dict.get(key)
 		if index is None:
-			return None
+			return default
 		del self._keys[index]
 		del self._dict[key]
 		value = self._list.pop(index)
@@ -95,40 +138,17 @@ class OrderedDict:
 		self._list.clear()
 		self._keys.clear()
 
-	def copy(self):
-		new = OrderedDict()
-		new._dict = self._dict.copy()
-		new._list = self._list.copy()
-		new._keys = self._keys.copy()
-		return new
-
-	def update(self, other):
-		self._dict.update(other._dict)
-		self._list.extend(other._list)
-		self._keys.extend(other.keys)
-
-	def setdefault(self, key, default=None):
-		if key not in self._dict:
-			self[key] = default
-		return self[key]
-	
-	def __setitem__(self, key, value):
+	def get(self, key, default=None):
 		index = self._dict.get(key)
-		if index is None:
-			index = len(self._list)
-			self._list.append(value)
-			self._keys.append(key)
-			self._dict[key] = index
-		else:
-			self._list[index] = value
+		return self._list[index] if index is not None else default
 
 	def __getitem__(self, key):
 		if isinstance(key, slice):
 			keys = self._keys[key]
 			return [self.__getitem__(k) for k in keys]
 		else:
-			index = self._dict.get(key)
-			return self._list[index] if index is not None else None
+			index = self._dict[key]
+			return self._list[index]
 
 	def __delitem__(self, key):
 		self.pop(key)
@@ -156,25 +176,26 @@ class OrderedDict:
 		return str(self._dict)
 
 	def __repr__(self):
-		return repr(self._dict)
+		return f"utils.OrderedDict({self._dict})"
 
 	def __eq__(self, other):
-		return self._dict == other._dict
-
-	def __ne__(self, other):
-		return self._dict != other._dict
+		if not isinstance(other, OrderedDict):
+			return False
+		if len(self) != len(other):
+			return False
+		if self._dict != other._dict:
+			return False
+		if self._list != other._list:
+			return False
+		return True
 
 	def __lt__(self, other):
-		return self._dict < other._dict
-
-	def __le__(self, other):
-		return self._dict <= other._dict
-
-	def __gt__(self, other):
-		return self._dict > other._dict
-
-	def __ge__(self, other):
-		return self._dict >= other._dict
+		if isinstance(other, OrderedDict):
+			return self._dict < other._dict
+		if isinstance(other, list):
+			return self._list < other
+		# It will raise a builtin exception
+		return self._dict < other
 
 	def __add__(self, other):
 		new = self.copy()
