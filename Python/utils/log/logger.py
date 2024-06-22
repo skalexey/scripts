@@ -3,6 +3,8 @@ import os
 import threading
 from enum import IntEnum
 
+import utils.inspect_utils as inspect_utils
+
 
 class LogLevel(IntEnum):
 	VERBOSE = 0
@@ -69,34 +71,41 @@ class Logger:
 				print(msg)
 			return msg, message, level, self.log_title, current_time
 
+	def _globals_locals(self, globals=None, locals=None):
+		if globals is None or locals is None:
+			frame = inspect_utils.user_frame(self)
+			_globals = frame.f_globals if globals is None else globals
+			_locals = frame.f_locals if locals is None else locals
+			return _globals, _locals
+		return globals, locals
+
 	def _exec(self, expression, globals=None, locals=None):
 		try:
-			result = exec(expression, globals, locals)
+			_globals, _locals = self._globals_locals(globals, locals)
+			exec(expression, _globals, _locals)
+		except Exception as e:
+			self.error(f"Error executing expression: '{expression}': '{e}'")
+		
+	def _eval(self, expression, globals=None, locals=None):
+		try:
+			_globals, _locals = self._globals_locals(globals, locals)
+			result = eval(expression, _globals, _locals)
 			return result
 		except Exception as e:
-			self.error(f"Error evaluating expression: '{expression}'. Exception: '{e}'")
+			self.error(f"Error evaluating expression: '{expression}': '{e}'")
 			return None
 
-	def expr(self, expression, globals = None, locals=None):
-		# Take the globals from the stack
-		if globals is None or locals is None:
-			frame = inspect.stack()[1].frame
-			globals_to_take = frame.f_globals if globals is None else globals
-			locals_to_take = frame.f_locals if locals is None else locals
-		else:
-			globals_to_take = globals
-			locals_to_take = locals
+	def expr(self, expression, globals=None, locals=None):
 		self.log(expression)
-		result = self._exec(expression, globals_to_take, locals_to_take)
-		return result
+		self._exec(expression, globals, locals)
 	
 	def expr_val(self, expression, globals, locals):
-		result = self._exec(expression, globals, locals)
+		result = self._eval(expression, globals, locals)
 		self.log(result)
 		return result
 
-	def expr_and_val(self, expression, globals = None, locals=None):
-		result = self._exec(expression, globals, locals)
+	def expr_and_val(self, expression, globals=None, locals=None):
+		result = self._eval(expression, globals, locals)
 		self.log(f"{expression}: {result}")
 		return result
 
