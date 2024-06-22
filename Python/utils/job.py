@@ -6,6 +6,7 @@ class Job:
 	def __init__(self, *args, **kwargs):
 		self.on_done = Subscription()
 		self.on_cancel = Subscription()
+		super().__init__(*args, **kwargs)
 
 	def update(self, dt):
 		if self.is_done():
@@ -20,14 +21,14 @@ class Job:
 		self.on_cancel.notify()
 
 class TimedJob(Job):
-	def __init__(self, duration = None, duration_range=None):
-		super().__init__()
+	def __init__(self, duration = None, duration_range=None, *args, **kwargs):
 		self.time_elapsed = 0
 		if duration is not None:
 			self.duration = duration
 		else:
 			range = duration_range if duration_range is not None else Range(0.4, 3.6)
 			self.duration = range.random()
+		super().__init__(*args, **kwargs)
 
 	def is_done(self):
 		return self.time_elapsed >= self.duration

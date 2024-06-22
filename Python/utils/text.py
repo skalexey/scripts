@@ -16,6 +16,7 @@ class AbstractTextSpinner(ABC):
 		self.frame_index = 0
 		self.frame_period = 0.1
 		self._time_since_last_frame = 0
+		# Don't call super().__init__() here since there are nuances with Qt subclasses initialization
 
 	@property
 	def frame_index(self):

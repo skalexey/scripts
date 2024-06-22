@@ -332,10 +332,11 @@ def query_dict(table_name, rowid=None, where=None, params=None, columns=None, st
 	return tuple(result)
 
 class CursorWrapper:
-	def __init__(self, cursor, lock):
+	def __init__(self, cursor, lock, *args, **kwargs):
 		self._cursor = cursor
 		self._lock = lock
 		self._lock.acquire()
+		super().__init__(*args, **kwargs)
 
 	def __del__(self):
 		self._lock.release()
@@ -346,10 +347,11 @@ class CursorWrapper:
 		return getattr(self._cursor, name)
 
 class Connection:
-	def __init__(self, db_fname):
+	def __init__(self, db_fname, *args, **kwargs):
 		self._lock = threading.RLock()
 		self.db_fname = db_fname
 		self.connection = sqlite3.connect(db_fname, check_same_thread=False)
+		super().__init__(*args, **kwargs)
 	
 	def cursor(self):
 		return CursorWrapper(self.connection.cursor(), self._lock)

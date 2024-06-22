@@ -42,6 +42,7 @@ class Logger:
 		self.log_level = 0
 		# Take the caller script name from the stack
 		self.log_title = title if title is not None else os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0]
+		super().__init__()
 
 	def set_log_title(self, title):
 		self.log_title = title

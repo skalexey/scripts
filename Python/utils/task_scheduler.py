@@ -46,6 +46,7 @@ class TaskScheduler(TrackableResource):
 			self.function = function
 			self.task = task
 			self.future = future or utils.asyncio_utils.get_event_loop().create_future()
+			super().__init__()
 			# self.future = future or asyncio.Future()
 
 	def schedule_task(self, async_function, max_queue_size=0):

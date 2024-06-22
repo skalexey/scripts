@@ -10,6 +10,7 @@ class Module(TrackableResource, ABC):
 		assert isinstance(module_name, str)
 		self.module_name = module_name
 		self._settings = None
+		super().__init__(*args, **kwargs)
 
 	# No need to call this class on_* methods in derived classes. It is done automatically by the module manager.
 	def call_if_defined(self, method_name, *args, **kwargs):

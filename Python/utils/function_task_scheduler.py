@@ -10,12 +10,14 @@ class FunctionTaskScheduler:
 		self.update_interval = kwargs.get("update_interval", 0.1)
 		self._tasks = {}
 		self._functions = {}
+		super().__init__(*args, **kwargs)
 
 	class FunctionInfo:
-		def __init__(self, function, future=None):
+		def __init__(self, function, future=None, *args, **kwargs):
 			self.function = function
 			self.future = future
 			self.queue = deque()
+			super().__init__(*args, **kwargs)
 		
 	def schedule_task(self, async_function, max_queue_size=0):
 		future = None

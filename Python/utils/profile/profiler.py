@@ -6,6 +6,7 @@ class TimeProfiler:
 		self.start_time = None
 		self.last_time = None
 		self._print_function = print
+		super().__init__()
 	
 	def start(self):
 		self.start_time = time.time()

@@ -20,12 +20,13 @@ class Subscription:
 			Subscription._cb_id += 1
 		return cb_id
 
-	def __init__(self):
+	def __init__(self, *args, **kwargs):
 		self._data = OrderedDict()
 		self._lock = threading.RLock()
+		super().__init__(*args, **kwargs)
 
 	class CallableInfo:
-		def __init__(self, callable, subscriber, id=None, on_callable_destroyed=None, max_calls=None, unsubscribe_on_false=False):
+		def __init__(self, callable, subscriber, id=None, on_callable_destroyed=None, max_calls=None, unsubscribe_on_false=False, *args, **kwargs):
 			# Detect if callable is a bound method
 			self.callable_ref = weakref.ref(callable, on_callable_destroyed)
 			_subscriber = subscriber if subscriber is not None else utils.lang.extract_self(callable)
@@ -35,6 +36,7 @@ class Subscription:
 			self._call_count = 0
 			self.unsubscribe_on_false = unsubscribe_on_false
 			self._is_valid = True
+			super().__init__(*args, **kwargs)
 		
 		def __repr__(self):
 			return f"{self.__class__.__name__}(id={self.id}, callable='{self.callable}', subscriber='{self.subscriber}')"

@@ -7,10 +7,11 @@ from utils.plugin import *
 
 log = Logger()
 class PluginManager:
-	def __init__(self, plugins_dir, app_context):
+	def __init__(self, plugins_dir, app_context, *args, **kwargs):
 		self.plugins_dir = plugins_dir
 		self.plugins = OrderedDict()
 		self.app_context = app_context
+		super().__init__(*args, **kwargs)
 
 	def load_plugins(self):
 		log.info(f"Loading plugins from '{self.plugins_dir}'")

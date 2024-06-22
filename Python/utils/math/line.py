@@ -6,6 +6,7 @@ class Line():
 	def __init__(self, point1, point2):
 		assert point1 != point2	
 		self.points = [point1, point2]
+		super().__init__()
 
 	def __repr__(self):
 		return f"Line({self.points})"

@@ -7,6 +7,7 @@ def clamp(value, _min, _max):
 class Range:
 	def __init__(self, min, max=None):
 		self.data = [min, max if max is not None else min]
+		super().__init__()
 	
 	def size(self):
 		return abs(self.data[1] - self.data[0])

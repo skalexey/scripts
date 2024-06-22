@@ -8,7 +8,8 @@ class TrackableResource:
 		super_repr = super().__repr__()
 		return f"{self.__class__.__name__}({super_repr})"
 
-	def __init__(self):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		log.verbose(f"TrackableResource: {self}.__init__()")
 
 	def __del__(self):

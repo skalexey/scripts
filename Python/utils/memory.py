@@ -7,7 +7,7 @@ from utils.log.logger import *
 log = Logger()
 
 class WeakCallable:
-	def __init__(self, cb, owner=None):
+	def __init__(self, cb, owner=None, *args, **kwargs):
 		def on_destroyed(ref):
 			log.warning(f"Callable has been garbage collected")
 		if owner is not None:
@@ -33,6 +33,7 @@ class WeakCallable:
 				else:
 					log.debug(f"Owner has been garbage collected")
 		self._ref = weakref.ref(cb, on_destroyed)
+		super().__init__(*args, **kwargs)
 
 	def __call__(self, *args, **kwargs):
 		cb = self._ref()

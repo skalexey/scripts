@@ -7,8 +7,9 @@ def iterate_components(any1, any2):
 	return zip(data1, data2)
 
 class Vector():
-	def __init__(self, data=[]):
-		self.data = data
+	def __init__(self, data=None):
+		self.data = data or []
+		super().__init__()
 
 	def __repr__(self):
 		return f"Vector({self.data})"

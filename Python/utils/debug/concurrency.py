@@ -10,6 +10,7 @@ class ThreadInfo:
 		self.thread = thread
 		self.id = thread.ident
 		self.name = thread.name
+		super().__init__()
 
 	def __str__(self):
 		return f"ThreadInfo(id={self.id}, name={self.name})"
@@ -28,6 +29,7 @@ class ConcurrentEntity(ABC):
 		self._sytem_lock = threading.RLock()
 		self._system_lock_timeout = 100
 		self._threads = {}
+		super().__init__()
 
 	@abstractmethod
 	def acquire_impl(self, *args, **kwargs):
