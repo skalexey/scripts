@@ -89,6 +89,19 @@ def create_line_input_widget(parent_layout, label, default_value=None, on_change
 		line_edit.textChanged.connect(on_text_changed)
 	return widget, line_edit
 
+def create_checkbox_widget(parent_layout, label, default_value, on_changed):
+	widget = QWidget()
+	layout = QHBoxLayout()
+	parent_layout.addWidget(widget)
+	widget.setLayout(layout)
+	checkbox = QCheckBox(label)
+	checkbox.setChecked(default_value)
+	layout.addWidget(checkbox)
+	def on_state_changed(state):
+		on_changed(state == Qt.Checked.value)
+	checkbox.stateChanged.connect(on_state_changed)
+	return widget, checkbox
+
 class CombinedMeta(type(QLabel), type(AbstractTextSpinner)):
 	pass
 		
