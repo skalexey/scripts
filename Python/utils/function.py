@@ -1,7 +1,5 @@
 import inspect
 
-import utils.collection_utils as collection_utils
-import utils.function
 import utils.inspect_utils as inspect_utils
 
 
@@ -14,8 +12,8 @@ def args(out=None, validate=True, custom_frame=None):
 	positional_vars = []
 	missing_args = []
 	for key, value in result.items():
-		arg = _locals.get(key, None)
-		if arg is None:
+		arg = _locals.get(key, inspect.Parameter.empty)
+		if arg is inspect.Parameter.empty:
 			if validate:
 				missing_args.append(key)
 			continue
@@ -32,14 +30,14 @@ def args(out=None, validate=True, custom_frame=None):
 		for k, v in var.items():
 			if k in result:
 				# This case should never happen, so this check is only for integrity
-				raise ValueError(utils.function.msg(f"Unexpected error: Duplicated argument passed through kwargs: '{k}'"))	
+				raise ValueError(msg(f"Unexpected error: Duplicated argument passed through kwargs: '{k}'"))	
 			result[k] = v
 	for var in positional_vars:
-		raise ValueError(utils.function.msg(f"Unexpected error: Positional arguments are not supported: '{var}'"))
+		raise ValueError(msg(f"Unexpected error: Positional arguments are not supported: '{var}'"))
 	if validate:
 		# Check for missing arguments
 		if missing_args:
-			raise ValueError(utils.function.msg(f"Missed arguments while carrying over: {missing_args}"))
+			raise ValueError(msg(f"Missed arguments while carrying over: {missing_args}"))
 	return result
 
 def msg(msg):
