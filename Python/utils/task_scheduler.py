@@ -51,15 +51,13 @@ class TaskScheduler(TrackableResource):
 
 	def schedule_task(self, async_function, max_queue_size=0):
 		with self._lock:
-			queue_size = len(self._queue)
-			registered_task_count = queue_size + (1 if self._current_task_info is None else 0)
+			registered_task_count = self.registered_task_count(async_function)
 			return self._schedule_task(async_function, registered_task_count, max_queue_size)
 	
 	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
 	def schedule_function(self, async_function, max_queue_size=0):
 		with self._lock:
-			enqueued_function_count = self.queue_size(async_function)
-			registered_function_count = enqueued_function_count + (1 if self._current_task_info is not None and self._current_task_info.function == async_function else enqueued_function_count)
+			registered_function_count = self.registered_task_count(async_function)
 			return self._schedule_task(async_function, registered_function_count, max_queue_size)
 
 	def run_parallel_task(self, async_function):
@@ -154,7 +152,6 @@ class TaskScheduler(TrackableResource):
 
 			# Schedule the task creation in a thread-safe manner
 			loop = self.loop
-			log.debug("Acquired the loop")
 			# future = asyncio.run_coroutine_threadsafe(create_task(), loop).result()
 			future = create_task()
 			return future
