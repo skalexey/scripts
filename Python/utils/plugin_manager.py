@@ -21,13 +21,14 @@ class PluginManager:
 				plugin_module = importlib.import_module(f"{self.plugins_dir}.{plugin_name}")
 				for name in dir(plugin_module):
 					obj = getattr(plugin_module, name)
-					if hasattr(obj, '__bases__') and Plugin in obj.__bases__:
-						# Check if the plugin name ends with "_plugin"
-						if not plugin_name.endswith("_plugin"):
-							raise ValueError(f"Plugin name '{plugin_name}' must end with '_plugin'")
-						log.info(f" Loading plugin '{plugin_name}'")
-						inst = obj(plugin_name, self.app_context)
-						self.plugins[plugin_name] = inst
+					if inspect.isclass(obj):
+						if hasattr(obj, '__bases__') and Plugin in obj.__bases__:
+							# Check if the plugin name ends with "_plugin"
+							if not plugin_name.endswith("_plugin"):
+								raise ValueError(f"Plugin name '{plugin_name}' must end with '_plugin'")
+							log.info(f" Loading plugin '{plugin_name}'")
+							inst = obj(plugin_name, self.app_context)
+							self.plugins[plugin_name] = inst
 
 	def get_plugin(self, name):
 		return self.plugins.get(name)
