@@ -6,8 +6,17 @@ import re
 def is_primitive(value):
 	return isinstance(value, (int, str, bool, float, type(None)))
 
+def is_dictionary(value):
+	return isinstance(value, (dict, collections.OrderedDict))
+
+def is_list(value):
+	return isinstance(value, list)
+
+def is_collection(value):
+	return is_dictionary(value) or is_list(value)
+
 def is_serializable(value):
-	return is_primitive(value) or isinstance(value, (list, dict, collections.OrderedDict))
+	return is_primitive(value) or is_collection(value)
 
 # Load with pre-check to avoid capturing raised exceptions
 # TODO: optimize-out pattern check for release environment
