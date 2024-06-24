@@ -2,11 +2,13 @@ import inspect
 
 import utils.function
 import utils.inspect_utils as inspect_utils
+from utils.ordered_dict import OrderedDict
 
 
 def args(out=None, validate=True, custom_frame=None):
 	result = utils.function.args(out, validate, custom_frame=(custom_frame or inspect_utils.caller_frame()))
-	result.pop('self', None)
+	assert len(result) > 0, f"Method has no self or cls parameter"
+	result.remove_at(0)
 	return result
 
 # Goes through the MRO and collects all the parameters of the method implementations in its class hierarchy
@@ -14,7 +16,7 @@ def chain_params(method, base_class=None, out=None):
 	class_hierarchy = inspect.getmro(inspect_utils.cls(method))
 	if base_class:
 		class_hierarchy = [cls for cls in class_hierarchy if issubclass(cls, base_class) and cls != base_class]
-	result = out or {}
+	result = out or OrderedDict()
 	for cls in class_hierarchy:
 		cls_method = cls.__dict__.get(method.__name__)
 		if cls_method is not None:
