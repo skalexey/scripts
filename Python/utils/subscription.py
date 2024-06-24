@@ -182,18 +182,20 @@ class Subscription:
 		self.unsubscribe(cb_id)
 		return event.is_set()
 
-	def _unsubscribe_callable(self, cb_or_id, subscriber=None):
+	def _unsubscribe_callable(self, any, subscriber=None):
 		unsubscribe_ids = []
 		result = False
 		with self._lock:
 			for cb_id, cb in self._data.items():
-				if isinstance(cb_or_id, int):
-					compare_result = cb_id == cb_or_id
-				elif isinstance(cb_or_id, self.CallableInfo):
-					compare_result = cb == cb_or_id
-				else:
-					cb_to_compare = self.CallableInfo(callable, subscriber)
+				if isinstance(any, int):
+					compare_result = cb_id == any
+				elif isinstance(any, self.CallableInfo):
+					compare_result = cb == any
+				elif callable(any):
+					cb_to_compare = self.CallableInfo(any, subscriber)
 					compare_result = cb == cb_to_compare
+				else:
+					compare_result = cb.subscriber == any
 				if compare_result:
 					unsubscribe_ids.append(cb_id)
 					result = True
