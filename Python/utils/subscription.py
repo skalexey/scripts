@@ -147,7 +147,7 @@ class Subscription:
 		result = False
 		with self._lock:
 			if isinstance(cb_or_id, int):
-				cb = self._data.pop(cb_or_id)
+				cb = self._data.pop(cb_or_id, None)
 				if cb is not None:
 					result = True
 			else:
