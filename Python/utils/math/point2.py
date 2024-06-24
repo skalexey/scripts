@@ -2,21 +2,35 @@ from .point import *
 
 
 class Point2(Point):
-	def __init__(self, *args):
+	def __init__(self, *args, **kwargs):
 		super().__init__()
-
+		x = kwargs.get("x", None)
+		y = kwargs.get("y", None)
+		data = kwargs.get("data", None)
+		if data is not None and (x is not None or y is not None):
+			raise ValueError(utils.function.msg("Cannot provide both data and x, y"))
 		if len(args) == 2:
 			# If two arguments are provided, assume they are x and y coordinates
-			self.data = list(args)
+			if x is not None or y is not None:
+				raise ValueError(utils.function.msg("Multiple values for x, y provided"))
+			if data is not None:
+				raise ValueError(utils.function.msg("data was provided though kwargs having x, y provided positionally"))
+			data = args
 		elif len(args) == 1:
 			# If only one argument is provided, assume it is a list or tuple containing x and y coordinates
-			assert len(args[0]) == 2, "Data must contain exactly two elements"
-			self.data = list(args[0])
+			if len(args[0]) != 2:
+				raise ValueError(utils.function.msg("Data must contain exactly two elements"))
+			if data is not None:
+				raise ValueError(utils.function.msg("Multiple values for data provided"))
+			data = list(args[0])
 		elif len(args) == 0:
-			# If no arguments are provided, assume the point is at the origin
-			self.data = [0, 0]
+			# If no arguments provided, assume the point is at the origin
+			data = [0, 0]
 		else:
-			raise ValueError("Invalid number of arguments")
+			raise ValueError(utils.function.msg("Invalid number of arguments"))
+		if self.data is None:
+			raise ValueError(utils.function.msg("Unexpected error"))
+		self.data = data
 	
 	def _get_x(self):
 		return self.data[0]
