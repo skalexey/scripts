@@ -25,7 +25,8 @@ def signature_input(func, out=None, filter=None):
 
 def method_parameters(method, out=None):
 	params = function_parameters(method, out)
-	params.pop('self', None)
+	assert len(params) > 0, f"Method '{method.__name__}' has no self or cls parameter"
+	params.remove_at(0)
 	return params
 
 def current_function_signature(custom_frame=None):
@@ -178,7 +179,10 @@ def caller_frame(level=-2):
 
 # Find the frame where the provided object is used
 def user_frame(obj=None):
-	frame = None
+	return user_frame_info(obj).frame
+
+def user_frame_info(obj=None):
+	frame_info = None
 	stack = inspect.stack()
 	if obj is None:
 		_caller_frame = caller_frame()
@@ -198,7 +202,7 @@ def user_frame(obj=None):
 				break
 			if frame.f_globals.get('__name__', None) != caller_module:
 				break
-	if frame is None:
-		raise ValueError(f"Could not find the frame of where the provided object is used (self: {self})")
-	return frame
+	if frame_info is None:
+		raise ValueError(f"Could not find the frame of where the provided object is used (obj: {obj})")
+	return frame_info
 
