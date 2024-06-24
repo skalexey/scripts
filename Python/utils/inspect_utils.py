@@ -1,7 +1,7 @@
 import inspect
 import itertools
 
-import utils.ordered_dict
+import utils
 
 
 def is_value_empty(value):
