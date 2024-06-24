@@ -3,7 +3,7 @@ import os
 import threading
 from enum import IntEnum
 
-import utils.inspect_utils as inspect_utils
+import utils  # Lazy import
 
 
 class LogLevel(IntEnum):
@@ -73,7 +73,7 @@ class Logger:
 
 	def _globals_locals(self, globals=None, locals=None):
 		if globals is None or locals is None:
-			frame = inspect_utils.user_frame(self)
+			frame = utils.inspect_utils.user_frame(self)
 			_globals = frame.f_globals if globals is None else globals
 			_locals = frame.f_locals if locals is None else locals
 			return _globals, _locals
