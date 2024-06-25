@@ -2,6 +2,7 @@ import os
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
+    QCheckBox,
     QFileDialog,
     QHBoxLayout,
     QInputDialog,
@@ -25,8 +26,8 @@ def select_data_file(from_path=None):
 	file_dialog.setDirectory(from_path)
 	if file_dialog.exec():
 		selected_files = file_dialog.selectedFiles()
-		current_directory = os.getcwd()
-		file_path1 = os.path.relpath(selected_files[0], current_directory)
+		file_path1 = os.path.abspath(selected_files[0])
+		assert file_path1 == os.path.abspath(selected_files[0], os.getcwd())
 		log.info(f"Selected quote data file: {file_path1}")
 		if len(selected_files) == 2:
 			file_path2 = os.path.relpath(selected_files[1], current_directory)
@@ -64,7 +65,7 @@ def create_slider_input_widget(parent_layout, label, min_value, max_value, defau
 	def on_value_changed(value):
 		value_label.setText(str(value))
 		on_changed(value)
-	slider.valueChanged.connect(on_changed)
+	slider.valueChanged.connect(on_value_changed)
 	return widget, slider, value_label
 
 def create_line_input_widget(parent_layout, label, default_value=None, on_changed=None, input_fixed_width=None):
@@ -107,7 +108,7 @@ class CombinedMeta(type(QLabel), type(AbstractTextSpinner)):
 		
 class TextSpinner(AbstractTextSpinner, QLabel, metaclass=CombinedMeta):
 	def __init__(self, parent=None):
-		QLabel.__init__(self, parent=parent)
+		QLabel.__init__(self, parent)
 		self.setAlignment(Qt.AlignCenter)
 		AbstractTextSpinner.__init__(self)
 
