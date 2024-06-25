@@ -31,6 +31,10 @@ function create_from_template_job()
 	[ $? -ne 0 ] && log_error "Errors during template delivering at '$file_path'" && return 6
 
 	file_replace "$file_path" "\{TPL_NAME\}" "$file_name"
+	file_replace "$file_path" "\{NAME\}" "$file_name"
+	# Title example: File Name
+	title=$(echo "$file_name" | sed -r 's/(^|_)([a-z])/\U\2/g')
+	file_replace "$file_path" "\{TITLE\}" "$title"
 	[ $? -ne 0 ] && log_error "Errors during template initialization at '$file_path'" && return 7
 
 	log_success "Template '$(basename "$tpl_path")' successfully instantiated at '$file_path'"
