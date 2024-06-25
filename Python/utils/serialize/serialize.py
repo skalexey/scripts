@@ -67,43 +67,15 @@ def to_collection(result, serializer, default=NotSerializable, throw=True, overw
 			return default
 	return result
 
-def stringify_json(obj, default=NotSerializable, throw=True, overwrite=False, fpath=None):
-	if json_utils.is_serializable(obj):
-		if json_utils.is_primitive(obj):
-			return obj
-		if fpath:
-			try:
-				from utils.log.logger import Logger
-				log = Logger()
-				log.info(f"Storing json to '{fpath}'")
-				if not os.path.exists(os.path.dirname(fpath)):
-					dirpath = os.path.dirname(fpath)
-					log.info(f"Creating storage directory '{dirpath}'")
-					os.makedirs(dirpath)
-				with open(fpath, 'w') as f:
-					json.dump(obj, f, indent='\t')
-				log.success(f"Stored successfully to '{fpath}'")
-				return True
-			except Exception as e:
-				if throw:
-					raise Exception(utils.function.msg(f"Error writing to file '{fpath}': {e}"))
-				else:
-					return default
-		return json.dumps(obj, indent='\t')
-	if throw:
-		raise Exception(utils.function.msg(f"Not supported type '{type(obj)}' encountered"))
-	else:
-		return default
-	
 def to_db_data(obj, default=NotSerializable, throw=True, overwrite=False):
 	data = to_json_struct(obj, default, throw, overwrite)
 	if json_utils.is_serializable(data):
 		if json_utils.is_primitive(data):
 			return data
 		if json_utils.is_dictionary(data):
-			return to_dict(data, stringify_json, default, throw, overwrite)
+			return to_dict(data, json_utils.stringify, default, throw, overwrite)
 		elif json_utils.is_list(data):
-			return to_list(data, stringify_json, default, throw, overwrite)
+			return to_list(data, json_utils.stringify, default, throw, overwrite)
 	if throw:
 		raise Exception(utils.function.msg(f"Not supported type '{type(data)}' encountered"))
 	else:
@@ -111,7 +83,7 @@ def to_db_data(obj, default=NotSerializable, throw=True, overwrite=False):
 
 def to_json(obj, default=NotSerializable, throw=True, overwrite=False, fpath=None):
 	data = to_json_struct(obj, default, throw, overwrite)
-	return stringify_json(data, default, throw, overwrite, fpath)
+	return json_utils.stringify(data, default, throw, overwrite, fpath)
 
 def from_json(json_str=None, fpath=None, carry_over_additional_kwargs=False, parse_result_processor=None, **additional_kwargs):
 	if json_str is None:
