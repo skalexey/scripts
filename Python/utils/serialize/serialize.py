@@ -16,7 +16,8 @@ import utils.string
 
 
 class NotSerializable:
-	pass
+	def __bool__(self):
+		return False
 
 # If you want to serialize to another type, consider providing the value already converted to that type, but the type must be json-serializable.
 # For overridings see Serializable.serialize(**kwargs)).
@@ -99,32 +100,38 @@ def from_json(json_str=None, fpath=None, carry_over_additional_kwargs=False, par
 		data = parse_result_processor(data)
 	if not json_utils.is_serializable(data):
 		return data # Return processor result
-	return from_json_struct(data, carry_over_additional_kwargs, **additional_kwargs)
+	return from_json_struct(data, carry_over_additional_kwargs, True, **additional_kwargs)
 
-def from_json_struct(data, carry_over_additional_kwargs=False, **additional_kwargs):
+def from_json_struct(data, carry_over_additional_kwargs=False, overwrite=False, **additional_kwargs):
 	def go_recursion(obj):
-		return from_json_struct(obj, carry_over_additional_kwargs, **(additional_kwargs if carry_over_additional_kwargs else {}))
+		return from_json_struct(obj, carry_over_additional_kwargs, overwrite, **(additional_kwargs if carry_over_additional_kwargs else {}))
 	if json_utils.is_primitive(data):
 		if isinstance(data, str):
 			if utils.string.is_datetime(data):
 				return datetime.fromisoformat(data)
 		return data
 	elif json_utils.is_list(data):
-		return [go_recursion(item) for item in data]
+		result = data if overwrite else [None] * len(data)
+		for i, item in enumerate(data):
+			result[i] = go_recursion(item)
+		return result
 	elif json_utils.is_dictionary(data):
 		classpath = data.get("classpath")
 		if classpath is None:
-			return {key: go_recursion(value) for key, value in data.items()}
+			result = data if overwrite else {}
+			for key, value in data.items():
+				result[key] = go_recursion(value)
+			return result
 		cls = import_utils.find_or_import_class(classpath)
-		return cls.deserialize(data, deserializer=from_json_struct, carry_over_additional_kwargs=carry_over_additional_kwargs, **additional_kwargs)
+		return cls.deserialize(data, deserializer=from_json_struct, carry_over_additional_kwargs=carry_over_additional_kwargs, overwrite=overwrite, **additional_kwargs)
 	else:
 		raise Exception(utils.function.msg(f"Not deserializable object of type '{type(data)}' encountered"))
 
-def kwargs_from_dict(data, deserializer=from_json_struct, carry_over_additional_kwargs=False, **additional_kwargs):
+def kwargs_from_dict(data, deserializer=from_json_struct, carry_over_additional_kwargs=False, overwrite=False, **additional_kwargs):
 	caller_args = utils.function.args()
 	return class_kwargs_from_dict(**caller_args)[1]
 
-def class_kwargs_from_dict(data, deserializer=None, carry_over_additional_kwargs=False, **additional_kwargs):
+def class_kwargs_from_dict(data, deserializer=None, carry_over_additional_kwargs=False, overwrite=False, **additional_kwargs):
 	_deserializer = deserializer or from_json_struct
 	classpath = data.get("classpath")
 	if classpath is None:
@@ -135,7 +142,7 @@ def class_kwargs_from_dict(data, deserializer=None, carry_over_additional_kwargs
 	for key, val in data.items():
 		if key in result:
 			if json_utils.is_serializable(val):
-				result[key] = _deserializer(val, carry_over_additional_kwargs, **(additional_kwargs if carry_over_additional_kwargs else {}))
+				result[key] = _deserializer(val, carry_over_additional_kwargs, overwrite, **(additional_kwargs if carry_over_additional_kwargs else {}))
 			else:
 				raise Exception(utils.function.msg(f"Not deserializable object of type '{type(val)}' encountered"))
 	# Fill the result with the additional_kwargs
@@ -169,6 +176,6 @@ def json_obj_from_db_data(data, carry_over_additional_kwargs=False, **additional
 
 def from_db_data(data, carry_over_additional_kwargs=False, **additional_kwargs):
 	obj = json_obj_from_db_data(data, carry_over_additional_kwargs, **additional_kwargs)
-	return from_json_struct(obj, carry_over_additional_kwargs, **additional_kwargs)
+	return from_json_struct(obj, carry_over_additional_kwargs, True, **additional_kwargs)
 
 
