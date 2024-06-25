@@ -58,8 +58,8 @@ class Module(TrackableResource, ABC):
 			return False
 		return self.store_settings()
 
-	def define_setting(self, name, default, getter=None, setter=None) -> None:
-		value = self.get_setting(name, default)
+	def define_setting(self, name, default, current_value=None, getter=None, setter=None) -> None:
+		value = current_value if current_value is not None else self.get_setting(name, default)
 		private_name = self._setting_private_variable_name(name)
 		# Generate the private variable
 		setattr(self, private_name, None)
@@ -90,10 +90,12 @@ class Module(TrackableResource, ABC):
 		# Set the property to the class instance
 		setattr(self.__class__, name, prop)
 		if value is not None:
-			# Assign the default value to the property
+			# Assign the value to the property and trigger the setter
 			setattr(self, name, value)
 
-	def _set_defined_setting_by_name_base(self, name, value, update_setting_func=None):
+	# current_value - used to override the current value getting logic that prevents from triggering on_setting_changed and storing settings if the setting has not been changed.
+	# By default, it takes the setting value from the main settings file through the settings_manager.
+	def _set_defined_setting_by_name_base(self, name, value, current_value=None, update_setting_func=None):
 		filter_func_name = f"{name}_setter_filter"
 		if hasattr(self, filter_func_name):
 			filtered_value = getattr(self, filter_func_name)(value)
@@ -103,9 +105,9 @@ class Module(TrackableResource, ABC):
 		on_set_name = f"on_{name}_set"
 		if hasattr(self, on_set_name):
 			getattr(self, on_set_name)(filtered_value)
-		current_value = self.get_setting(name)
-		if current_value == filtered_value:
-			return False
+		_current_value = current_value if current_value is not None else self.get_setting(name)
+		if _current_value == filtered_value:
+			return False # No need to update the setting if it is the same
 		_update_setting_func = update_setting_func if update_setting_func is not None else self.update_setting
 		if not _update_setting_func(name, filtered_value):
 			return False
