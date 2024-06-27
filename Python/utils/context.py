@@ -7,4 +7,7 @@ class GlobalContextMeta(type):
 		raise AttributeError(f"'{cls.__name__}' object has no attribute '{name}'")
 
 class GlobalContext(metaclass=GlobalContextMeta):
-	pass
+	def __setattr__(self, name, value):
+		setattr(self.__class__, name, value)
+		# You can add custom logic here
+		super().__setattr__(name, value)
