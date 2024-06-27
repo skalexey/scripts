@@ -149,7 +149,7 @@ class OrderedDict(OrderedSet):
 
 	def __and__(self, other):
 		new = self.__class__()
-		for key in self:
+		for key in self.keys():
 			if key in other:
 				new.add(key)
 		return new
@@ -157,15 +157,15 @@ class OrderedDict(OrderedSet):
 	def __xor__(self, other):
 		new = self.__class__()
 		for key in self:
-			if key not in other:
+			if key not in other.keys():
 				new[key] = self[key]
-		for key in other:
+		for key in other.keys():
 			if key not in self:
 				new[key] = other[key]
 		return new
 	
 	def __ixor__(self, other):
-		for key in other:
+		for key in other.keys():
 			if key in self:
 				del self[key]
 			else:

@@ -128,7 +128,8 @@ class OrderedSet(Serializable):
 		return key in self._dict
 
 	def __str__(self):
-		return self.__repr__()
+		values_str = ', '.join([f"'{str(key)}'" for key in self._keys])
+		return f"[{{{values_str}}}]"
 
 	def __repr__(self):
 		return f"utils.OrderedSet({self._keys})"
@@ -161,13 +162,15 @@ class OrderedSet(Serializable):
 	
 	def __sub__(self, other):
 		new = self.copy()
-		for key in other:
+		for k in other:
+			key = k[0] if isinstance(k, tuple) else k
 			if key in new:
 				del new[key]
 		return new
 	
 	def __isub__(self, other):
-		for key in other:
+		for k in other:
+			key = k[0] if isinstance(k, tuple) else k
 			if key in self:
 				del self[key]
 		return self
@@ -183,27 +186,31 @@ class OrderedSet(Serializable):
 	
 	def __and__(self, other):
 		# Create using a list comprehension
-		new = self.__class__([key for key in self if key in other])
+		other_keys = other.keys() if hasattr(other, 'keys') else other
+		new = self.__class__([key for key in self._keys if key in other_keys])
 		return new
 	
 	def __iand__(self, other):
-		for key in self:
-			if key not in other:
+		other_keys = other.keys() if hasattr(other, 'keys') else other
+		for key in self._keys:
+			if key not in other_keys:
 				del self[key]
 		return self
 	
 	def __xor__(self, other):
 		new = OrderedSet()
-		for key in self:
-			if key not in other:
+		other_keys = other.keys() if hasattr(other, 'keys') else other
+		for key in self._keys:
+			if key not in other_keys:
 				new.add(key)
-		for key in other:
+		for key in other_keys:
 			if key not in self:
 				new.add(key)
 		return new
 	
 	def __ixor__(self, other):
-		for key in other:
+		other_keys = other.keys() if hasattr(other, 'keys') else other
+		for key in other_keys:
 			if key in self:
 				del self[key]
 			else:
