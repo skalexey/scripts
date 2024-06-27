@@ -1,4 +1,5 @@
 import collections
+import inspect
 import json
 import os
 from datetime import datetime
@@ -11,8 +12,9 @@ import utils.inspect_utils as inspect_utils
 import utils.json_utils as json_utils
 import utils.lang
 import utils.method
-import utils.serialize
+import utils.serialize  # Lazy import
 import utils.string
+from utils.ordered_set import OrderedSet
 
 
 class NotSerializable:
@@ -127,37 +129,57 @@ def from_json_struct(data, carry_over_additional_kwargs=False, overwrite=False, 
 	else:
 		raise Exception(utils.function.msg(f"Not deserializable object of type '{type(data)}' encountered"))
 
-def kwargs_from_dict(data, deserializer=from_json_struct, carry_over_additional_kwargs=False, overwrite=False, **additional_kwargs):
-	caller_args = utils.function.args()
-	return class_kwargs_from_dict(**caller_args)[1]
+def attrs_from_dict(data, deserializer=from_json_struct, carry_over_additional_kwargs=False, overwrite=False, **additional_kwargs):
+	caller_frame = inspect_utils.caller_frame()
+	return class_attrs_from_dict(data, deserializer=from_json_struct, carry_over_additional_kwargs=False, overwrite=False, caller_frame=caller_frame, **additional_kwargs)[1:4]
 
-def class_kwargs_from_dict(data, deserializer=None, carry_over_additional_kwargs=False, overwrite=False, **additional_kwargs):
+def class_attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=False, overwrite=False, caller_frame=None, **additional_kwargs):
 	_deserializer = deserializer or from_json_struct
 	classpath = data.get("classpath")
 	if classpath is None:
 		raise Exception(utils.function.msg("No 'classpath' value provided in the data"))
 	cls = import_utils.find_or_import_class(classpath)
-	result = inspect_utils.method_parameters(cls.__init__)
-	# Fill the result with the values from the data
+	all_attrs = collect_all_params(cls)
+	_caller_frame = caller_frame or inspect_utils.caller_frame()
+	args = utils.method.chain_args(utils.serialize.Serializable, custom_frame=_caller_frame)
+	call_info = inspect_utils.frame_call_info(_caller_frame)
+	base_params = utils.method.params(getattr(utils.serialize.Serializable, call_info.co_name))
+	args -= base_params
+	if len(args) > 0:
+		print("args", args)
+	all_attrs.update(args)
+	# Distribute
+	not_supported_params = OrderedSet()
 	for key, val in data.items():
-		if key in result:
+		if key in all_attrs:
 			if json_utils.is_serializable(val):
-				result[key] = _deserializer(val, carry_over_additional_kwargs, overwrite, **(additional_kwargs if carry_over_additional_kwargs else {}))
+				all_attrs[key] = _deserializer(val, carry_over_additional_kwargs, overwrite, **(additional_kwargs if carry_over_additional_kwargs else {}))
+				assert all_attrs[key] is not NotSerializable
+				assert all_attrs[key] is not inspect.Parameter.empty
 			else:
 				raise Exception(utils.function.msg(f"Not deserializable object of type '{type(val)}' encountered"))
-	# Fill the result with the additional_kwargs
+		else:
+			not_supported_params.add(key)
+	not_supported_params.pop("classpath")
+	# Check for not supported parameters
+	if not_supported_params:
+		sig_str = inspect_utils.signature_str(cls.__init__)
+		raise Exception(f"Not supported parameters provided for {sig_str} in data: {not_supported_params}")
 	if not carry_over_additional_kwargs:
-		not_supported_params = [key for key in additional_kwargs if key not in result]
+		not_supported_additional_kwargs = additional_kwargs.keys() - all_attrs.keys()
+		not_supported_params.update(not_supported_additional_kwargs)
 		if not_supported_params:
 			sig_str = inspect_utils.signature_str(cls.__init__)
 			raise Exception(f"Not supported parameters provided for {sig_str} through kwargs: {not_supported_params}")
-	collection_utils.update_existing(result, additional_kwargs)
+	# Apply additional kwargs atop
+	collection_utils.update_existing(all_attrs, additional_kwargs)
+	kwargs, attrs = utils.method.filter_params(all_attrs, cls.__init__)
 	# Check for missed required parameters
-	not_provided_params = [key for key, val in result.items() if inspect_utils.is_value_empty(val) and key not in result]
+	not_provided_params = [key for key, val in kwargs.items() if inspect_utils.is_value_empty(val)]
 	if not_provided_params:
 		sig_str = inspect_utils.signature_str(cls.__init__)
 		raise Exception(f"Missing values for a required parameters: {not_provided_params} for {sig_str}")
-	return cls, result
+	return cls, all_attrs, kwargs, attrs
 
 def json_obj_from_db_data(data, carry_over_additional_kwargs=False, **additional_kwargs):
 	def go_recursion(obj):
@@ -178,4 +200,7 @@ def from_db_data(data, carry_over_additional_kwargs=False, **additional_kwargs):
 	obj = json_obj_from_db_data(data, carry_over_additional_kwargs, **additional_kwargs)
 	return from_json_struct(obj, carry_over_additional_kwargs, True, **additional_kwargs)
 
-
+def collect_all_params(cls):
+	def filter(param):
+		return param.kind is not inspect.Parameter.VAR_POSITIONAL
+	return utils.method.chain_params(cls.__init__, cls, mro_end=utils.serialize.Serializable, filter=filter)

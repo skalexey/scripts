@@ -151,6 +151,8 @@ def function(obj):
 def cls(obj):
 	if inspect.isclass(obj):
 		return obj
+	if inspect.isfunction(obj):
+		return None
 	if inspect.ismethod(obj):
 		return cls(obj.__self__)
 	if hasattr(obj, '__class__'):
