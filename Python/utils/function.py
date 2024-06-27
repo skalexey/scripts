@@ -3,6 +3,29 @@ import inspect
 import utils.inspect_utils as inspect_utils
 
 
+def params(func, out=None, filter=None):
+	var_positional_name = None
+	keep_var_positional = False
+	def sig_filter(param, filter=filter):
+		if param.kind is inspect.Parameter.VAR_POSITIONAL:
+			nonlocal var_positional_name
+			var_positional_name = param.name
+		else:
+			if var_positional_name is not None:
+				if param.kind is not inspect.Parameter.VAR_KEYWORD:
+					nonlocal keep_var_positional
+					keep_var_positional = True # Keep *args if it goes before declared keyword parameters
+			if param.kind is inspect.Parameter.VAR_KEYWORD:
+				return False
+		if filter is not None:
+			if not filter(param):
+				return False
+		return True
+	result = inspect_utils.signature_input(func, out, sig_filter)
+	if not keep_var_positional:
+		result.pop(var_positional_name, None)
+	return result
+
 def args(out=None, validate=True, custom_frame=None):
 	_frame = custom_frame or inspect_utils.caller_frame()
 	func = inspect_utils.frame_function(_frame)
