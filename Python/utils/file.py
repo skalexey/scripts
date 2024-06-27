@@ -26,7 +26,7 @@ def restore(backed_path, original_path):
 		os.makedirs(os.path.dirname(original_path))
 	try:
 		shutil.copy2(backed_path, original_path)
-		verify_result = verify_copy(backup_path, path)
+		verify_result = verify_copy(backup_path, original_path)
 		if verify_result != 0:
 			log.error(utils.function.msg(f"Error verifying restored file '{original_path}': {verify_result}"))
 			return verify_result
