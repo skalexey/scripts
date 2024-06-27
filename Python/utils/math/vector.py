@@ -1,4 +1,5 @@
 import math
+from functools import total_ordering
 
 
 def iterate_components(any1, any2):
@@ -6,10 +7,11 @@ def iterate_components(any1, any2):
 	data2 = any2.data if hasattr(any2, "data") else any2
 	return zip(data1, data2)
 
+@total_ordering
 class Vector():
-	def __init__(self, data=None):
+	def __init__(self, data=None, *args, **kwargs):
 		self.data = data or []
-		super().__init__()
+		super().__init__(*args, **kwargs)
 
 	def __repr__(self):
 		return f"Vector({self.data})"
@@ -37,23 +39,13 @@ class Vector():
 	def __eq__(self, value) -> bool:
 		if value is None:
 			return False
+		if not isinstance(value, Vector):
+			return False
 		return self.data == value.data
-	
-	def __ne__(self, value) -> bool:
-		return not self.__eq__(value)
 	
 	def __lt__(self, value) -> bool:
 		return self.sqmagnitude() < value.sqmagnitude()
 	
-	def __le__(self, value) -> bool:
-		return self.sqmagnitude() <= value.sqmagnitude()
-	
-	def __gt__(self, value) -> bool:
-		return self.sqmagnitude() > value.sqmagnitude()
-	
-	def __ge__(self, value) -> bool:
-		return self.sqmagnitude() >= value.sqmagnitude()
-
 	def sqdistance(self, vec):
 		return sum((a - b) ** 2 for a, b in iterate_components(self, vec))
 	
