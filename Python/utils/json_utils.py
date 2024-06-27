@@ -60,7 +60,7 @@ def stringify(obj, default=None, throw=True, overwrite=False, fpath=None, backup
 						raise Exception(utils.function.msg(f"Error backing up file '{fpath}': {bak_fpath}"))
 				with open(fpath, 'w') as f:
 					json.dump(obj, f, indent='\t')
-				log.success(utils.function.msg(f"Stored successfully to '{fpath}'"))
+				log.debug(utils.function.msg(f"Stored successfully to '{fpath}'"))
 				if backup:
 					os.remove(bak_fpath)
 				return True
