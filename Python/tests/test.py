@@ -1,6 +1,7 @@
 import inspect
 import sys
 
+import utils.inspect_utils as inspect_utils
 import utils.profile.profiler
 import utils.text
 from utils.log.logger import *
@@ -18,9 +19,9 @@ def title(text):
 
 def run():
 	function_name = sys.argv[1] if len(sys.argv) > 1 else 'test'
-	caller_frame = inspect.stack()[1].frame
+	user_frame = inspect_utils.user_frame()
 
 	# Get the caller's globals from the frame
-	caller_globals = caller_frame.f_globals
+	caller_globals = user_frame.f_globals
 	function_to_call = caller_globals[function_name]
 	function_to_call()
