@@ -64,5 +64,5 @@ def args(out=None, validate=True, custom_frame=None):
 	return result
 
 def msg(msg):
-	sig_str = inspect_utils.current_function_signature(custom_frame=inspect_utils.caller_frame())
+	sig_str = inspect_utils.current_function_signature(custom_frame=inspect_utils.caller_frame(), noargs=True)
 	return f"{sig_str}: {msg}"

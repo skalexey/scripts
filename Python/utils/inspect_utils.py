@@ -1,16 +1,16 @@
 import inspect
 import itertools
 
-import utils
+import utils  # Lazy import
+import utils.function
 
 
 def is_value_empty(value):
 	return value == inspect.Parameter.empty
 
-def function_parameters(func, out=None):
-	return signature_input(func, out, lambda param: param.kind is not inspect.Parameter.VAR_KEYWORD and param.kind is not inspect.Parameter.VAR_POSITIONAL)
-
 def signature_input(func, out=None, filter=None):
+	if func is None:
+		raise ValueError(utils.function.msg("The given argument is not a method or a function"))
 	signature = inspect.signature(func)
 	result = out or utils.ordered_dict.OrderedDict()
 	for param in signature.parameters.values():
@@ -23,26 +23,24 @@ def signature_input(func, out=None, filter=None):
 			result[param.name] = param.default
 	return result
 
-def method_parameters(method, out=None):
-	params = function_parameters(method, out)
-	assert len(params) > 0, f"Method '{method.__name__}' has no self or cls parameter"
-	params.remove_at(0)
-	return params
-
-def current_function_signature(custom_frame=None):
+def current_function_signature(custom_frame=None, noargs=False):
 	frame = custom_frame or caller_frame()
-	func = frame_function(frame)
-	return signature_str(func)
+	call_info = frame_call_info(frame)
+	func = call_info.function
+	if func is None:
+		return f"{call_info.co_name}()"
+	return signature_str(func, noargs=noargs)
 
-def signature_str(func):
+def signature_str(func, noargs=False):
 	if hasattr(func, '__self__'):
 		class_name = func.__self__.__class__.__name__
 	elif hasattr(func, '__qualname__'):
-		class_name = func.__qualname__.split('.')[0]
+		class_name = func.__qualname__.rsplit('.', 1)[0]
 	else:
 		class_name = None
 	class_name_addition = f"{class_name}." if class_name is not None else ""
-	return f"{class_name_addition}{func.__name__}{inspect.signature(func)}"
+	args_sig = inspect.signature(func) if not noargs else "()"
+	return f"{class_name_addition}{func.__name__}{args_sig}"
 
 def frame_function(frame):
 	call_info = frame_call_info(frame)
@@ -188,15 +186,17 @@ def user_frame_info(obj=None):
 	if obj is None:
 		_caller_frame = caller_frame()
 		caller_module = _caller_frame.f_globals.get('__name__', None)
+	entered_caller_stack = False
 	for frame_info in stack[1:]:
 		# Check if the class if not Logger
 		frame = frame_info.frame
-		frame_locals = frame.f_locals
 		if obj is not None:
-			frame_self = frame_locals.get('self', None)
-			# If it is a call of a local funciton, or another class method, then we found it
-			if frame_self is None or not isinstance(frame_self, obj.__class__):
-				break
+			call_info = frame_call_info(frame)
+			if call_info.caller == obj:
+				entered_caller_stack = True
+			else:
+				if entered_caller_stack:
+					break
 		else:
 			# Find the first frame out of this module
 			if caller_module is None:
