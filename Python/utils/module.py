@@ -1,16 +1,29 @@
 import json
 from abc import ABC
 
+import utils.string
 from utils.decorators import no_return
 from utils.profile.trackable_resource import *
 
 
 class Module(TrackableResource, ABC):
-	def __init__(self, module_name, *args, **kwargs):
-		assert isinstance(module_name, str)
-		self.module_name = module_name
+	def __init__(self, module_name=None, *args, **kwargs):
+		assert isinstance(module_name, (str, type(None)))
+		self._module_name = module_name
 		self._settings = None
 		super().__init__(*args, **kwargs)
+
+	@property
+	def classname(self):
+		return self.__class__.__name__
+
+	@property
+	def module_name(self):
+		if self._module_name is None: # Default module name is the class name without the "Module" converted to snake case.
+			id = utils.string.to_snake_case(self.classname)
+			self._module_name = id.replace("_module", "")
+			return self._module_name
+		return self._module_name
 
 	# No need to call this class on_* methods in derived classes. It is done automatically by the module manager.
 	def call_if_defined(self, method_name, *args, **kwargs):

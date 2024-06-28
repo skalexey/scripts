@@ -27,7 +27,7 @@ class PluginManager:
 							if not plugin_name.endswith("_plugin"):
 								raise ValueError(f"Plugin name '{plugin_name}' must end with '_plugin'")
 							log.info(f" Loading plugin '{plugin_name}'")
-							inst = obj(plugin_name, self.app_context)
+							inst = obj(self.app_context)
 							self.plugins[plugin_name] = inst
 
 	def get_plugin(self, name):
