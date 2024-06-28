@@ -20,8 +20,6 @@ def title(text):
 def run():
 	function_name = sys.argv[1] if len(sys.argv) > 1 else 'test'
 	user_frame = inspect_utils.user_frame()
-
 	# Get the caller's globals from the frame
-	caller_globals = user_frame.f_globals
-	function_to_call = caller_globals[function_name]
+	function_to_call = user_frame.f_globals[function_name]
 	function_to_call()
