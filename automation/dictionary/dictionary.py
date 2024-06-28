@@ -1,7 +1,7 @@
-import requests
 import json
-import sys
 import os
+import sys
+
 
 def dictionary_init():
     global gcloud_api_key
@@ -10,9 +10,9 @@ def dictionary_init():
 
 dictionary_init()
 
-from request import *
-from log_utils import *
 from command_line_utils import *
+from request import *
+
 
 def meaning( word ):
     r = get( "https://api.dictionaryapi.dev/api/v2/entries/en/" + word );

@@ -1,7 +1,8 @@
-import requests
 import json
-import sys
 import os
+import sys
+
+import requests
 
 gcloud_api_key = None
 gcloud_api_p2_key = None
@@ -19,9 +20,9 @@ def gcloud_init():
 
 gcloud_init()
 
-from request import *
-from log_utils import *
 from command_line_utils import *
+from request import *
+
 
 def get_token( setting = "" ):
 	return os.popen( "gcloud auth " + setting + " print-access-token" ).read().strip()
