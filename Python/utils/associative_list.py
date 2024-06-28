@@ -65,3 +65,4 @@ class AssociativeList():
 		key = self._id
 		self._data[key] = value
 		self._id += 1
+		return key
