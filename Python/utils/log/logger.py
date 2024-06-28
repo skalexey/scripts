@@ -43,7 +43,7 @@ class Logger:
 	def __init__(self, title=None, title_stack_level=1):
 		self.log_level = 0
 		# Take the caller script name from the stack
-		self.log_title = title if title is not None else os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0]
+		self.log_title = title or os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0]
 		super().__init__()
 
 	def set_log_title(self, title):
@@ -64,9 +64,10 @@ class Logger:
 			now = datetime.now()
 			current_time = now.strftime("%H:%M:%S.%f")
 			level_sign = LogLevel.sign(level)
-			level_prefix = f"[{level_sign}] " if level_sign is not None else "    "
-			log_title_addition = f"[{self.log_title}]: " if self.log_title is not None else ""
-			msg = f"{level_prefix}[{current_time}] {self.log_addition}{log_title_addition}{message}"
+			level_prefix = f"[{level_sign}] " if level_sign else "    "
+			log_title_addition = f"[{self.log_title}]: " if self.log_title else ""
+			log_addition_str = self.log_addition or ""
+			msg = f"{level_prefix}[{current_time}] {log_addition_str}{log_title_addition}{message}"
 			with Logger._lock:
 				print(msg)
 			return msg, message, level, self.log_title, current_time
