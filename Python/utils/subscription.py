@@ -107,25 +107,25 @@ class Subscription:
 				_subscriber.__subscriptions__.add(id, callable)
 
 		def __del__(self):
-			log.debug(f"__del__({self})")
+			log.verbose(f"__del__({self})")
 			subscriber = self.subscriber
 			if subscriber is not None:
 				subscriber.__subscriptions__.remove(self.id)
-				log.debug(f"CallableInfo {self.id} detached from the subscriber")
+				log.verbose(f"CallableInfo {self.id} detached from the subscriber")
 				if len(subscriber.__subscriptions__) == 0:
 					del subscriber.__subscriptions__
-					log.debug(f"__subscriptions__ attribute removed from the subscriber")
+					log.verbose(f"__subscriptions__ attribute removed from the subscriber")
 
 	# Any callable can be passed including another subscription
 	def subscribe(self, callable, subscriber=None, max_calls=None, unsubscribe_on_false=False):
 		cb_id = self._next_cb_id()
-		log.debug(f"subscribe({callable}, {subscriber}) -> {cb_id}")
+		log.verbose(f"subscribe({callable}, {subscriber}) -> {cb_id}")
 		assert cb_id not in self._data.keys()
 		def on_callable_destroyed(ref):
-			log.debug(f"on_callable_destroyed({cb_id})")
+			log.verbose(f"on_callable_destroyed({cb_id})")
 			assert ref() is None
 			if self.unsubscribe(cb_id):
-				log.debug(f"Unsubscribed a deleted subscriber. Callable id: {cb_id}")
+				log.verbose(f"Unsubscribed a deleted subscriber. Callable id: {cb_id}")
 		with self._lock:
 			self._data[cb_id] = self.CallableInfoCleanOnDestroy(callable, subscriber, cb_id, on_callable_destroyed, max_calls, unsubscribe_on_false)
 		return cb_id
