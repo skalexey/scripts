@@ -45,7 +45,11 @@ def signature_str(func, noargs=False):
 def frame_function(frame):
 	call_info = frame_call_info(frame)
 	return call_info.function
-	
+
+def module_name(frame=None):
+	frame = frame or caller_frame()
+	return frame.f_globals.get('__name__', None)
+
 class CallInfo:
 	def __init__(self, frame):
 		self.frame = frame
@@ -54,11 +58,13 @@ class CallInfo:
 		self.caller = None
 		self.cls = None
 		self.method = None
+		self.module_name = None
 
 		co_name = frame.f_code.co_name
 		self.co_name = co_name
 		if co_name == "<module>":
 			return
+		self.module_name = module_name(frame)
 		previous_frame = frame.f_back
 		# Try to get the function object from local scope on the level above
 		func = previous_frame.f_locals.get(co_name)
@@ -175,19 +181,26 @@ def relframe(level):
 		cur += step
 	return frame
 
-def caller_frame(level=-2):
-	return relframe(level)
+def caller_frame(level=None):
+	return relframe((level or 0) - 2) # Excluding relframe and caller_frame calls since we need to go a level above the function where caller_frame is called.
 
 # Find the frame where the provided object is used
-def user_frame(obj=None):
-	return user_frame_info(obj).frame
+def user_frame(obj=None, caller_level=None):
+	return user_frame_info(obj, (caller_level or 0) - 1).frame
 
-def user_frame_info(obj=None):
+# Terms:
+# User - the user of the object if provided or of the caller module.
+# Caller - who called user_frame_info.
+# Params:
+# obj - the object to find the first frame where it is used going back from this one. If not provided, then the first frame of the user of the caller module is returned.
+# caller_level - the level of the caller of user_frame_info.
+def user_frame_info(obj=None, caller_level=None):
 	frame_info = None
 	stack = inspect.stack()
+	frame = stack[1].frame
 	if obj is None:
-		_caller_frame = caller_frame()
-		caller_module = _caller_frame.f_globals.get('__name__', None)
+		frame = caller_frame(caller_level)
+		caller_module = module_name(frame)
 	entered_caller_stack = False
 	for frame_info in stack[1:]:
 		# Check if the class if not Logger
@@ -203,8 +216,13 @@ def user_frame_info(obj=None):
 			# Find the first frame out of this module
 			if caller_module is None:
 				break
-			if frame.f_globals.get('__name__', None) != caller_module:
-				break
+			frame_module = module_name(frame)
+			if frame_module == caller_module:
+				entered_caller_stack = True
+			else:
+				if entered_caller_stack:
+					if frame_module != caller_module:
+						break
 	if frame_info is None:
 		raise ValueError(f"Could not find the frame of where the provided object is used (obj: {obj})")
 	return frame_info

@@ -15,14 +15,14 @@ log = utils.log.logger.Logger()
 
 _module_cache = None
 _cache_lock = threading.Lock()
-_cache_loading_thread = None
+_cache_is_loading = None
 
 
 def module_cache():
 	if _module_cache is None:
 		with _cache_lock:
-			global _cache_loading_thread
-			if _cache_loading_thread is not None:
+			global _cache_is_loading
+			if _cache_is_loading is not None:
 				return None
 			log.debug("Building module cache")
 			def work():
@@ -48,12 +48,11 @@ def module_cache():
 								# log.debug(f"Found module: {module_path} in dir_path: '{dir_path}', root: '{root}', file: '{file}'")
 								assert module_path not in cache
 								cache[module_path] = full_fpath
-				profiler.print_measure()
-				log.debug(f"module_cache(): Found {len(cache)} modules")
+				log.debug(f"module_cache(): Found {len(cache)} modules in {profiler.measure()} seconds")
 				_module_cache = cache
 			# Run task in parallel
-			_cache_loading_thread = threading.Thread(target=work)
-			_cache_loading_thread.start()
+			_cache_is_loading = True
+			threading.Thread(target=work).start()
 			
 	return _module_cache
 
