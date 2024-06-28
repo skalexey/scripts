@@ -52,8 +52,9 @@ def stringify(obj, default=None, throw=True, overwrite=False, fpath=None, backup
 					os.makedirs(dirpath)
 				# Backup the current file content to avoid losing it in case of an error
 				if precache:
-					with open(fpath, 'r') as f:
-						previous_content = f.read()
+					if os.path.exists(fpath):
+						with open(fpath, 'r') as f:
+							previous_content = f.read()
 				if backup:
 					bak_fpath = utils.file.backup(fpath, date_format="%Y-%m-%d_%H-%M-%S_stringify")
 					if isinstance(bak_fpath, int):
