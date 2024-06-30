@@ -118,3 +118,9 @@ def chain_args(base_class=None, out=None, validate=True, custom_frame=None):
 			raise ValueError(utils.function.msg(f"Missed arguments: {missing_args}"))
 
 	return result
+
+def msg(msg, args_format=None, empty=False, frame=None):
+	return utils.function.msg(msg, args_format=args_format, empty=empty, frame=frame or inspect_utils.caller_frame(), ignore_first=True)
+
+def msg_kw(text=None, empty=False, frame=None):
+	return msg(text, empty=empty, args_format="kw", frame=frame or inspect_utils.caller_frame())

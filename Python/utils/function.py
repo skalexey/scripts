@@ -63,6 +63,8 @@ def args(out=None, validate=True, custom_frame=None):
 			raise ValueError(msg(f"Missed arguments while carrying over: {missing_args}"))
 	return result
 
-def msg(msg):
-	sig_str = inspect_utils.current_function_signature(custom_frame=inspect_utils.caller_frame(), noargs=True)
-	return f"{sig_str}: {msg}"
+def msg(msg, args_format=None, empty=False, frame=None, ignore_first=None):
+	_args_format = args_format or False
+	sig_str = inspect_utils.current_function_signature(custom_frame=frame or inspect_utils.caller_frame(), args_format=_args_format, ignore_first=ignore_first)
+	msg_addition = "" if empty else f": {msg}"
+	return f"{sig_str}{msg_addition}"

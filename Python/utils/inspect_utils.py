@@ -23,15 +23,18 @@ def signature_input(func, out=None, filter=None):
 			result[param.name] = param.default
 	return result
 
-def current_function_signature(custom_frame=None, noargs=False):
+def current_function_signature(custom_frame=None, args_format=None, ignore_first=None):
 	frame = custom_frame or caller_frame()
 	call_info = frame_call_info(frame)
 	func = call_info.function
 	if func is None:
 		return f"{call_info.co_name}()"
-	return signature_str(func, noargs=noargs)
+	return signature_str(func, frame, args_format=args_format, ignore_first=ignore_first)
 
-def signature_str(func, noargs=False):
+def signature_str(func, frame=None, args_format=None, ignore_first=None):
+	_ignore_first = 1 if ignore_first else 0
+	_frame = frame or caller_frame()
+	_args_format = "values" if args_format is None else args_format
 	if hasattr(func, '__self__'):
 		class_name = func.__self__.__class__.__name__
 	elif hasattr(func, '__qualname__'):
@@ -39,7 +42,25 @@ def signature_str(func, noargs=False):
 	else:
 		class_name = None
 	class_name_addition = f"{class_name}." if class_name is not None else ""
-	args_sig = inspect.signature(func) if not noargs else "()"
+	if not _args_format:
+		args_sig = "()"
+	else:
+		sig = inspect.signature(func)
+		args = utils.function.args(out=None, validate=False, custom_frame=_frame)
+		# bound_arguments = sig.bind(*args, **kwargs)
+		bound_arguments = sig.bind(**args)
+		bound_arguments.apply_defaults()
+		if _args_format == "values":
+			args_repr = ", ".join(repr(arg) for arg in bound_arguments.args[_ignore_first:])
+			kwargs_only_repr = ", ".join(f"{v!r}" for v in bound_arguments.kwargs.values())
+			combined_repr = ", ".join(part for part in [args_repr, kwargs_only_repr] if part)
+			args_sig = f"({combined_repr})"
+		elif _args_format == "kw":
+			arguments = list(bound_arguments.arguments.items())[_ignore_first:]
+			kwargs_repr = ", ".join(f"{k}={v!r}" for k, v in arguments)
+			args_sig = f"({kwargs_repr})"
+		else:
+			raise ValueError(f"Unexpected value for args: {args_format}")
 	return f"{class_name_addition}{func.__name__}{args_sig}"
 
 def frame_function(frame):
@@ -101,7 +122,8 @@ class CallInfo:
 									return
 					if self.function is not None:
 						return
-			raise ValueError(f"Couldn't retrieve call information for the code object '{co_name}'")
+			# raise ValueError(f"Couldn't retrieve call information for the code object '{co_name}'")
+			return
 
 	def is_function(self):
 		return self.function is not None and self.cls is None
