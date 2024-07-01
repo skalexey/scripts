@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from utils.context import GlobalContext
 from utils.log.logger import *
 from utils.text import AbstractTextSpinner
 
@@ -37,9 +38,46 @@ def select_data_file(from_path=None):
 		return file_path1, file_path2
 	return None, None
 
+# Every message box blocks the calling thread, and it must be processed in the main thread.
 def show_message(title, message):
 	log.info(f"Show message: {title}, {message}")
-	QMessageBox.information(None, title, message)
+
+	def job():
+		return QMessageBox.information(None, title, message)
+
+	return GlobalContext.app.do_in_main_thread(job)
+
+def ask_yes_no(title, message, on_answer=None, yes_text=None, no_text=None):
+	log.info(utils.function.msg_kw())
+
+	def job():
+		msg_box = QMessageBox()
+		msg_box.setIcon(QMessageBox.Question)
+		msg_box.setWindowTitle(title)
+		msg_box.setText(message)
+		msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+		_yes_text = "Yes"
+		if yes_text is not None:
+			msg_box.setButtonText(QMessageBox.Yes, yes_text)
+			_yes_text = yes_text
+		if no_text is not None:
+			msg_box.setButtonText(QMessageBox.No, no_text)
+
+		class State:
+			def __init__(self):
+				self.result = None
+		state = State()
+
+		def _on_answer(button):
+			button_text = button.text()
+			state.result = button_text.lower().find(_yes_text.lower()) != -1
+
+		msg_box.buttonClicked.connect(_on_answer)
+		msg_box.exec_()
+
+		return state.result
+
+	return GlobalContext.app.do_in_main_thread(job)
 
 def show_input_dialog(title, message, on_answer):
 	text, ok = QInputDialog.getText(None, title, message)
