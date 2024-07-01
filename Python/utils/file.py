@@ -13,10 +13,26 @@ def backup_path(path, datetime=None, date_format=None):
 	def gen_backup_path(cnt):
 		cnt_addition = f"_{cnt}" if cnt > 0 else ""
 		return path + "." + dt.strftime(_date_format) + cnt_addition + ".bak"
-	cnt = 0
-	while os.path.exists(backup_path := gen_backup_path(cnt)):
-		cnt += 1
+	backup_path = gen_free_path(gen_func=gen_backup_path)
 	return backup_path
+
+def gen_free_path(path=None, gen_func=None):
+	if gen_func is None:
+		if path is None:
+			raise ValueError("Either 'path' or 'gen_func' must be provided")
+		dir = os.path.dirname(path)
+		basename = os.path.basename(path)
+		name, ext = os.path.splitext(basename)
+		def _gen_func(cnt):
+			cnt_addition = f"-{cnt}" if cnt > 0 else ""
+			ext_addition = f".{ext}" if ext else ""
+			return os.path.join(dir, f"{name}{cnt_addition}{ext_addition}")
+	else:
+		_gen_func = gen_func
+	cnt = 0
+	while os.path.exists(free_path := gen_func(cnt)):
+		cnt += 1
+	return free_path
 
 def restore(backed_path, original_path):
 	if not os.path.exists(backed_path):
