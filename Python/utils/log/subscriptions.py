@@ -17,9 +17,10 @@ def _init():
 	base_log = Logger.log
 	def log(self, msg, level=LogLevel.PRINT):
 		result = base_log(self, msg, level)
-		g_on_log_level[level.value].notify(result)
-		g_on_log.notify(result)
-		return result
+		if result is not None:
+			g_on_log_level[level.value].notify(result)
+			g_on_log.notify(result)
+			return result
 	Logger.log = log
 _init()
 	
