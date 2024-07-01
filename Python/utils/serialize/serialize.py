@@ -163,13 +163,13 @@ def class_attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=
 	not_supported_params.pop("classpath")
 	# Check for not supported parameters
 	if not_supported_params:
-		sig_str = inspect_utils.signature_str(cls.__init__)
+		sig_str = inspect_utils.signature_str(cls.__init__, cls)
 		raise Exception(f"Not supported parameters provided for {sig_str} in data: {not_supported_params}")
 	if not carry_over_additional_kwargs:
 		not_supported_additional_kwargs = additional_kwargs.keys() - all_attrs.keys()
 		not_supported_params.update(not_supported_additional_kwargs)
 		if not_supported_params:
-			sig_str = inspect_utils.signature_str(cls.__init__)
+			sig_str = inspect_utils.signature_str(cls.__init__, cls)
 			raise Exception(f"Not supported parameters provided for {sig_str} through kwargs: {not_supported_params}")
 	# Apply additional kwargs atop
 	collection_utils.update_existing(all_attrs, additional_kwargs)
@@ -177,7 +177,7 @@ def class_attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=
 	# Check for missed required parameters
 	not_provided_params = [key for key, val in kwargs.items() if inspect_utils.is_value_empty(val)]
 	if not_provided_params:
-		sig_str = inspect_utils.signature_str(cls.__init__)
+		sig_str = inspect_utils.signature_str(cls.__init__, cls)
 		raise Exception(f"Missing values for a required parameters: {not_provided_params} for {sig_str}")
 	return cls, all_attrs, kwargs, attrs
 
