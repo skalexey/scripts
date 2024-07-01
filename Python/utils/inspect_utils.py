@@ -34,14 +34,8 @@ def current_function_signature(custom_frame=None, args_format=None, ignore_first
 def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=None):
 	_frame = frame or caller_frame()
 	_args_format = "names" if args_format is None else args_format
-	if cls is not None:
-		class_name = cls.__name__
-	elif hasattr(func, '__self__'):
-		class_name = func.__self__.__class__.__name__
-	elif hasattr(func, '__qualname__'):
-		class_name = func.__qualname__.rsplit('.', 1)[0]
-	else:
-		class_name = None
+	_cls = cls or _get_class(func)
+	class_name = _cls.__name__ if _cls is not None else None
 	_ignore_first = 1 if ignore_first or (class_name and ignore_first is None) else 0
 	class_name_addition = f"{class_name}." if class_name is not None else ""
 	if not _args_format:
@@ -196,7 +190,9 @@ def cls(obj):
 	if hasattr(obj, '__class__'):
 		return obj.__class__
 	return None
-	
+
+_get_class = cls
+
 def call_info():
 	frame = caller_frame()
 	return frame_call_info(frame)

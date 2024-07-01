@@ -119,8 +119,8 @@ def chain_args(base_class=None, out=None, validate=True, custom_frame=None):
 
 	return result
 
-def msg(msg, args_format=None, empty=False, frame=None):
-	return utils.function.msg(msg, args_format=args_format, empty=empty, frame=frame or inspect_utils.caller_frame(), ignore_first=True)
+def msg(message=None, args_format=None, frame=None):
+	return utils.function.msg(message, args_format=args_format, frame=frame or inspect_utils.caller_frame(), ignore_first=True)
 
-def msg_kw(text=None, empty=False, frame=None):
-	return msg(text, empty=empty, args_format="kw", frame=frame or inspect_utils.caller_frame())
+def msg_kw(message=None, frame=None):
+	return msg(message, args_format="kw", frame=frame or inspect_utils.caller_frame())
