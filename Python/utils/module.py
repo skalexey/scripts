@@ -1,9 +1,11 @@
 import json
 from abc import ABC
 
+import utils.serialize
 import utils.string
 from utils.decorators import no_return
-from utils.profile.trackable_resource import *
+from utils.ordered_dict import OrderedDict
+from utils.profile.trackable_resource import TrackableResource
 
 
 class Module(TrackableResource, ABC):
@@ -41,24 +43,15 @@ class Module(TrackableResource, ABC):
 		return module_settings.get(key, default)
 	
 	def settings_file_path(self):
-		return f"{self.module_name}_settings.json"
+		return f"data/{self.module_name}_settings.json"
 
 	def store_settings(self):
 		fpath = self.settings_file_path()
-		with open(fpath, "w") as f:
-			settings = self.module_settings()
-			json.dump(settings, f, indent='\t')
+		return utils.serialize.to_json(self.module_settings(), fpath=fpath)
 
 	def load_settings(self):
 		fpath = self.settings_file_path()
-		try:
-			with open(fpath, 'r') as file:
-				self._settings = json.load(file)
-		except FileNotFoundError:
-			self._settings = {}
-		except Exception as e:
-			print(f"Error loading settings: '{e}'")
-			raise e
+		self._settings = utils.serialize.from_json(fpath=fpath) or OrderedDict()
 
 	def set_setting(self, key, value):
 		module_settings = self.module_settings()
