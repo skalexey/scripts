@@ -3,7 +3,7 @@ import shutil
 from datetime import datetime as _datetime
 
 import utils.function
-from utils.log.logger import *
+from utils.log.logger import Logger
 
 log = Logger()
 

@@ -1,7 +1,7 @@
 import sys
 
 import utils.module
-from utils.log.logger import *
+from utils.log.logger import Logger
 
 log = Logger()
 

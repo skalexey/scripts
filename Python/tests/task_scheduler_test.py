@@ -2,7 +2,7 @@ import sys
 
 import utils.profile.profiler
 import utils.text
-from utils.log.logger import *
+from utils.log.logger import Logger
 from utils.task_scheduler import *
 
 log = Logger()

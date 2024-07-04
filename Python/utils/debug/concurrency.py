@@ -1,7 +1,7 @@
 import threading
 from abc import ABC, abstractmethod
 
-from utils.log.logger import *
+from utils.log.logger import Logger
 
 log = Logger()
 

@@ -1,5 +1,5 @@
-from utils.log.logger import *
-from utils.subscription import *
+from utils.log.logger import Logger, LogLevel
+from utils.subscription import Subscription
 
 g_on_log_level = [Subscription() for _ in range(len(LogLevel))]
 g_on_log = Subscription()

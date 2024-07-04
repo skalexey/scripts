@@ -6,7 +6,7 @@ import threading
 from datetime import datetime
 
 import utils.lang
-from utils.log.logger import *
+from utils.log.logger import Logger
 
 log = Logger("sqlite_utils")
 

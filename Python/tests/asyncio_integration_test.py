@@ -3,7 +3,7 @@ import threading
 import time
 
 from utils.asyncio_utils import *
-from utils.log.logger import *
+from utils.log.logger import Logger
 from utils.task_scheduler import *
 
 log = Logger()

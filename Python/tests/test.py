@@ -1,14 +1,15 @@
 import inspect
 import sys
 
+import utils.function
 import utils.inspect_utils as inspect_utils
 import utils.profile.profiler
 import utils.text
-from utils.log.logger import *
+from utils.log.logger import Logger
 from utils.subscription import *
 
 # Caller script name from the stack
-log = Logger(title_stack_level=2)
+log = Logger()
 profiler = utils.profile.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 

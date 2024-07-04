@@ -4,6 +4,7 @@ import threading
 from enum import IntEnum
 
 import utils  # Lazy import
+import utils.inspect_utils as inspect_utils
 
 
 class LogLevel(IntEnum):
