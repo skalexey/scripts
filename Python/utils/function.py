@@ -26,26 +26,30 @@ def params(func, out=None, filter=None):
 		result.pop(var_positional_name, None)
 	return result
 
-def args(out=None, validate=True, custom_frame=None):
+def args(out=None, validate=True, custom_frame=None, extract_args=None, extract_kwargs=None):
 	_frame = custom_frame or inspect_utils.caller_frame()
+	_extract_kwargs = extract_kwargs or False
+	_extract_args = extract_args or False
 	func = inspect_utils.frame_function(_frame)
 	_locals = _frame.f_locals
 	result = inspect_utils.signature_input(func, out)
 	keyword_vars = {}
 	positional_vars = []
-	missing_args = []
+	missed_args = []
 	for key, value in result.items():
 		arg = _locals.get(key, inspect.Parameter.empty)
 		if arg is inspect.Parameter.empty:
 			if validate:
-				missing_args.append(key)
+				missed_args.append(key)
 			continue
 		if value is inspect.Parameter.VAR_KEYWORD:
-			keyword_vars[key] = arg
-			continue
+			if _extract_kwargs:
+				keyword_vars[key] = arg
+				continue
 		if value is inspect.Parameter.VAR_POSITIONAL:
-			positional_vars.append(arg)
-			continue
+			if _extract_args:
+				positional_vars.append(arg)
+				continue
 		result[key] = arg
 	for key, var in keyword_vars.items():
 		result.pop(key)

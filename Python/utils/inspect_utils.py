@@ -55,13 +55,10 @@ def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=Non
 			bound_arguments = sig.bind(**args)
 			bound_arguments.apply_defaults()
 			if _args_format == "values":
-				args_repr = ", ".join(repr(arg) for arg in bound_arguments.args[_ignore_first:])
-				kwargs_only_repr = ", ".join(f"{v!r}" for v in bound_arguments.kwargs.values())
-				combined_repr = ", ".join(part for part in [args_repr, kwargs_only_repr] if part)
-				args_sig = f"({combined_repr})"
+				args_repr = ", ".join(repr(arg) for arg in args[_ignore_first:])
+				args_sig = f"({args_repr})"
 			elif _args_format == "kw":
-				arguments = list(bound_arguments.arguments.items())[_ignore_first:]
-				kwargs_repr = ", ".join(f"{k}={v!r}" for k, v in arguments)
+				kwargs_repr = ", ".join(f"{k}={v!r}" for k, v in args.items())
 				args_sig = f"({kwargs_repr})"
 			else:
 				raise ValueError(f"Unexpected value for args: {args_format}")

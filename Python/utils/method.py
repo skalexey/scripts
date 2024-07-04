@@ -2,11 +2,11 @@ import inspect
 
 import utils.function
 import utils.inspect_utils as inspect_utils
-from utils.ordered_dict import OrderedDict
+from utils.collection.ordered_dict import OrderedDict
 
 
-def args(out=None, validate=True, custom_frame=None):
-	result = utils.function.args(out, validate, custom_frame=(custom_frame or inspect_utils.caller_frame()))
+def args(out=None, validate=True, custom_frame=None, extract_kwargs=None):
+	result = utils.function.args(out, validate, custom_frame=(custom_frame or inspect_utils.caller_frame()), extract_kwargs=extract_kwargs)
 	assert len(result) > 0, f"Method has no self or cls parameter"
 	result.remove_at(0)
 	return result

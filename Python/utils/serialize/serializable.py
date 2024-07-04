@@ -98,5 +98,5 @@ class DBSerializable(Serializable):
 
 	@classmethod
 	def deserialize(cls, data, deserializer=None, carry_over_additional_kwargs=False, **additional_kwargs):
-		caller_args = utils.method.args()
+		caller_args = utils.method.args(extract_args=True, extract_kwargs=True)
 		return super().deserialize(**caller_args)
