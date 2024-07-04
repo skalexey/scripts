@@ -348,17 +348,17 @@ class CursorWrapper:
 		return getattr(self._cursor, name)
 
 class Connection:
-	def __init__(self, db_fname, *args, **kwargs):
+	def __init__(self, db_fpath, *args, **kwargs):
 		self._lock = threading.RLock()
-		self.db_fname = db_fname
-		self.connection = sqlite3.connect(db_fname, check_same_thread=False)
+		self.db_fpath = db_fpath
+		self.connection = sqlite3.connect(db_fpath, check_same_thread=False)
 		super().__init__(*args, **kwargs)
 	
 	def cursor(self):
 		return CursorWrapper(self.connection.cursor(), self._lock)
 	
 	def backup(self, addition=None, datetime_format='%Y-%m-%d--%H-%M-%S'):
-		backup_database(self.db_fname, addition, datetime_format)
+		backup_database(self.db_fpath, addition, datetime_format)
 
 	def query(self, table_name, where=None, params=None, statement="SELECT", **kwargs):
 		return query_rows(table_name, where, params, statement, connection=self.connection, cursor=self.cursor(), **kwargs)[0]
@@ -370,18 +370,18 @@ class Connection:
 		return query_row(table_name, id, columns, statement, connection=self.connection, cursor=self.cursor())[0]
 
 	def insert(self, data, table_name, **kwargs):
-		return insert(data, table_name, self.db_fname, connection=self.connection, cursor=self.cursor(), **kwargs)
+		return insert(data, table_name, self.db_fpath, connection=self.connection, cursor=self.cursor(), **kwargs)
 
 	def update(self, table_name, data, where=None, params=None):
 		return update(table_name, data, where, params, connection=self.connection, cursor=self.cursor())
 
 
 class DictInterface(Connection):
-	def __init__(self, db_fname, *args, **kwargs):
-		super().__init__(db_fname, *args, **kwargs)
+	def __init__(self, db_fpath, *args, **kwargs):
+		super().__init__(db_fpath, *args, **kwargs)
 
 	def create_or_alter_table(self, table_name, data, addition=None, primary_keys=None, composite_indexes=None):
-		create_or_alter_table_from_dict(self.db_fname, table_name, data, addition, primary_keys, composite_indexes, connection=self.connection, cursor=self.cursor())
+		create_or_alter_table_from_dict(self.db_fpath, table_name, data, addition, primary_keys, composite_indexes, connection=self.connection, cursor=self.cursor())
 
 	def query(self, table_name, where=None, params=None, columns=None, statement="SELECT", **kwargs):
 		return query_data(table_name, where, params, columns, statement, connection=self.connection, cursor=self.cursor(), **kwargs)[0]
