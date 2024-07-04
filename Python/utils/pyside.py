@@ -44,10 +44,19 @@ def select_data_file(dir=None):
 
 # Every message box blocks the calling thread, and it must be processed in the main thread.
 def show_message(title, message):
-	log.info(f"Show message: {title}, {message}")
+	log.info(utils.function.msg_kw())
 
 	def job():
 		return QMessageBox.information(None, title, message)
+
+	return GlobalContext.app.do_in_main_thread(job)
+
+def attention_message(title=None, message=None):
+	_title = title or "Attention"
+	log.attention(utils.function.msg_kw())
+
+	def job():
+		return QMessageBox.warning(None, _title, message)
 
 	return GlobalContext.app.do_in_main_thread(job)
 
