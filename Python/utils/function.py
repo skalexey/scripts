@@ -59,12 +59,13 @@ def args(out=None, validate=True, custom_frame=None, extract_args=None, extract_
 				# This case should never happen, so this check is only for integrity
 				raise ValueError(msg(f"Unexpected error: Duplicated argument passed through kwargs: '{k}'"))	
 			result[k] = v
+	# TODO: move on a higher level
 	for var in positional_vars:
 		raise ValueError(msg(f"Unexpected error: Positional arguments are not supported: '{var}'"))
 	if validate:
 		# Check for missing arguments
-		if missing_args:
-			raise ValueError(msg(f"Missed arguments while carrying over: {missing_args}"))
+		if missed_args:
+			raise ValueError(msg(f"Missed arguments while carrying over: {missed_args}"))
 	return result
 
 def msg(message=None, args_format=None, frame=None, ignore_first=None):

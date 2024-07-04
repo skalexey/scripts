@@ -41,6 +41,7 @@ class LogLevel(IntEnum):
 class Logger:
 	log_addition = None
 	_lock = threading.Lock()
+
 	def __init__(self, title=None, title_stack_level=1):
 		self.log_level = 0
 		# Take the caller script name from the stack
