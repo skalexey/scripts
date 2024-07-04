@@ -107,7 +107,10 @@ class OrderedDict(OrderedSet):
 	def __getitem__(self, key):
 		if isinstance(key, slice):
 			keys = self._keys[key]
-			return [self.__getitem__(k) for k in keys]
+			result = OrderedDict()
+			for k in keys:
+				result[k] = self[k]
+			return result
 		else:
 			idx = self.index(key)
 			if idx is None:
