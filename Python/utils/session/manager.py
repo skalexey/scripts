@@ -75,12 +75,12 @@ class SessionManager:
 		if self.screem_if_current_session():
 			return None
 		session = Session(*args, **kwargs)
-		def on_session_end(session):
+		def on_session_end(self, session):
 			if self.current_session() != session:
 				raise ValueError(utils.function.msg("Session end event received from a session that is not the current session"))
 			self._current_session = None
 			self._session_list[session.id] = session.storage
-		session.on_end.subscribe(on_session_end, self)
+		session.on_end.subscribe(on_session_end, self, caller=self)
 		session_id = session.id
 		self._session_list[session_id] = session
 		self._current_session = session
