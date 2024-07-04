@@ -1,8 +1,23 @@
+import collections
+
 from utils.collection.ordered_set import OrderedSet
 
 
 class OrderedDict(OrderedSet):
-	def __init__(self, list=None, keys=None, **kwargs):
+	def __init__(self, *args, list=None, keys=None, **kwargs):
+		if len(args) == 1:
+			arg = args[0]
+			if isinstance(arg, (dict, collections.OrderedDict, OrderedDict)):
+				keys, list = [], []
+				for key, value in arg.items():
+					keys.append(key)
+					list.append(value)
+			else:
+				raise ValueError(f"Can't instantiate OrderedDict from '{type(arg).__name__}'")
+		elif len(args) == 2:
+			keys, list = args
+		elif len(args) > 2:
+			raise ValueError(f"Expected maximum 2 positional arguments, got {len(args)}")
 		super().__init__(keys, **kwargs) # Assign manually, since assigning algorithm uses collection, an can be configured working with OrderedDict
 		self._list = list or []
 
@@ -136,6 +151,13 @@ class OrderedDict(OrderedSet):
 		return f"utils.collection.orderedDict({contents_str})"
 
 	def __eq__(self, other):
+		if isinstance(other, list):
+			return self._list == other
+		elif isinstance(other, (dict, collections.OrderedDict)):
+			for key, value in other.items():
+				if key not in self or self[key] != value:
+					return False
+			return True
 		if not super().__eq__(other):
 			return False
 		if self._list != other._list:
