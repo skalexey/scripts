@@ -1,8 +1,9 @@
-from utils.math.utility import *
-from utils.subscription import *
+from utils.math.utility import Range
+from utils.profile.trackable_resource import TrackableResource
+from utils.subscription import Subscription
 
 
-class Job:
+class Job(TrackableResource):
 	def __init__(self, *args, **kwargs):
 		self.on_done = Subscription()
 		self.on_cancel = Subscription()
