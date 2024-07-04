@@ -170,3 +170,40 @@ class TextSpinner(AbstractTextSpinner, QLabel, metaclass=CombinedMeta):
 	@AbstractTextSpinner.text.setter
 	def text(self, value):
 		self.setText(value)
+
+class CopyableLabel(QLabel):
+	def __init__(self, text="", parent=None):
+		super().__init__(text, parent)
+		self.setTextInteractionFlags(Qt.TextSelectableByMouse)  # Enable text selection
+		self.setContextMenuPolicy(Qt.CustomContextMenu)  # Enable custom context menu
+		self.customContextMenuRequested.connect(self.show_context_menu)
+
+	def show_context_menu(self, pos):
+		context_menu = QMenu(self)
+		copy_action = QAction("Copy", self)
+		copy_action.triggered.connect(self.copy_text)
+		context_menu.addAction(copy_action)
+		context_menu.exec_(self.mapToGlobal(pos))
+
+	def copy_text(self):
+		clipboard = QApplication.clipboard()
+		clipboard.setText(self.text())
+
+class ValueWidget(QWidget):
+	def __init__(self, parent_layout, label, value, fixed_width=None, parent=None):
+		super().__init__(parent)
+		layout = QHBoxLayout()
+		self.setLayout(layout)
+		parent_layout.addWidget(self)
+		label_widget = QLabel(label)
+		layout.addWidget(label_widget)
+		self.value_label = CopyableLabel(str(value))
+		if fixed_width is not None:
+			self.value_label.setFixedWidth(fixed_width)
+		layout.addWidget(self.value_label)
+
+	def set_value(self, value):
+		self.value_label.setText(str(value))
+
+	def value(self):
+		return self.value_label.text()
