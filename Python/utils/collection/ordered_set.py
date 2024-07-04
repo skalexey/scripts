@@ -135,7 +135,7 @@ class OrderedSet(Serializable):
 		return f"utils.collection.orderedSet({self._keys})"
 
 	def __eq__(self, other):
-		if not isinstance(other, OrderedSet):
+		if not isinstance(other, self.__class__):
 			return False
 		if len(self) != len(other):
 			return False
