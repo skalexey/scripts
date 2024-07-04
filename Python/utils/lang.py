@@ -13,8 +13,11 @@ def extract_self(bound_method):
 	return None
 
 def clear_resources(obj):
-	for attr in obj.__dict__:
-		obj.__dict__[attr] = None
+	if isinstance(obj, dict):
+		obj.clear()
+	else:
+		for attr in obj.__dict__:
+			obj.__dict__[attr] = None
 
 class DefaultNew:
 	def __init__(self, callable, *args, **kwargs):
