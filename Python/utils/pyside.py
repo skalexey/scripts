@@ -1,37 +1,41 @@
 import os
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QClipboard
 from PySide6.QtWidgets import (
+    QApplication,
     QCheckBox,
     QFileDialog,
     QHBoxLayout,
     QInputDialog,
     QLabel,
     QLineEdit,
+    QMenu,
     QMessageBox,
     QSizePolicy,
     QSlider,
     QWidget,
 )
 
+import utils.function
 from utils.context import GlobalContext
-from utils.log.logger import *
+from utils.log.logger import Logger
 from utils.text import AbstractTextSpinner
 
 log = Logger()
 
-def select_data_file(from_path=None):
+def select_data_file(dir=None):
 	file_dialog = QFileDialog()
 	file_dialog.setFileMode(QFileDialog.ExistingFiles)
 	file_dialog.setNameFilter("CSV files (*.csv)")
-	file_dialog.setDirectory(from_path)
+	if dir is not None:
+		file_dialog.setDirectory(dir)
 	if file_dialog.exec():
 		selected_files = file_dialog.selectedFiles()
 		file_path1 = os.path.abspath(selected_files[0])
-		assert file_path1 == os.path.abspath(selected_files[0], os.getcwd())
 		log.info(f"Selected quote data file: {file_path1}")
 		if len(selected_files) == 2:
-			file_path2 = os.path.relpath(selected_files[1], current_directory)
+			file_path2 = os.path.abspath(selected_files[1])
 			log.info(f"Selected trading data file: {file_path2}")
 		else:
 			file_path2 = None
