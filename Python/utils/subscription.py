@@ -23,19 +23,24 @@ class Subscription:
 
 	def __init__(self, *args, **kwargs):
 		self._data = OrderedDict()
+		self._priorities = {}
 		self._lock = threading.RLock()
 		super().__init__(*args, **kwargs)
 
 	class CallableInfo:
-		def __init__(self, callable, subscriber, id=None, on_callable_destroyed=None, max_calls=None, unsubscribe_on_false=False, *args, **kwargs):
+		def __init__(self, callable, subscriber, id=None, caller=None, on_callable_destroyed=None, max_calls=None, unsubscribe_on_false=None, priority=None, *args, **kwargs):
 			# Detect if callable is a bound method
-			self.callable_ref = weakref.ref(callable, on_callable_destroyed)
-			_subscriber = subscriber if subscriber is not None else utils.lang.extract_self(callable)
-			self.subscriber_ref = weakref.ref(_subscriber) if _subscriber is not None else None
+			cb = utils.inspect_utils.function(callable) or callable
+			self.callable_ref = weakref.ref(cb, on_callable_destroyed)
+			cb_self = caller or utils.lang.extract_self(callable)
+			self.cb_self_ref = weakref.ref(cb_self, on_callable_destroyed) if cb_self is not None else None
+			_subscriber = subscriber#subscriber if subscriber is not None else cb_self
+			self.subscriber_ref = weakref.ref(_subscriber, on_callable_destroyed) if _subscriber is not None else None
 			self.id = id
 			self.max_calls = max_calls
 			self._call_count = 0
-			self.unsubscribe_on_false = unsubscribe_on_false
+			self.unsubscribe_on_false = unsubscribe_on_false or False
+			self.priority = priority or 0
 			self._is_valid = True
 			super().__init__(*args, **kwargs)
 		
@@ -49,6 +54,10 @@ class Subscription:
 		@property
 		def subscriber(self):
 			return self.subscriber_ref() if self.subscriber_ref is not None else None
+
+		@property
+		def cb_self(self):
+			return self.cb_self_ref() if self.cb_self_ref is not None else None
 
 		def _invalidate(self):
 			# Keep internal data unchanged for debugging purposes
@@ -66,13 +75,20 @@ class Subscription:
 				# Invalidate before logging to avoid infinite recursion since there are subscriptions on logs
 				log.error(f"Subscriber is deleted, but not unsubscribed. Unsubscribing the callable {self}")
 				return False
+			if self.callable_ref is not None and self.callable is None:
+				self._invalidate()
+				# Invalidate before logging to avoid infinite recursion since there are subscriptions on logs
+				log.error(f"Callable is deleted, but not unsubscribed. Unsubscribing the callable {self}")
+				return False
 			if self.max_calls is not None:
 				if self._call_count >= self.max_calls:
 					self._invalidate()
 					# Invalidate before logging to avoid infinite recursion since there are subscriptions on logs
 					log.error(f"Trying to call a callable '{self}' that has reached ({self._call_count}) its max call count {self.max_calls}, but has not unsubscribed yet for some reason. Unsubscribing it ignoring this call.")
 					return False
-			result = self.callable(*args, **kwargs)
+			cb_self = self.cb_self
+			_args = [cb_self] + list(args) if cb_self is not None else args
+			result = self.callable(*_args, **kwargs)
 			self._call_count += 1
 			if result is False:
 				if self.unsubscribe_on_false:
@@ -95,30 +111,34 @@ class Subscription:
 						return True
 					return subscriber1 == subscriber2
 				return False
-			return self.callable == other
+			if not self.callable == other:
+				return utils.inspect_utils.function(other) == self.callable
+			return True
 
 	class CallableInfoCleanOnDestroy(CallableInfo):
-		def __init__(self, callable, subscriber, id, on_callable_destroyed=None, max_calls=None, unsubscribe_on_false=False):
-			super().__init__(callable, subscriber, id, on_callable_destroyed, max_calls, unsubscribe_on_false)
-			_subscriber = self.subscriber
-			if _subscriber is not None:
+		def __init__(self, callable, subscriber, id, *args, **kwargs):
+			super().__init__(callable, subscriber, id, *args, **kwargs)
+			if subscriber is not None:
 				# Add __subscriptions__ attribute as a list of callables to the subscriber if not present
-				if not hasattr(_subscriber, "__subscriptions__"):
-					_subscriber.__subscriptions__ = OrderedDict()
-				_subscriber.__subscriptions__.add(id, callable)
+				if not hasattr(subscriber, "__subscriptions__"):
+					subscriber.__subscriptions__ = OrderedDict()
+				cb = utils.inspect_utils.function(callable) or callable
+				subscriber.__subscriptions__.add(id, cb)
 
 		def __del__(self):
 			log.verbose(f"__del__({self})")
 			subscriber = self.subscriber
 			if subscriber is not None:
-				subscriber.__subscriptions__.remove(self.id)
-				log.verbose(f"CallableInfo {self.id} detached from the subscriber")
-				if len(subscriber.__subscriptions__) == 0:
-					del subscriber.__subscriptions__
-					log.verbose(f"__subscriptions__ attribute removed from the subscriber")
+				subscriptions = getattr(subscriber, "__subscriptions__", None)
+				if subscriptions is not None:
+					subscriber.__subscriptions__.remove(self.id)
+					log.verbose(f"CallableInfo {self.id} detached from the subscriber")
+					if len(subscriber.__subscriptions__) == 0:
+						del subscriber.__subscriptions__
+						log.verbose(f"__subscriptions__ attribute removed from the subscriber")
 
 	# Any callable can be passed including another subscription
-	def subscribe(self, callable, subscriber=None, max_calls=None, unsubscribe_on_false=False):
+	def subscribe(self, callable, subscriber=None, caller=None, max_calls=None, unsubscribe_on_false=None, priority=None):
 		cb_id = self._next_cb_id()
 		log.verbose(f"subscribe({callable}, {subscriber}) -> {cb_id}")
 		assert cb_id not in self._data.keys()
@@ -128,15 +148,30 @@ class Subscription:
 			if self.unsubscribe(cb_id):
 				log.verbose(f"Unsubscribed a deleted subscriber. Callable id: {cb_id}")
 		with self._lock:
-			self._data[cb_id] = self.CallableInfoCleanOnDestroy(callable, subscriber, cb_id, on_callable_destroyed, max_calls, unsubscribe_on_false)
+			cb = self.CallableInfoCleanOnDestroy(callable, subscriber, cb_id, caller, on_callable_destroyed, max_calls, unsubscribe_on_false, priority)
+			self._data[cb_id] = cb
+			self._assign_priority(cb_id, cb.priority)
 		return cb_id
 	
-	def subscribe_once(self, callable, subscriber=None, max_calls=0, unsubscribe_on_false=False):
+	def _assign_priority(self, cb_id, priority):
+		priority_group = self._priorities.get(priority)
+		if priority_group is None:
+			priority_group = OrderedSet()
+			self._priorities[priority] = priority_group
+		priority_group.add(cb_id)
+
+	def _remove_priority(self, cb_id, priority):
+		priority_group = self._priorities[priority]
+		priority_group.remove(cb_id)
+		if len(priority_group) == 0:
+			self._priorities.pop(priority)
+
+	def subscribe_once(self, callable, subscriber=None, *args, **kwargs):
 		cb_to_compare = self.CallableInfo(callable, subscriber)
-		cb = utils.collection_utils.find_first(self._data.values(), lambda cb: cb == cb_to_compare)
+		cb = utils.collection.find_first(self._data.values(), lambda cb: cb == cb_to_compare)
 		if cb is not None:
 			return cb.id
-		return self.subscribe(callable, subscriber, max_calls, unsubscribe_on_false)
+		return self.subscribe(callable, subscriber, *args, **kwargs)
 
 	def is_subscribed(self, cb_or_id):
 		with self._lock:
@@ -151,6 +186,7 @@ class Subscription:
 				cb = self._data.pop(cb_or_id, None)
 				if cb is not None:
 					result = True
+					self._remove_priority(cb_or_id, cb.priority)
 			else:
 				result = self._unsubscribe_callable(cb_or_id, subscriber)
 		log.debug(f"{f'Unsubscribed' if result else 'Already unsubscribed'} callable {cb_or_id}")
@@ -159,9 +195,11 @@ class Subscription:
 	def notify(self, *args, **kwargs):
 		with self._lock:
 			to_unsubscribe = []
-			for cb in self._data.values().copy():
-				if cb(*args, **kwargs) is False:
-					to_unsubscribe.append(cb)
+			for priority_group in list(self._priorities.values()):
+				for cb_id in priority_group.copy():
+					cb = self._data[cb_id]
+					if cb(*args, **kwargs) is False:
+						to_unsubscribe.append(cb)
 			for cb in to_unsubscribe:
 				self.unsubscribe(cb)
 
