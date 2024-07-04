@@ -12,6 +12,7 @@ class ApplicationContext(GlobalContext):
 		self.app = None
 		self.main_window = None
 		self.data_manager = None
+		self.session_manager = None
 		self._is_ready = False
 		
 	def is_ready(self):
