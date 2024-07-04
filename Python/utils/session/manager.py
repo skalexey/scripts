@@ -48,6 +48,8 @@ class SessionManager:
 
 	def get_session_storage(self, session_id):
 		session_storage = self._session_list.get(session_id)
+		if session_storage is None:
+			return None
 		if isinstance(session_storage, str):
 			session_storage = SessionStorage(storage_path=session_storage)
 			self._session_list[session_id] = session_storage
