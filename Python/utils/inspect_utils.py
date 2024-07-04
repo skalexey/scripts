@@ -252,3 +252,10 @@ def user_frame_info(obj=None, caller_level=None):
 		raise ValueError(f"Could not find the frame of where the provided object is used (obj: {obj})")
 	return frame_info
 
+def user_globals_locals(obj=None, globals=None, locals=None):
+	if globals is None or locals is None:
+		frame = user_frame(obj, -1)
+		_globals = frame.f_globals if globals is None else globals
+		_locals = frame.f_locals if locals is None else locals
+		return _globals, _locals
+	return globals, locals

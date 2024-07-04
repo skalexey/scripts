@@ -74,24 +74,16 @@ class Logger:
 				print(msg)
 			return msg, message, level, self.log_title, current_time
 
-	def _globals_locals(self, globals=None, locals=None):
-		if globals is None or locals is None:
-			frame = utils.inspect_utils.user_frame(self)
-			_globals = frame.f_globals if globals is None else globals
-			_locals = frame.f_locals if locals is None else locals
-			return _globals, _locals
-		return globals, locals
-
 	def _exec(self, expression, globals=None, locals=None):
 		try:
-			_globals, _locals = self._globals_locals(globals, locals)
+			_globals, _locals = inspect_utils.user_globals_locals(self, globals, locals)
 			exec(expression, _globals, _locals)
 		except Exception as e:
 			self.error(f"Error executing expression: '{expression}': '{e}'")
 		
 	def _eval(self, expression, globals=None, locals=None):
 		try:
-			_globals, _locals = self._globals_locals(globals, locals)
+			_globals, _locals = inspect_utils.user_globals_locals(self, globals, locals)
 			result = eval(expression, _globals, _locals)
 			return result
 		except Exception as e:
