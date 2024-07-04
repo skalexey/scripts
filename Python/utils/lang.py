@@ -1,7 +1,7 @@
 import inspect
 
+import utils.collection.ordered_dict
 import utils.inspect_utils as inspect_utils
-import utils.ordered_dict
 
 
 def is_primitive(value):

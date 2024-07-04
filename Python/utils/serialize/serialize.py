@@ -5,7 +5,7 @@ import os
 from datetime import datetime
 from enum import Enum
 
-import utils.collection_utils as collection_utils
+import utils.collection
 import utils.function
 import utils.import_utils as import_utils
 import utils.inspect_utils as inspect_utils
@@ -14,7 +14,7 @@ import utils.lang
 import utils.method
 import utils.serialize  # Lazy import
 import utils.string
-from utils.ordered_set import OrderedSet
+from utils.collection.ordered_set import OrderedSet
 
 
 class NotSerializable:
@@ -172,7 +172,7 @@ def class_attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=
 			sig_str = inspect_utils.signature_str(cls.__init__, cls)
 			raise Exception(f"Not supported parameters provided for {sig_str} through kwargs: {not_supported_params}")
 	# Apply additional kwargs atop
-	collection_utils.update_existing(all_attrs, additional_kwargs)
+	utils.collection.update_existing(all_attrs, additional_kwargs)
 	kwargs, attrs = utils.method.filter_params(all_attrs, cls.__init__)
 	# Check for missed required parameters
 	not_provided_params = [key for key, val in kwargs.items() if inspect_utils.is_value_empty(val)]

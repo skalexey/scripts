@@ -132,7 +132,7 @@ class OrderedSet(Serializable):
 		return f"[{{{values_str}}}]"
 
 	def __repr__(self):
-		return f"utils.OrderedSet({self._keys})"
+		return f"utils.collection.orderedSet({self._keys})"
 
 	def __eq__(self, other):
 		if not isinstance(other, OrderedSet):

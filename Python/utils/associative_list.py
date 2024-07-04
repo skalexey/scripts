@@ -1,4 +1,4 @@
-from utils.ordered_dict import *
+from utils.collection.ordered_dict import *
 
 
 class AssociativeList():

@@ -1,6 +1,6 @@
 from test import *
 
-from utils.ordered_dict import *
+from utils.collection.ordered_dict import *
 from utils.subscription import *
 
 

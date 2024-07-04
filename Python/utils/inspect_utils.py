@@ -12,7 +12,7 @@ def signature_input(func, out=None, filter=None):
 	if func is None:
 		raise ValueError(utils.function.msg("The given argument is not a method or a function"))
 	signature = inspect.signature(func)
-	result = out or utils.ordered_dict.OrderedDict()
+	result = out or utils.collection.ordered_dict.OrderedDict()
 	for param in signature.parameters.values():
 		if filter is not None:
 			if not filter(param):

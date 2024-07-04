@@ -2,10 +2,11 @@ import asyncio
 import threading
 import weakref
 
-import utils.collection_utils
+import utils.collection
+import utils.inspect_utils as inspect_utils
 import utils.lang
-from utils.log.logger import *
-from utils.ordered_dict import *
+from utils.collection.ordered_dict import OrderedDict, OrderedSet
+from utils.log.logger import Logger
 
 log = Logger()
 

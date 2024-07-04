@@ -1,4 +1,4 @@
-from utils.ordered_set import OrderedSet
+from utils.collection.ordered_set import OrderedSet
 
 
 class OrderedDict(OrderedSet):
@@ -130,7 +130,7 @@ class OrderedDict(OrderedSet):
 	def __repr__(self):
 		# Contents in the format k->i: v
 		contents_str = ", ".join([f"{key}->{index}: {value}" for key, index, value in zip(self._keys, range(len(self._list)), self._list)])
-		return f"utils.OrderedDict({contents_str})"
+		return f"utils.collection.orderedDict({contents_str})"
 
 	def __eq__(self, other):
 		if not super().__eq__(other):

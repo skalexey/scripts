@@ -4,7 +4,6 @@ from abc import ABC
 import utils.serialize
 import utils.string
 from utils.decorators import no_return
-from utils.ordered_dict import OrderedDict
 from utils.profile.trackable_resource import TrackableResource
 
 

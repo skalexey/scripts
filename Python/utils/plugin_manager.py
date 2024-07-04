@@ -1,9 +1,10 @@
 import importlib.util
+import inspect
 import os
 
-from utils.log.logger import *
-from utils.ordered_dict import *
-from utils.plugin import *
+from utils.collection.ordered_dict import OrderedDict
+from utils.log.logger import Logger
+from utils.plugin import Plugin
 
 log = Logger()
 class PluginManager:

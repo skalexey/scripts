@@ -28,7 +28,7 @@ class LazyLoader:
 		return self._user_module_name
 
 	def collect_module_names(self):
-		from utils.ordered_set import OrderedSet
+		from utils.collection.ordered_set import OrderedSet
 		module_names = OrderedSet()
 		# Directory path of the current module
 		user_frame_info = utils.inspect_utils.user_frame_info()

@@ -1,7 +1,7 @@
 import collections
 
 import utils.class_utils as class_utils
-import utils.collection_utils as collection_utils
+import utils.collection
 import utils.function
 import utils.serialize as serialize
 from utils.object.attributes_view import *
@@ -22,12 +22,12 @@ class Serializable:
 	def serialize(self, ignore=None, serializer=None, allow_extension=False, **param_overrides):
 		_serializer = serializer or serialize.to_json_struct
 		init_params = utils.serialize.collect_all_params(self.__class__)
-		for param_name in collection_utils.as_set(ignore):
+		for param_name in utils.collection.as_set(ignore):
 			init_params.pop(param_name, None)
 		# Process overridings
 		custom_mapping = self._serialize_mapping()
 		attrs = AttributesView(self)
-		collection_utils.fill_dict(init_params, attrs, ignore=custom_mapping)
+		utils.collection.fill_dict(init_params, attrs, ignore=custom_mapping)
 		for param_name, attr_name in custom_mapping.items():
 			if param_name in init_params:
 				if attr_name is not None:
