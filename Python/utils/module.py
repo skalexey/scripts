@@ -50,7 +50,7 @@ class Module(TrackableResource, ABC):
 
 	def load_settings(self):
 		fpath = self.settings_file_path()
-		self._settings = utils.serialize.from_json(fpath=fpath) or OrderedDict()
+		self._settings = utils.serialize.from_json(fpath=fpath) or {}
 
 	def set_setting(self, key, value):
 		module_settings = self.module_settings()
