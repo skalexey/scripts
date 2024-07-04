@@ -124,3 +124,6 @@ def msg(message=None, args_format=None, frame=None):
 
 def msg_kw(message=None, frame=None):
 	return msg(message, args_format="kw", frame=frame or inspect_utils.caller_frame())
+
+def msg_v(message=None, frame=None):
+	return msg(message, args_format="values", frame=frame or inspect_utils.caller_frame())
