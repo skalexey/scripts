@@ -160,11 +160,11 @@ def functions(obj):
 	result = []
 	if inspect.isfunction(obj):
 		result.append(obj)
-	if inspect.ismethod(obj):
+	elif inspect.ismethod(obj):
 		result.append(obj.__func__)
-	if hasattr(obj, '__func__'):
+	elif hasattr(obj, '__func__'):
 		result.append(obj.__func__)
-	if isinstance(obj, property):
+	elif isinstance(obj, property):
 		attrs = ['fget', 'fset']
 		for name in attrs:
 			func = getattr(obj, name)
