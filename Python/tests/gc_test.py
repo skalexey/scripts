@@ -1,10 +1,17 @@
 import gc
 from test import *
 
-from utils.log.logger import *
+from utils.log.logger import Logger
 
 log = Logger()
 _globals = globals()
+
+class E:
+	def __init__(self):
+		log("E()")
+
+	def __del__(self):
+		log("__del__(E)")
 class D:
 	def __init__(self, c):
 		log(f"D('{c}')")
@@ -59,11 +66,20 @@ def no_collect_no_cyclic_test():
 	c = None
 	log(title("no_collect_no_cyclic_test end"))
 
+def dictionaries_test():
+	log(title("Dictionaries Test"))
+	e = E()
+	d = {}
+	d["e"] = e
+	e.d = d
+	b = B(e)
+	log(title("End of Dictionaries Test"))
 
 def test():
-	no_collect_cyclic_test()
-	collect_cyclic_test()
-	no_collect_no_cyclic_test()
+	# no_collect_cyclic_test()
+	# collect_cyclic_test()
+	# no_collect_no_cyclic_test()
+	dictionaries_test()
 
 run()
 

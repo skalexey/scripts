@@ -31,6 +31,14 @@ class A:
 		self.cb_id2 = self.on_call.subscribe(self._on_call)
 		assert self.on_call.is_subscribed(self.cb_id2)
 
+	def subscribe_subscription(self):
+		sub = Subscription()
+		self.cb_id = self.on_call.subscribe(sub)
+		self.on_call()
+		assert self.on_call.is_subscribed(self.cb_id)
+		self.on_call.unsubscribe(self.cb_id)
+		assert not self.on_call.is_subscribed(self.cb_id)
+
 	def _on_call(self):
 		log("A._on_call()")
 
@@ -65,33 +73,33 @@ class B:
 def test_independent_cb_no_subscriber():
 	log(title("test_independent_cb_no_subscriber()"))
 	log.expr("a = A()")
-	log.expr("a.subscribe_independent_no_subscriber()")
-	log.expr("assert a.on_call.unsubscribe(a.cb_id) == False)"
+	assert_exception("a.subscribe_independent_no_subscriber()", False)
+	assert_exception("assert a.on_call.unsubscribe(a.cb_id) == False", False)
 	log(title("End of test_independent_cb_no_subscriber()"))
 
 def test_independent_cb_with_subscriber():
 	log(title("test_independent_cb_with_subscriber()"))
 	log.expr("a = A()")
-	log.expr("a.subscribe_independent_with_self()")
-	log.expr("assert a.on_call.is_subscribed(a.cb_id))"
-	log.expr("assert a.on_call.is_subscribed(a.cb_id2))"
+	assert_exception("a.subscribe_independent_with_self()", False)
+	assert_exception("assert a.on_call.is_subscribed(a.cb_id)", False)
+	assert_exception("assert a.on_call.is_subscribed(a.cb_id2)", False)
 	log.expr("a()")
 	log.expr("b = B()")
-	log.expr("b.subscribe_independent_with_self(a)")
-	log.expr("assert a.on_call.is_subscribed(b.cb_id))"
-	log.expr("assert a.on_call.is_subscribed(b.cb_id2))"
+	assert_exception("b.subscribe_independent_with_self(a)", False)
+	assert_exception("assert a.on_call.is_subscribed(b.cb_id)", False)
+	assert_exception("assert a.on_call.is_subscribed(b.cb_id2)", False)
 	log.expr("a()")
 	log(title("End of test_independent_cb_with_subscriber()"))
 
 def test_dependent_cb():
 	log(title("test_dependent_cb()"))
 	log.expr("a = A()")
-	log.expr("a.subscribe_dependent()")
-	log.expr("assert a.on_call.is_subscribed(a.cb_id))"
+	assert_exception("a.subscribe_dependent()", False)
+	assert_exception("assert a.on_call.is_subscribed(a.cb_id)", False)
 	log.expr("a()")
 	log.expr("b = B()")
-	log.expr("b.subscribe_dependent(a)")
-	log.expr("assert a.on_call.is_subscribed(b.cb_id))"
+	assert_exception("b.subscribe_dependent(a)", False)
+	assert_exception("assert a.on_call.is_subscribed(b.cb_id)", False)
 	log.expr("a()")
 	log(title("End of test_dependent_cb()"))
 
@@ -109,12 +117,21 @@ subscribe_b(a)"""
 	log.expr("a()")
 	log(title("End of test_dependent_cb()"))
 
+
+def test_subscribe_subscription():
+	log(title("test_subscribe_subscription()"))
+	log.expr("a = A()")
+	log.expr("a.subscribe_subscription()")
+	assert_exception("assert a.on_call.is_subscribed(a.cb_id) is False", False)
+	log(title("End of test_subscribe_subscription()"))
+
 def test():
 	log(title("Subscription Test"))
 	test_independent_cb_no_subscriber()
 	test_independent_cb_with_subscriber()
 	test_dependent_cb()
 	test_dependent_cb_destroy()
+	test_subscribe_subscription()
 	log(title("Subscription Test finished"))
 
 run()

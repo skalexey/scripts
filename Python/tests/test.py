@@ -24,3 +24,17 @@ def run():
 	# Get the caller's globals from the frame
 	function_to_call = user_frame.f_globals[function_name]
 	function_to_call()
+
+def assert_exception(expr, result=True):
+	ex = None
+	try:
+		_globals, _locals = inspect_utils.user_globals_locals()
+		log(utils.function.msg_v())
+		exec(expr, _globals, _locals)
+	except Exception as e:
+		ex = e
+		log(f"Exception caught: '{e}'")
+	if result:
+		assert ex is not None, f"Expected exception for '{expr}'"
+	else:
+		assert ex is None, f"Unexpected exception for '{expr}'"
