@@ -70,7 +70,8 @@ def args(out=None, validate=True, custom_frame=None, extract_args=None, extract_
 
 def msg(message=None, args_format=None, frame=None, ignore_first=None):
 	_args_format = args_format or False
-	sig_str = inspect_utils.current_function_signature(custom_frame=frame or inspect_utils.caller_frame(), args_format=_args_format, ignore_first=ignore_first)
+	_ignore_first = ignore_first or False
+	sig_str = inspect_utils.current_function_signature(custom_frame=frame or inspect_utils.caller_frame(), args_format=_args_format, ignore_first=_ignore_first)
 	message_addition = f": {message}" if message is not None else ""
 	return f"{sig_str}{message_addition}"
 

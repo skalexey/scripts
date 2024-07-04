@@ -50,12 +50,16 @@ def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=Non
 			call_info = frame_call_info(_frame)
 			if call_info.function != func:
 				raise ValueError(f"Function mismatch. Provided: '{func}', what frame contains: '{call_info.function}'")
-			args = utils.function.args(out=None, validate=False, custom_frame=_frame)
-			# bound_arguments = sig.bind(*args, **kwargs)
-			bound_arguments = sig.bind(**args)
-			bound_arguments.apply_defaults()
+			all_args = utils.function.args(out=None, validate=False, custom_frame=_frame)
+			args = all_args[_ignore_first:]
 			if _args_format == "values":
-				args_repr = ", ".join(repr(arg) for arg in args[_ignore_first:])
+				args_repr = ''
+				for i, (name, arg) in enumerate(args.items()):
+					param = sig.parameters[name]
+					if param.kind is inspect.Parameter.VAR_KEYWORD or param.kind is inspect.Parameter.VAR_POSITIONAL:
+						if arg == {} or arg == [] or arg == tuple(): # Scip empty args and kwargs for values format
+							continue
+					args_repr += f"{', ' if i > 0 else ''}{name}={arg!r}"
 				args_sig = f"({args_repr})"
 			elif _args_format == "kw":
 				kwargs_repr = ", ".join(f"{k}={v!r}" for k, v in args.items())
