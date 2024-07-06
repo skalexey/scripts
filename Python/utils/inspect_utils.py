@@ -93,7 +93,7 @@ class CallInfo:
 		self.module_name = module_name(frame)
 		previous_frame = frame.f_back
 		# Try to get the function object from local scope on the level above
-		func = previous_frame.f_locals.get(co_name)
+		func = previous_frame.f_locals.get(co_name) if previous_frame is not None else None
 		if not inspect.isfunction(func):
 			# Check the globals of the current frame
 			func = frame.f_globals.get(co_name, None)
