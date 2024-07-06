@@ -91,7 +91,7 @@ def ask_yes_no(title, message, on_answer=None, yes_text=None, no_text=None):
 			state.result = button_text.lower().find(_yes_text.lower()) != -1
 
 		msg_box.buttonClicked.connect(_on_answer)
-		msg_box.exec_()
+		msg_box.exec()
 
 		return state.result
 
