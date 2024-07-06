@@ -5,6 +5,8 @@ from datetime import datetime
 from PySide6.QtCore import QEvent, QTimer
 from PySide6.QtWidgets import QApplication
 
+from utils.collection.associative_list import AssociativeList
+
 
 class Application(QApplication):
 	class JobEvent(QEvent):
@@ -23,6 +25,7 @@ class Application(QApplication):
 		self.timer.timeout.connect(self.update)
 		self.timer.start(update_interval * 1000)  # Update every 1000 milliseconds (1 second)
 		self.last_time = None
+		self.on_update_jobs = AssociativeList()
 		self.installEventFilter(self)
 
 	def eventFilter(self, obj, event):
@@ -44,11 +47,20 @@ class Application(QApplication):
 			QApplication.postEvent(self, event)
 		return future
 
+	def add_on_update(self, func):
+		self.on_update_jobs.add(func)
+
+	def on_update(self, dt):
+		self.context.module_manager.call_on_modules("on_update", dt)
+
 	def update(self):
 		current_time = self.context.current_time()
 		dt = current_time - (self.last_time or current_time)
+		jobs_to_delete = []
+		for id, job in self.on_update_jobs:
+			if job(dt) is False:
+				jobs_to_delete.append(id)
+		for id in jobs_to_delete:
+			self.on_update_jobs.remove(id)
 		self.last_time = current_time
-		current_datetime = datetime.fromtimestamp(current_time)
-		last_datetime = datetime.fromtimestamp(self.last_time)
-		# log.debug(f"last_time: {self.last_time}, current_time: {current_time}, dt: {dt}, last_datetime: {last_datetime}, current_datetime: {current_datetime}")
-		self.context.module_manager.call_on_modules("on_update", dt)
+		self.on_update(dt)

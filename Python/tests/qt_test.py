@@ -9,11 +9,19 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from utils.application_context import ApplicationContext
 from utils.profile.refmanager import RefManager
 from utils.profile.trackable_resource import TrackableResource
 from utils.pyside import WidgetBase
+from utils.pyside.application import Application
 
-app = QApplication([])
+
+class TestApplication(Application):
+	def on_update(self, dt):
+		pass
+
+app_context = ApplicationContext()
+app = TestApplication(app_context, [])
 window = QMainWindow()
 window.setWindowTitle("Circular Reference Test")
 layout = QVBoxLayout()
@@ -144,6 +152,15 @@ def circular_ref_test():
 	gc.collect()
 	gc.collect()
 	assert man.connected_func is not None, "ConnectedFunc should have not been collected since it has a reference to itself captured by .connect() and the widget is still alive"
+	time_elapsed = 0
+	def check(dt):
+		nonlocal time_elapsed
+		time_elapsed += dt
+		if time_elapsed > 1:
+			assert man.connected_func is None, "ConnectedFunc should have been collected now"
+			log("ConnectedFunc has been collected")
+			return False
+	app.add_on_update(check)
 
 	log(title("End of Circular Reference Test"))
 
