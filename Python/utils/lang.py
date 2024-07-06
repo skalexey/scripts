@@ -33,3 +33,14 @@ class DefaultNew:
 
 def defnew(callable, *args, **kwargs):
 	return DefaultNew(callable, *args, **kwargs)
+
+class NoValueMeta(type):
+	def __bool__(cls):
+		return False
+
+	def __call__(cls, *args, **kwargs):
+		# Prevent instance creation by returning None or raising an exception
+		raise TypeError(f"Cannot create instances of {cls.__name__}")
+
+class NoValue(metaclass=NoValueMeta):
+	pass
