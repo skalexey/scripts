@@ -1,6 +1,5 @@
 import weakref
 
-import utils.method
 from utils.collection.associative_list import AssociativeList
 from utils.log.logger import Logger
 
@@ -16,7 +15,7 @@ class TrackableResourceInfo:
 	def repr(self):
 		obj = self.ref()
 		if obj is not None:
-			self._repr = f"TrackableResource: {obj!r}" # Always store the latest repr
+			self._repr = f"{obj!r}" # Always store the latest repr
 		return self._repr
 
 class TrackableResource:
@@ -30,8 +29,8 @@ class TrackableResource:
 		super().__init__(*args, **kwargs)
 		info = TrackableResourceInfo()
 		def on_destroyed(ref):
-			log.verbose(utils.function.msg(info.repr))
+			log.verbose(f"TrackableResource destroyed: {info.repr}")
 			TrackableResource.resources.remove(info.id)
 		info.ref = weakref.ref(self, on_destroyed)
 		info.id = self.resources.add(info)
-		log.verbose(utils.function.msg_v())
+		log.verbose(f"TrackableResource created: {info.repr}")
