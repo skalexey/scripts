@@ -10,15 +10,20 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QLabel,
     QLineEdit,
+    QListWidget,
     QMenu,
     QMessageBox,
+    QPushButton,
     QSizePolicy,
     QSlider,
+    QVBoxLayout,
     QWidget,
 )
 
 import utils.function
+import utils.method
 from utils.context import GlobalContext
+from utils.lang import NoValue
 from utils.log.logger import Logger
 from utils.text import AbstractTextSpinner
 
@@ -154,26 +159,79 @@ def create_checkbox_widget(parent_layout, label, default_value, on_changed):
 	checkbox.stateChanged.connect(on_state_changed)
 	return widget, checkbox
 
-class CombinedMeta(type(QLabel), type(AbstractTextSpinner)):
-	pass
-		
-class TextSpinner(AbstractTextSpinner, QLabel, metaclass=CombinedMeta):
-	def __init__(self, parent=None):
-		QLabel.__init__(self, parent)
-		self.setAlignment(Qt.AlignCenter)
-		AbstractTextSpinner.__init__(self)
+class Stub:
+	# This class allows to carry over the same arguments through all the mixins passing QWidget if it is the last in the chain since QWidget needs to resolve the remaining arguments against the 'object' class.
+	def __init__(self, *args, parent_layout=None, parent=None, **kwargs):
+		super().__init__(*args, **kwargs)
 
-	@AbstractTextSpinner.text.getter
+def WidgetBase(*classes):
+	# See the comments above of Stub class purpose.
+	# If not Stub is set, expect Qt errors in the case of provided both kwargs and several positional arguments. Qt performs the checks after super().__init__ call.
+	# Adding also allows to better diagnose problems caused by passing excessive arguments.
+	class WidgetBase(*classes, Stub):
+		# Support using Qt signatures directly like QPushButton("Click", parent)
+		def __init__(self, *args, parent=NoValue, parent_layout=None, **kwargs):
+			if parent is not NoValue: # Need to distinguish between not passed parent and explicitly passed None as a parent
+				# Expect multiple values error from Qt in the case of provided parent in *args as well. Qt performs the checks after super().__init__ call.
+				kwargs["parent"] = parent
+			if parent_layout is not None and parent:
+				raise ValueError(utils.method.msg("ResourceListWidget: parent and parent_layout cannot be both set"))
+			super().__init__(*args, **kwargs, parent_layout=parent_layout) # Carry over parent_layout to all the mixins
+			if parent_layout is not None:
+				parent_layout.addWidget(self)
+	return WidgetBase
+
+
+base = AbstractTextSpinner(QLabel)
+class TextSpinner(base):
+	def __init__(self, parent=None, *args, **kwargs):
+		super().__init__(parent, *args, **kwargs)
+		self.setAlignment(Qt.AlignCenter)
+
+	@base.text.getter
 	def text(self):
 		return self.text()
 
-	@AbstractTextSpinner.text.setter
+	@base.text.setter
 	def text(self, value):
 		self.setText(value)
 
-class CopyableLabel(QLabel):
-	def __init__(self, text="", parent=None):
-		super().__init__(text, parent)
+class CopyableMixin:
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._text = None
+
+	def create_context_menu(self):
+		context_menu = QMenu(self)
+		copy_action = QAction("Copy", self)
+		context_menu.addAction(copy_action)
+		copy_action.triggered.connect(self.copy_text)
+		# copy_action.triggered.connect(partial(self.copy_text, "some argument"))
+		return context_menu
+
+	def text_to_copy(self, context_menu_event):
+		pass
+
+	def contextMenuEvent(self, event):
+		text = self.text_to_copy(event)
+		if text is None:
+			return
+		self._text = text
+		context_menu = self.create_context_menu()
+		context_menu.exec(event.globalPos())
+
+	def copy_text(self):
+		clipboard = QApplication.clipboard()
+		clipboard.setText(self._text)
+		self._text = None
+
+class CopyableLabelMixin(CopyableMixin):
+	def text_to_copy(self, context_menu_event):
+		return self.text()
+
+class CopyableLabel(WidgetBase(CopyableLabelMixin, QLabel)):
+	def __init__(self, text="", parent=None, *args, **kwargs):
+		super().__init__(text, parent, *args, **kwargs)
 		self.setTextInteractionFlags(Qt.TextSelectableByMouse)  # Enable text selection
 		self.setContextMenuPolicy(Qt.CustomContextMenu)  # Enable custom context menu
 		self.customContextMenuRequested.connect(self.show_context_menu)
@@ -183,23 +241,26 @@ class CopyableLabel(QLabel):
 		copy_action = QAction("Copy", self)
 		copy_action.triggered.connect(self.copy_text)
 		context_menu.addAction(copy_action)
-		context_menu.exec_(self.mapToGlobal(pos))
+		context_menu.exec(self.mapToGlobal(pos))
 
 	def copy_text(self):
 		clipboard = QApplication.clipboard()
 		clipboard.setText(self.text())
 
-class ValueWidget(QWidget):
-	def __init__(self, parent_layout, label, value, fixed_width=None, parent=None):
-		super().__init__(parent)
+class ValueWidget(WidgetBase(QWidget)):
+	def __init__(self, label, value, fixed_width=None, value_fixed_width=None, parent=None, parent_layout=None, *args, **kwargs):
+		super().__init__(parent=parent, parent_layout=parent_layout, *args, **kwargs)
 		layout = QHBoxLayout()
 		self.setLayout(layout)
-		parent_layout.addWidget(self)
+		if fixed_width is not None:
+			self.setFixedWidth(fixed_width)
+		# Label
 		label_widget = QLabel(label)
 		layout.addWidget(label_widget)
+		# Value
 		self.value_label = CopyableLabel(str(value))
-		if fixed_width is not None:
-			self.value_label.setFixedWidth(fixed_width)
+		if value_fixed_width is not None:
+			self.value_label.setFixedWidth(value_fixed_width)
 		layout.addWidget(self.value_label)
 
 	def set_value(self, value):
@@ -207,3 +268,73 @@ class ValueWidget(QWidget):
 
 	def value(self):
 		return self.value_label.text()
+
+
+class ExpandableWidget(WidgetBase(QWidget)):
+	def __init__(self, title=None, expanded_widget=None, collapsed_widget=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		# Layouting
+		self.layout = QVBoxLayout()
+		self.setLayout(self.layout)
+		self.hlayout = QHBoxLayout()
+		self.hlayout.setAlignment(Qt.AlignLeft)
+		self.layout.addLayout(self.hlayout)
+		# Widgets
+		self.collapsed_widget = collapsed_widget or QLabel(title or "")
+		self.hlayout.addWidget(self.collapsed_widget)
+		self.expanded_widget = expanded_widget
+		if self.expanded_widget is not None:
+			self.layout.addWidget(self.expanded_widget)
+		# Expand button
+		self.expand_button = QPushButton("+")
+		self.expand_button.clicked.connect(self._on_expand_click)
+		self.hlayout.addWidget(self.expand_button)
+		self.update()
+
+	def _on_expand_click(self):
+		self.expand()
+
+	def _on_collapse_click(self):
+		self.collapse()
+
+	def expand(self):
+		self.expand_button.setText("-")
+		self.expand_button.clicked.disconnect()
+		self.expand_button.clicked.connect(self._on_collapse_click)
+		if self.expanded_widget is not None:
+			self.expanded_widget.show()
+
+	def collapse(self):
+		self.expand_button.setText("+")
+		self.expand_button.clicked.disconnect()
+		self.expand_button.clicked.connect(self._on_expand_click)
+		if self.expanded_widget is not None:
+			self.expanded_widget.hide()
+
+
+class ResizableListMixin:
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.adjustSize()
+
+	def addItem(self, item_text):
+		# item = QListWidgetItem(item_text)
+		# item.setSizeHint(QSize(self.fontMetrics().horizontalAdvance(item_text) + 20, self.fontMetrics().height() + 10))
+		super().addItem(item_text)
+		self.adjustSizeToContents()
+
+	def adjustSizeToContents(self):
+		total_width = max(self.sizeHintForColumn(0) + self.verticalScrollBar().sizeHint().width(), self.width())
+		total_height = self.sizeHintForRow(0) * self.count() + self.horizontalScrollBar().sizeHint().height()
+		self.setFixedSize(total_width, total_height)
+
+
+class CopyableListElementMixin(CopyableMixin):
+	def text_to_copy(self, context_menu_event):
+		item = self.itemAt(context_menu_event.pos())
+		return item.text() if item else None
+
+class ListWidget(WidgetBase(ResizableListMixin, CopyableListElementMixin, QListWidget)):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.adjustSize()

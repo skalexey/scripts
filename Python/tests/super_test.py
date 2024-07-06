@@ -208,7 +208,7 @@ def super_test():
 	log.expr("p = QWidget()")
 	log.expr("layout = QVBoxLayout()")
 	log.expr("z = Z(None, a2=None)")
-	log.expr("list_widget = utils.pyside.ResizableListWidget(parent_layout=layout)")
+	log.expr("list_widget = utils.pyside.ListWidget(parent_layout=layout)")
 	log.expr("y = Y()")
 	log.expr("layout.addWidget(y)")
 	# log.expr("z.a2.addWidget(z)")
