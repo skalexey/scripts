@@ -16,7 +16,8 @@ class Intrstate:
 		state = self._get_intrincic_attr('_state')
 		if state is None:
 			return None
-		return state.get(name)
+		value = state.get(name)
+		return self._process_get_value(name, value)
 
 	def _on_state_update(self, name, value):
 		pass
@@ -39,5 +40,12 @@ class Intrstate:
 		if value is None:
 			del self._state[name]
 		else:
-			self._state[name] = value
+			self._state[name] = self._process_set_value(name, value)
 		self._on_state_update(name, value)
+
+	# Override these method to process the value before storing and upon retrieval
+	def _process_set_value(self, name, value):
+		return value
+
+	def _process_get_value(self, name, value):
+		return value
