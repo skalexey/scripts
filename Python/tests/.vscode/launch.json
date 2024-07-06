@@ -35,5 +35,12 @@
 			"program": "${workspaceFolder}/qt_test.py",
 			"console": "integratedTerminal"
 		},
+		{
+			"name": "Python Debugger: Debug Gc Test",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/gc_test.py",
+			"console": "integratedTerminal"
+		},
 	]
 }

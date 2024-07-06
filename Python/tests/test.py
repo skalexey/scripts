@@ -38,3 +38,7 @@ def assert_exception(expr, result=True):
 		assert ex is not None, f"Expected exception for '{expr}'"
 	else:
 		assert ex is None, f"Unexpected exception for '{expr}'"
+
+def log_if_true(flag, msg):
+	if flag:
+		log(msg)

@@ -1,7 +1,5 @@
 from test import *
 
-import utils.method
-import utils.pyside
 from PySide6.QtWidgets import (
     QApplication,
     QHBoxLayout,
@@ -11,6 +9,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+import utils.method
+import utils.pyside
 
 
 def super_test():

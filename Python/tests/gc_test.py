@@ -1,49 +1,38 @@
 import gc
 from test import *
 
+import utils.method
 from utils.log.logger import Logger
+from utils.profile.refmanager import RefManager
+from utils.profile.trackable_resource import TrackableResource
 
 log = Logger()
 _globals = globals()
 
-class E:
+class E(TrackableResource):
 	def __init__(self):
-		log("E()")
+		super().__init__()
 
-	def __del__(self):
-		log("__del__(E)")
-class D:
+class D(TrackableResource):
 	def __init__(self, c):
-		log(f"D('{c}')")
+		super().__init__()
+		log(utils.method.msg_v())
 
-	def __del__(self):
-		log("__del__(D)")
-		
-class C:
+class C(TrackableResource):
 	def __init__(self):
-		log("C()")
+		super().__init__()
 		d = D(self)
 
-	def __del__(self):
-		log("__del__(C)")
-
-class B:
+class B(TrackableResource):
 	def __init__(self, a):
-		log(f"B('{a}')")
+		super().__init__()
+		log(utils.method.msg_v())
 		self.a = a
 
-	def __del__(self):
-		log("__del__(B)")
-		self.a = None
-
-class A:
+class A(TrackableResource):
 	def __init__(self):
-		log("A()")
+		super().__init__()
 		self.b = B(self)
-
-	def __del__(self):
-		log("__del__(A)")
-		self.b = None
 
 def no_collect_cyclic_test():
 	log(title("no_collect_cyclic_test"))
@@ -75,11 +64,62 @@ def dictionaries_test():
 	b = B(e)
 	log(title("End of Dictionaries Test"))
 
+def circular_ref_test():
+	log(title("Circular Reference Test"))
+	# Don't use log.expr since it exposes objects to another stack frame and undermines the outcome of this test
+	e = E()
+	a = A()
+
+	man = RefManager()
+
+	def inner_scope():
+		class F(E):
+			def create_closure(self):
+				def f():
+					log(utils.method.msg_v(f"capturing self: {self}"))
+				return f
+
+			def capture_self(self):
+				return self.create_closure()
+
+			def __init__(self):
+				super().__init__()
+				log(utils.method.msg_v())
+				self.capture_self()
+
+		class G(F):
+			def capture_self(self):
+				self.f = super().capture_self()
+				return self.f
+
+		class H(F):
+			def create_closure(self):
+				l = lambda: log(utils.method.msg_v(f"capturing self: {self}"))
+				return l
+
+		class I(H, G):
+			pass
+
+		man.f = F()
+		man.g = G()
+		man.h = H()
+		man.i = I()
+
+	inner_scope()
+	assert man.f is None, "F should have been collected since the function that has a reference to self captured in a closure has been collected"
+	assert man.g is not None, "G should have not been collected since it has a reference to itself captured in a closure"
+	assert man.h is None, "H should have been collected since the lambda that has a reference to self captured in a closure has been collected"
+	assert man.i is not None, "I should have not been collected since it has a reference to itself captured in a lambda"
+	log(title("End of Circular Reference Test"))
+
 def test():
+	log(title("Test"))
 	# no_collect_cyclic_test()
 	# collect_cyclic_test()
 	# no_collect_no_cyclic_test()
-	dictionaries_test()
+	# dictionaries_test()
+	circular_ref_test()
+	log(title("End of Test"))
 
 run()
 
