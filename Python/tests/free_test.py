@@ -1,3 +1,6 @@
+from test import *
+
+
 def extend_test():
 	l1 = [1,2]
 	l2 = [2,3]
@@ -60,6 +63,48 @@ def dict_test():
 		pop_test_impl(pop2)
 		pop_empty_default()
 
-	pop_test()
 
-dict_test()
+def partial_test():
+	from functools import partial
+
+	def original_function(first_arg, second_arg):
+		return f"First argument: {first_arg}, Second argument: {second_arg}"
+
+	# Create a partial function that always adds the second argument
+	second_argument = "fixed_value"
+	partial_function = partial(original_function, second_argument)
+
+	# Use the partial function
+	result = partial_function("dynamic_value")
+	print(result)  # Output: "First argument: dynamic_value, Second argument: fixed_value"
+
+partial_test()
+
+def get_prop_method_test():
+	class MyClass:
+		def __init__(self, value):
+			self._value = value
+
+		@property
+		def value(self):
+			return self._value
+
+	# Create an instance of the class
+	obj = MyClass(42)
+
+	# Access the property's getter method directly and bind it to the instance
+	getter_method = MyClass.value.__get__(obj)
+
+	# Call the getter method
+	print(getter_method())  # Output: 42
+
+def mro_test():
+	class M:
+		pass
+
+	log(M.mro())
+
+def test():
+	mro_test()
+
+run()

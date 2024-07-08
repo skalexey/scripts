@@ -72,6 +72,8 @@ class B:
 
 def test_independent_cb_no_subscriber():
 	log(title("test_independent_cb_no_subscriber()"))
+	a = A()
+	a.subscribe_independent_no_subscriber()
 	log.expr("a = A()")
 	assert_exception("a.subscribe_independent_no_subscriber()", False)
 	assert_exception("assert a.on_call.unsubscribe(a.cb_id) == False", False)

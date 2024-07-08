@@ -1,15 +1,11 @@
 import gc
+import types
+from functools import partial
 from test import *
 
-from PySide6.QtWidgets import (
-    QApplication,
-    QLabel,
-    QMainWindow,
-    QPushButton,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
 from utils.application_context import ApplicationContext
+from utils.memory import SmartCallable, weak_self_class, weak_self_method
 from utils.profile.refmanager import RefManager
 from utils.profile.trackable_resource import TrackableResource
 from utils.pyside import WidgetBase
@@ -110,6 +106,31 @@ def circular_ref_test():
 			button.clicked.connect(on_click)
 			return on_click
 
+	class ConnectedFuncCompositionWeakSelf(Composition):
+		def __init__(self, *args, **kwargs):
+			super().__init__(*args, **kwargs)
+			self.value = 444
+
+		def create_closure(self, parent):
+			button = Composition.create_closure(self, parent)
+			def on_click():
+				try:
+					log(utils.method.msg(f"Capturing self: {self.value}"))
+				except ReferenceError as e:
+					log(utils.method.msg(f"ReferenceError: {e}"))
+			button.clicked.connect(on_click)
+			return on_click
+
+	@weak_self_class
+	class ConnectedFuncCompositionWeakSelfClass(ConnectedFuncCompositionWeakSelf):
+		def create_closure(self, parent):
+			return ConnectedFuncCompositionWeakSelf.create_closure(self, parent)
+
+	class ConnectedFuncCompositionWeakSelfMethod(ConnectedFuncCompositionWeakSelf):
+		@weak_self_method
+		def create_closure(self, parent):
+			return ConnectedFuncCompositionWeakSelf.create_closure(self, parent)
+
 	class CapturedWidget(Composition):
 		def create_closure(self, parent):
 			button = super().create_closure(parent)
@@ -119,6 +140,35 @@ def circular_ref_test():
 				log(utils.method.msg(f"Capturing widget {w}"))
 			button.clicked.connect(on_click)
 			return button
+		
+	class BoundArguments(Composition):
+		def create_closure(self, parent):
+			button = super().create_closure(parent)
+			f = partial(self.p, 3)
+			button.clicked.connect(f)
+			return button
+		
+		def p(self, a):
+			log(utils.method.msg_kw(f"self: {self}"))
+
+	class DynamicMethod(Composition):
+		def create_closure(self, parent):
+			button = super().create_closure(parent)
+			def m(self):
+				log(utils.method.msg(f"Dynamic method capturing self: {self}"))
+			method = types.MethodType(m, self)
+			button.clicked.connect(method)
+			return button
+		
+	class SmartCallableComposition(Composition):
+		def create_closure(self, parent):
+			button = super().create_closure(parent)
+			sc = SmartCallable(self.scm)
+			button.clicked.connect(sc)
+			return button
+		
+		def scm(self):
+			log(utils.method.msg(f"capturing self: {self}"))
 
 	man = RefManager()
 	def closed_scope(window, central_widget):
@@ -129,10 +179,12 @@ def circular_ref_test():
 		man.connected_func = ConnectedFunc(central_widget)
 		man.connected_func_no_capture = ConnectedFuncNoCapture(central_widget)
 		man.connected_func_composition = ConnectedFuncComposition(central_widget)
+		man.connected_func_composition_weak_self_class = ConnectedFuncCompositionWeakSelfClass(central_widget)
+		man.connected_func_composition_weak_self_method = ConnectedFuncCompositionWeakSelfMethod(central_widget)
 		man.captured_widget = CapturedWidget(central_widget)
-		# w = EmptyWidget(window)
-		# w.show()
-		# w.deleteLater()
+		man.bound_arguments = BoundArguments(central_widget)
+		man.dynamic_method = DynamicMethod(central_widget)
+		man.smart_callable = SmartCallableComposition(central_widget)
 		log(title("End of Closed scope"))
 
 	closed_scope(window, central_widget)
@@ -143,6 +195,8 @@ def circular_ref_test():
 	assert man.connected_func is not None, "ConnectedFunc should have not been collected since it has a reference to itself captured by .connect()"
 	assert man.connected_func_no_capture is None, "ConnectedFuncNoCapture should have been collected since it has no reference to itself"
 	assert man.connected_func_composition is not None, "ConnectedFuncComposition should have not been collected since it has a reference to itself captured by .connect()"
+	assert man.connected_func_composition_weak_self_class is None, "ConnectedFuncCompositionWeakSelf should have been collected since it has no strong reference to itself"
+	assert man.connected_func_composition_weak_self_method is None, "ConnectedFuncCompositionWeakMethod should have been collected since it has no strong reference to itself"
 	assert man.captured_widget is None, "CapturedWidget should have been collected since it has no reference to itself"
 	gc.collect()
 	gc.collect()
@@ -161,7 +215,9 @@ def circular_ref_test():
 			log("ConnectedFunc has been collected")
 			return False
 	app.add_on_update(check)
-
+	assert man.bound_arguments is not None, "BoundArguments should have not been collected since it has a reference to itself inside a function that is the result of partial() captured by .connect()"
+	assert man.dynamic_method is None, "DynamicMethod should have been collected since it has no reference to itself"
+	assert man.smart_callable is None, "SmartCallable should have been collected since it has no reference to itself"
 	log(title("End of Circular Reference Test"))
 
 def test():
