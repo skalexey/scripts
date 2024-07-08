@@ -2,7 +2,9 @@ import inspect
 
 import utils.collection.ordered_dict
 import utils.inspect_utils as inspect_utils
+from utils.log.logger import Logger
 
+log = Logger()
 
 def is_primitive(value):
 	return isinstance(value, (int, float, str, bool, bytes))
@@ -16,8 +18,10 @@ def clear_resources(obj):
 	if isinstance(obj, dict):
 		obj.clear()
 	else:
-		for attr in obj.__dict__:
-			obj.__dict__[attr] = None
+		for attr in obj.__dict__.copy():
+			log.debug(utils.function.msg_kw(f"Clearing attribute '{attr}'"))
+			if attr in obj.__dict__: # Any attribute could have been removed from a desctructor of any other one
+				obj.__dict__[attr] = None
 
 class DefaultNew:
 	def __init__(self, callable, *args, **kwargs):
