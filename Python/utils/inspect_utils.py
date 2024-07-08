@@ -104,7 +104,7 @@ class CallInfo:
 		frame_locals = frame.f_locals
 		frame_locals_values = frame_locals.values()
 		frame_self = frame_locals.get('self', None)
-		candidates = itertools.chain([frame_self], frame_locals_values) if frame_self else frame_locals_values
+		candidates = itertools.chain([frame_self], frame_locals_values) if frame_self is not None else frame_locals_values
 		for obj in candidates:
 			attr = inspect.getattr_static(obj, co_name, None)
 			if attr is None:
