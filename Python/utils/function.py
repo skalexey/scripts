@@ -80,3 +80,14 @@ def msg_kw(message=None, frame=None):
 
 def msg_v(message=None, frame=None):
 	return msg(message, args_format="values", frame=frame or inspect_utils.caller_frame())
+
+def glue(*funcs):
+	_funcs = [func for func in funcs if func is not None]
+	if len(_funcs) == 0:
+		raise ValueError("At least one function should be passed")
+	if len(_funcs) == 1:
+		return _funcs[0]
+	def _glue(*args, **kwargs):
+		for func in _funcs:
+			func(*args, **kwargs)
+	return _glue
