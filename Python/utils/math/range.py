@@ -1,9 +1,6 @@
 import random
 
 
-def clamp(value, _min, _max):
-	return max(_min, min(value, _max))
-
 class Range:
 	def __init__(self, min, max=None):
 		self.data = [min, max if max is not None else min]
