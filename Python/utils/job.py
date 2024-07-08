@@ -1,4 +1,4 @@
-from utils.math.utility import Range
+from utils.math.range import Range
 from utils.profile.trackable_resource import TrackableResource
 from utils.subscription import Subscription
 
