@@ -48,3 +48,17 @@ class NoValueMeta(type):
 
 class NoValue(metaclass=NoValueMeta):
 	pass
+
+class SafeSuper:
+	class DummyFunct:
+		def __init__(self, *args, **kwargs):
+			pass
+
+	def __init__(self, cls, inst):
+		self._super = super(cls, inst)
+
+	def __getattr__(self, name):
+		return getattr(self._super, name, self.DummyFunct)
+	
+def safe_super(cls, inst):
+	return SafeSuper(cls, inst)
