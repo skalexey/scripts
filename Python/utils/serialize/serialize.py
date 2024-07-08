@@ -15,7 +15,9 @@ import utils.method
 import utils.serialize  # Lazy import
 import utils.string
 from utils.collection.ordered_set import OrderedSet
+from utils.log.logger import Logger
 
+log = Logger()
 
 class NotSerializable:
 	def __bool__(self):
@@ -95,6 +97,9 @@ def from_json(json_str=None, fpath=None, carry_over_additional_kwargs=False, par
 		try:
 			with open(fpath, 'r') as f:
 				json_str = f.read()
+		except FileNotFoundError:
+			log.warning(utils.function.msg_kw(f"File '{fpath}' not found"))
+			return None
 		except Exception as e:
 			raise Exception(utils.function.msg(f"Error reading file '{fpath}': {e}"))
 	data = json_utils.load(json_str)
