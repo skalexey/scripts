@@ -59,7 +59,7 @@ class FunctionTaskScheduler:
 				await asyncio.sleep(self.update_interval)
 			future.get_loop().run_until_complete(update_task())
 
-	def _set_result(self, task):
+	def _on_task_done(self, task):
 		future, async_function = self._tasks.pop(task)
 		if task.cancelled():
 			return
@@ -74,7 +74,7 @@ class FunctionTaskScheduler:
 		function_info.future = future
 		loop = utils.asyncio_utils.get_event_loop()
 		task = loop.create_task(function_info.function())
-		task.add_done_callback(self._set_result)
+		task.add_done_callback(self._on_task_done)
 		self._tasks[task] = (future, function_info.function)
 		def future_done(future):
 			if future.cancelled():
