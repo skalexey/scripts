@@ -6,8 +6,10 @@ import weakref
 from collections import deque
 
 import utils.asyncio_utils
+import utils.method
 from utils.log.logger import Logger
-from utils.profile.trackable_resource import *
+from utils.memory import SmartCallable
+from utils.profile.trackable_resource import TrackableResource
 from utils.subscription import Subscription
 
 log = Logger()
@@ -50,25 +52,29 @@ class TaskScheduler(TrackableResource):
 			# self.future = future or asyncio.Future()
 
 	def schedule_task(self, async_function, max_queue_size=0):
+		cb = SmartCallable.bind_if_func(async_function, self)
 		with self._lock:
-			registered_task_count = self.registered_task_count(async_function)
-			return self._schedule_task(async_function, registered_task_count, max_queue_size)
+			registered_task_count = self.registered_task_count(cb)
+			return self._schedule_task(cb, registered_task_count, max_queue_size)
 	
 	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
 	def schedule_function(self, async_function, max_queue_size=0):
+		cb = SmartCallable.bind_if_func(async_function, self)
 		with self._lock:
-			registered_function_count = self.registered_task_count(async_function)
-			return self._schedule_task(async_function, registered_function_count, max_queue_size)
+			registered_function_count = self.registered_task_count(cb)
+			return self._schedule_task(cb, registered_function_count, max_queue_size)
 
 	def run_parallel_task(self, async_function):
 		raise "Not implemented yet."
 
 	def wait_all_tasks(self):
+		tasks = []
 		for task_info in list(self._tasks.values()):
-			try:
-				task_info.future.get_loop().run_until_complete(task_info.future)
-			except asyncio.CancelledError:
-				log.info(f"Task has been cancelled (tas_info: {task_info})")
+			tasks.append(task_info.task)
+		async def wait_tasks():
+			# Suppresses CancelledError exceptions here, but they will still be originally raised in the coros
+			await asyncio.gather(*tasks, return_exceptions=True)
+		self.loop.run_until_complete(wait_tasks())
 
 	def wait(self, future):
 		future.get_loop().run_until_complete(future)
@@ -77,6 +83,7 @@ class TaskScheduler(TrackableResource):
 		self._queue.clear()
 		for task_info in list(self._tasks.values()):
 			task_info.task.cancel()
+		self.wait_all_tasks()
 
 	# Use this method in a loop if your application doesn't have an event loop running
 	def update(self, dt):
@@ -107,6 +114,7 @@ class TaskScheduler(TrackableResource):
 		return len(self._tasks)
 
 	def _schedule_task(self, async_function, registered_task_count, max_queue_size=0):
+		log.debug(utils.method.msg_kw())
 		# Locked by the caller method
 		if 0 <= max_queue_size >= registered_task_count:
 			task_info = self._create_task_info(async_function)
@@ -116,6 +124,7 @@ class TaskScheduler(TrackableResource):
 			else:
 				return task_info.future
 		# Don't fit by queue size
+		log.debug(utils.method.msg_kw(f"Task has been cancelled due to the queue size limit"))
 		return None
 
 	def _create_task_info(self, async_function):
@@ -137,7 +146,7 @@ class TaskScheduler(TrackableResource):
 				task_info.task = task
 				self._tasks[task] = task_info
 				assert len(self._tasks) == 1
-				task.add_done_callback(self._set_result)
+				task.add_done_callback(self._on_task_done)
 
 				# log.attention(f"Added a new task {task} to the loop")
 
@@ -145,6 +154,7 @@ class TaskScheduler(TrackableResource):
 
 				def future_done(future):
 					if future.cancelled():
+						log.debug(utils.method.msg(f"Future {future} has been cancelled"))
 						task.cancel()
 
 				future.add_done_callback(future_done)
@@ -156,11 +166,12 @@ class TaskScheduler(TrackableResource):
 			future = create_task()
 			return future
 
-	def _set_result(self, task):
+	def _on_task_done(self, task):
 		task_info = self._tasks.pop(task)
 		assert task_info == self._current_task_info
 		task, future = task_info.task, task_info.future
 		if task.cancelled():
+			log.debug(utils.method.msg(f"Task has been cancelled (task_info: {task_info})"))
 			if not future.done():
 				future.cancel()
 		else:
