@@ -1,5 +1,6 @@
 import os
 
+from PySide6.QtCore import QRect
 from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QPushButton
 
 import utils.function
@@ -104,3 +105,49 @@ def WidgetBase(*classes):
 			if parent_layout is not None:
 				parent_layout.addWidget(self)
 	return WidgetBase
+
+def clamp_geometry(widget, clamper_widget, geometry=None):
+	# Transform into screen space first
+	r1 = geometry or widget.geometry()
+	r2 = clamper_widget.geometry()
+	r1 = map_to_global(widget, r1)
+	r2 = map_to_global(clamper_widget, r2)
+	# Calculate the intersection
+	intersection = r1.intersected(r2)
+	# Transform back to the widget space
+	intersection = map_from_global(widget, intersection)
+	return QRect(intersection)
+
+def map_to_global(widget, rect):
+	"""
+	Transform a QRect from the local coordinate space of a widget to the global coordinate space.
+
+	:param widget: The widget whose coordinate space the QRect is in.
+	:param rect: The QRect to transform.
+	:return: A new QRect in the global coordinate space.
+	"""
+	# Transform the top-left and bottom-right corners to global coordinates
+	top_left_global = widget.mapToGlobal(rect.topLeft())
+	bottom_right_global = widget.mapToGlobal(rect.bottomRight())
+
+	# Create a new QRect from the transformed points
+	global_rect = QRect(top_left_global, bottom_right_global)
+
+	return global_rect
+
+def map_from_global(widget, rect):
+	"""
+	Transform a QRect from the global coordinate space to the local coordinate space of a widget.
+
+	:param widget: The widget whose coordinate space the QRect will be transformed into.
+	:param rect: The QRect in global coordinates.
+	:return: A new QRect in the local coordinate space of the widget.
+	"""
+	# Transform the top-left and bottom-right corners from global coordinates to local coordinates
+	top_left_local = widget.mapFromGlobal(rect.topLeft())
+	bottom_right_local = widget.mapFromGlobal(rect.bottomRight())
+
+	# Create a new QRect from the transformed points
+	local_rect = QRect(top_left_local, bottom_right_local)
+
+	return local_rect

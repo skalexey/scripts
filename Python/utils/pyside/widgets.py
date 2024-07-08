@@ -1,5 +1,5 @@
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QAction, QClipboard
+from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import utils.pyside
 from utils.memory import SmartCallable
 from utils.pyside import WidgetBase
 from utils.text import AbstractTextSpinner
@@ -266,20 +267,30 @@ class ExpandableWidget(WidgetBase(QWidget)):
 
 
 class ResizableListMixin:
-	def __init__(self, *args, **kwargs):
+	def __init__(self, widget_to_fit=None, *args, **kwargs):
+		self.widget_to_fit = widget_to_fit
 		super().__init__(*args, **kwargs)
-		self.adjustSize()
+		self.adjust_size_to_contents()
 
 	def addItem(self, item_text):
 		# item = QListWidgetItem(item_text)
 		# item.setSizeHint(QSize(self.fontMetrics().horizontalAdvance(item_text) + 20, self.fontMetrics().height() + 10))
 		super().addItem(item_text)
-		self.adjustSizeToContents()
+		self.adjust_size_to_contents()
 
-	def adjustSizeToContents(self):
+	def adjust_size_to_contents(self):
 		total_width = max(self.sizeHintForColumn(0) + self.verticalScrollBar().sizeHint().width(), self.width())
 		total_height = self.sizeHintForRow(0) * self.count() + self.horizontalScrollBar().sizeHint().height()
-		self.setFixedSize(total_width, total_height)
+		new_size = QSize(total_width, total_height)
+		# Shrink the new size to fit the parent widget
+		geometry = self.geometry()
+		widget_to_fit = self.widget_to_fit
+		if widget_to_fit:
+			geometry_to_fit = widget_to_fit.geometry()
+			new_geometry = QRect(geometry_to_fit.topLeft(), new_size)
+			intersection = utils.pyside.clamp_geometry(self, widget_to_fit, new_geometry)
+			new_size = intersection.size()
+		self.setFixedSize(new_size)
 
 
 class CopyableListElementMixin(CopyableMixin):
