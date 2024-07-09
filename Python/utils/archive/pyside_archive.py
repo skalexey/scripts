@@ -338,7 +338,7 @@ class ExpandableWidget(WidgetBase(QWidget)):
 			self.expanded_widget.hide()
 
 
-class ResizableMixin:
+class FitContentsMixin:
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.adjustSize()
@@ -374,7 +374,7 @@ class CopyableMixin:
 		clipboard.setText(text)
 
 
-class ResizableListWidget(WidgetBase(ResizableMixin, CopyableMixin, QListWidget)):
+class ResizableListWidget(WidgetBase(FitContentsMixin, CopyableMixin, QListWidget)):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.adjustSize()
