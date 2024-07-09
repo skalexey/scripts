@@ -1,9 +1,13 @@
+from abc import ABC, abstractmethod
+
 from PySide6.QtCore import QRect, QSize, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
+    QAbstractItemView,
     QApplication,
     QCheckBox,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -11,10 +15,13 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSlider,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
+import utils.class_utils as class_utils
 import utils.pyside
 from utils.memory import SmartCallable
 from utils.pyside import WidgetBase
@@ -266,24 +273,12 @@ class ExpandableWidget(WidgetBase(QWidget)):
 			self.expanded_widget.hide()
 
 
-class ResizableListMixin:
+class ResizableMixin:
 	def __init__(self, widget_to_fit=None, *args, **kwargs):
 		self.widget_to_fit = widget_to_fit
 		super().__init__(*args, **kwargs)
-		self.adjust_size_to_contents()
 
-	def addItem(self, item_text):
-		# item = QListWidgetItem(item_text)
-		# item.setSizeHint(QSize(self.fontMetrics().horizontalAdvance(item_text) + 20, self.fontMetrics().height() + 10))
-		super().addItem(item_text)
-		self.adjust_size_to_contents()
-
-	def adjust_size_to_contents(self):
-		total_width = max(self.sizeHintForColumn(0) + self.verticalScrollBar().sizeHint().width(), self.width())
-		total_height = self.sizeHintForRow(0) * self.count() + self.horizontalScrollBar().sizeHint().height()
-		new_size = QSize(total_width, total_height)
-		# Shrink the new size to fit the parent widget
-		geometry = self.geometry()
+	def adjust_size_to_fit_parent(self, new_size):
 		widget_to_fit = self.widget_to_fit
 		if widget_to_fit:
 			geometry_to_fit = widget_to_fit.geometry()
@@ -292,6 +287,38 @@ class ResizableListMixin:
 			new_size = intersection.size()
 		self.setFixedSize(new_size)
 
+	def adjust_size_to_contents(self):
+		new_size = self.calculate_size()
+		self.adjust_size_to_fit_parent(new_size)
+		
+		# Call the next adjust_size_to_contents in the MRO, if it exists
+		if hasattr(super(), 'adjust_size_to_contents'):
+			super().adjust_size_to_contents()
+
+	def calculate_size(self):
+		raise NotImplementedError("Subclasses should implement this method.")
+	
+	def _on_contents_changed(self):
+		self.adjust_size_to_contents()
+
+
+class ResizableListMixin(ResizableMixin):
+	def calculate_size(self):
+		total_width = max(self.sizeHintForColumn(0) + self.verticalScrollBar().sizeHint().width(), self.width())
+		total_height = self.sizeHintForRow(0) * self.count() + self.horizontalScrollBar().sizeHint().height()
+		return QSize(total_width, total_height)
+
+
+class ResizableTableMixin(ResizableMixin):
+	def add_item(self, *column_values):
+		super().add_item(*column_values)
+		self.adjust_size_to_contents()
+
+	def calculate_size(self):
+		total_width = sum(self.columnWidth(i) for i in range(self.columnCount())) + self.verticalScrollBar().sizeHint().width()
+		total_height = sum(self.rowHeight(i) for i in range(self.rowCount())) + self.horizontalScrollBar().sizeHint().height()
+		return QSize(total_width, total_height)
+
 
 class CopyableListElementMixin(CopyableMixin):
 	def text_to_copy(self, context_menu_event):
@@ -299,7 +326,65 @@ class CopyableListElementMixin(CopyableMixin):
 		return item.text() if item else None
 
 
-class ListWidget(WidgetBase(ResizableListMixin, CopyableListElementMixin, QListWidget)):
+# Use EnforcedABCMeta instead of ABCMeta since QtWidget metaclass suppresses the abstractmethod checking behavior
+class CombinedMeta(class_utils.EnforcedABCMeta, type(QAbstractItemView)):
+	pass
+
+class AbstractListWidget(ABC, QTableWidget, metaclass=CombinedMeta):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.adjustSize()
+		self._on_contents_changed()
+
+	def add_items(self, items):
+		for item in items:
+			self._add_item(*item)
+		self._on_contents_changed()
+
+	def add_item(self, *args, **kwargs):
+		self._add_item(*args, **kwargs)
+		self._on_item_added()
+		self._on_contents_changed()
+
+	def _on_contents_changed(self):
+		pass
+
+	def _on_item_added(self):
+		pass
+
+	@abstractmethod
+	def _add_item(self, *args, **kwargs):
+		pass
+	
+class ListWidget(WidgetBase(ResizableListMixin, CopyableListElementMixin, AbstractListWidget, QListWidget)):
+	def _add_item(self, item_text):
+		self.addItem(item_text)
+
+
+class TableWidget(WidgetBase(ResizableTableMixin, CopyableListElementMixin, AbstractListWidget, QTableWidget)):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.setColumnCount(0)
+		self.horizontalHeader().setSectionsClickable(True)
+		self.horizontalHeader().sectionClicked.connect(self.sort_by_column)
+		self.adjust_size_to_contents()
+
+	def add_column(self, column_name):
+		self.insertColumn(self.columnCount())
+		header_item = QTableWidgetItem(column_name)
+		self.setHorizontalHeaderItem(self.columnCount() - 1, header_item)
+		self.resizeColumnsToContents()
+
+	def _add_item(self, *column_values):
+		row_position = self.rowCount()
+		self.insertRow(row_position)
+		for column, value in enumerate(column_values):
+			table_item = QTableWidgetItem(str(value) if value is not None else '')
+			self.setItem(row_position, column, table_item)
+	
+	def sort_by_column(self, column_index):
+		order = self.horizontalHeader().sortIndicatorOrder()
+		self.sortItems(column_index, order)
+
+	def adjust_size_to_contents(self):
+		self.resizeColumnsToContents()
+		super().adjust_size_to_contents()
