@@ -49,6 +49,8 @@ class NoValueMeta(type):
 class NoValue(metaclass=NoValueMeta):
 	pass
 
+
+# It does not support super() without arguments for performance reasons since retrieving the class of the function requires iterating the whole MRO.
 class SafeSuper:
 	class DummyFunct:
 		def __init__(self, *args, **kwargs):
