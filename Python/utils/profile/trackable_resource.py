@@ -1,3 +1,4 @@
+import time
 import weakref
 
 from utils.collection.associative_list import AssociativeList
@@ -11,6 +12,7 @@ class TrackableResourceInfo:
 		self.ref = None
 		self.on_destroyed = None
 		self._repr = None
+		self._created_time = time.time()
 
 	@property
 	def repr(self):
@@ -18,7 +20,15 @@ class TrackableResourceInfo:
 		if obj is not None:
 			self._repr = f"{obj!r}" # Always store the latest repr
 		return self._repr
+	
+	@property
+	def lifetime(self):
+		return time.time() - self._created_time
 
+	@property
+	def info(self):
+		return self.repr # By default. Opened for further improvements.
+	
 class TrackableResource:
 	resources = AssociativeList()
 	def __repr__(self):
