@@ -22,10 +22,35 @@ from PySide6.QtWidgets import (
 )
 
 import utils.class_utils as class_utils
+import utils.lang
 import utils.pyside
 from utils.memory import SmartCallable
 from utils.pyside import WidgetBase
 from utils.text import AbstractTextSpinner
+
+
+# Use EnforcedABCMeta instead of ABCMeta since QtWidget metaclass suppresses the abstractmethod checking behavior
+class CombinedMetaQtABC(class_utils.EnforcedABCMeta, type(QWidget)):
+	pass
+
+
+class ABCQt(ABC, metaclass=CombinedMetaQtABC):
+	pass
+
+
+class AbstractWidget(ABCQt):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._on_contents_changed()
+
+	def _adjust_size(self):
+		self.adjustSize()
+
+	def _on_contents_changed(self):
+		self._adjust_size()
+
+	def update(self, dt):
+		self._on_contents_changed() # TODO: consider lighter options
 
 
 class SliderInputWidget(WidgetBase(QWidget)):
@@ -139,21 +164,20 @@ class CheckboxWidget(WidgetBase(QWidget)):
 		self.checkbox.setChecked(_value)
 
 
-base = AbstractTextSpinner(QLabel)
-class TextSpinner(base):
-	def __init__(self, parent=None, *args, **kwargs):
-		super().__init__(parent, *args, **kwargs)
+class TextSpinner(AbstractTextSpinner, QLabel, metaclass=CombinedMetaQtABC):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.setAlignment(Qt.AlignCenter)
 
-	@base.text.getter
+	@AbstractTextSpinner.text.getter
 	def text(self):
 		return self.text()
 
-	@base.text.setter
+	@AbstractTextSpinner.text.setter
 	def text(self, value):
 		self.setText(value)
 
-
+# Mixins
 class CopyableMixin:
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -273,47 +297,66 @@ class ExpandableWidget(WidgetBase(QWidget)):
 			self.expanded_widget.hide()
 
 
-class ResizableMixin:
-	def __init__(self, widget_to_fit=None, *args, **kwargs):
-		self.widget_to_fit = widget_to_fit
+class DeallocateExpandedWidgetMixin(ABCQt):
+	@abstractmethod
+	def create_expanded_widget(self):
+		pass
+
+	def expand(self):
+		super().expand()
+		self.expanded_widget = self.create_expanded_widget()
+
+	def collapse(self):
+		super().collapse()
+		if self.expanded_widget is not None:
+			self.expanded_widget.deleteLater()
+			self.expanded_widget = None
+
+
+class CustomAdjustSizeMixin(AbstractWidget):
+	def _adjust_size(self):
+		geometry = self._adjusted_geometry()
+		self.setFixedSize(geometry.size())
+		self.setGeometry(geometry)
+
+	def _adjusted_geometry(self):
+		return self.geometry()
+
+
+class ClampGeometryMixin(CustomAdjustSizeMixin):
+	def __init__(self, *args, clamper_widget=None, **kwargs):
+		self._clamper_widget = clamper_widget
 		super().__init__(*args, **kwargs)
 
-	def adjust_size_to_fit_parent(self, new_size):
-		widget_to_fit = self.widget_to_fit
-		if widget_to_fit:
-			geometry_to_fit = widget_to_fit.geometry()
-			new_geometry = QRect(geometry_to_fit.topLeft(), new_size)
-			intersection = utils.pyside.clamp_geometry(self, widget_to_fit, new_geometry)
-			new_size = intersection.size()
-		self.setFixedSize(new_size)
+	def _adjusted_geometry(self):
+		geometry = super()._adjusted_geometry()
+		clamped_geometry = self.clamped_geometry(geometry)
+		return clamped_geometry or geometry
 
-	def adjust_size_to_contents(self):
+	def clamped_geometry(self, geometry):
+		if self._clamper_widget:
+			intersection = utils.pyside.clamp_geometry(self, self._clamper_widget, geometry)
+			return intersection
+		return None
+
+class FitContentsMixin(CustomAdjustSizeMixin):
+	def _adjusted_geometry(self):
+		geometry = super()._adjusted_geometry()
 		new_size = self.calculate_size()
-		self.adjust_size_to_fit_parent(new_size)
-		
-		# Call the next adjust_size_to_contents in the MRO, if it exists
-		if hasattr(super(), 'adjust_size_to_contents'):
-			super().adjust_size_to_contents()
+		return QRect(geometry.topLeft(), new_size)
 
 	def calculate_size(self):
 		raise NotImplementedError("Subclasses should implement this method.")
 	
-	def _on_contents_changed(self):
-		self.adjust_size_to_contents()
 
-
-class ResizableListMixin(ResizableMixin):
+class FitContentsListMixin(FitContentsMixin):
 	def calculate_size(self):
 		total_width = max(self.sizeHintForColumn(0) + self.verticalScrollBar().sizeHint().width(), self.width())
 		total_height = self.sizeHintForRow(0) * self.count() + self.horizontalScrollBar().sizeHint().height()
 		return QSize(total_width, total_height)
 
 
-class ResizableTableMixin(ResizableMixin):
-	def add_item(self, *column_values):
-		super().add_item(*column_values)
-		self.adjust_size_to_contents()
-
+class FitContentsTableMixin(FitContentsMixin):
 	def calculate_size(self):
 		total_width = sum(self.columnWidth(i) for i in range(self.columnCount())) + self.verticalScrollBar().sizeHint().width()
 		total_height = sum(self.rowHeight(i) for i in range(self.rowCount())) + self.horizontalScrollBar().sizeHint().height()
@@ -326,14 +369,10 @@ class CopyableListElementMixin(CopyableMixin):
 		return item.text() if item else None
 
 
-# Use EnforcedABCMeta instead of ABCMeta since QtWidget metaclass suppresses the abstractmethod checking behavior
-class CombinedMeta(class_utils.EnforcedABCMeta, type(QAbstractItemView)):
-	pass
-
-class AbstractListWidget(ABC, QTableWidget, metaclass=CombinedMeta):
-	def __init__(self, *args, **kwargs):
-		super().__init__(*args, **kwargs)
-		self._on_contents_changed()
+class AbstractListWidget(AbstractWidget):
+	@abstractmethod
+	def _add_item(self, *args, **kwargs):
+		pass
 
 	def add_items(self, items):
 		for item in items:
@@ -345,28 +384,22 @@ class AbstractListWidget(ABC, QTableWidget, metaclass=CombinedMeta):
 		self._on_item_added()
 		self._on_contents_changed()
 
-	def _on_contents_changed(self):
-		pass
-
 	def _on_item_added(self):
 		pass
 
-	@abstractmethod
-	def _add_item(self, *args, **kwargs):
-		pass
-	
-class ListWidget(WidgetBase(ResizableListMixin, CopyableListElementMixin, AbstractListWidget, QListWidget)):
+
+# Mixins logic executed in the order opposite to the inheritance order
+class ListWidget(WidgetBase(ClampGeometryMixin, FitContentsListMixin, CopyableListElementMixin, AbstractListWidget, QListWidget)):
 	def _add_item(self, item_text):
 		self.addItem(item_text)
 
-
-class TableWidget(WidgetBase(ResizableTableMixin, CopyableListElementMixin, AbstractListWidget, QTableWidget)):
+class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, CopyableListElementMixin, AbstractListWidget, QTableWidget)):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.setColumnCount(0)
 		self.horizontalHeader().setSectionsClickable(True)
 		self.horizontalHeader().sectionClicked.connect(self.sort_by_column)
-		self.adjust_size_to_contents()
+		self._on_contents_changed()
 
 	def add_column(self, column_name):
 		self.insertColumn(self.columnCount())
@@ -385,6 +418,6 @@ class TableWidget(WidgetBase(ResizableTableMixin, CopyableListElementMixin, Abst
 		order = self.horizontalHeader().sortIndicatorOrder()
 		self.sortItems(column_index, order)
 
-	def adjust_size_to_contents(self):
+	def _on_contents_changed(self):
 		self.resizeColumnsToContents()
-		super().adjust_size_to_contents()
+		super()._on_contents_changed()

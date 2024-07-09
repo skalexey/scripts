@@ -10,44 +10,42 @@ def title(string, filler='=', length=80):
 	right_length = length - len(string) - 2 - left_length
 	return f"{filler * left_length} {string} {filler * right_length}"
 
-def AbstractTextSpinner(base_class):
-	class AbstractTextSpinner(base_class):
-		def __init__(self, *args, **kwargs):
-			super().__init__(*args, **kwargs)
-			self.frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-			self.frame_index = 0
-			self.frame_period = 0.1
-			self._time_since_last_frame = 0
-			# Don't call super().__init__() here since there are nuances with Qt subclasses initialization
+class AbstractTextSpinner(ABC):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.frames = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+		self.frame_index = 0
+		self.frame_period = 0.1
+		self._time_since_last_frame = 0
+		# Don't call super().__init__() here since there are nuances with Qt subclasses initialization
 
-		@property
-		def frame_index(self):
-			return self._frame_index
+	@property
+	def frame_index(self):
+		return self._frame_index
 
-		@frame_index.setter
-		def frame_index(self, value):
-			self._frame_index = value
-			self.text = self.frames[self.frame_index]
+	@frame_index.setter
+	def frame_index(self, value):
+		self._frame_index = value
+		self.text = self.frames[self.frame_index]
 
-		def reset(self):
-			self.frame_index = 0
+	def reset(self):
+		self.frame_index = 0
 
-		def update(self, dt):
-			self._time_since_last_frame += dt
-			if self._time_since_last_frame >= self.frame_period:
-				self.update_frame()
-			
+	def update(self, dt):
+		self._time_since_last_frame += dt
+		if self._time_since_last_frame >= self.frame_period:
+			self.update_frame()
+		
 
-		@property
-		def text(self):
-			return None
+	@property
+	def text(self):
+		return None
 
-		def update_frame(self):
-			self.frame_index = (self.frame_index + 1) % len(self.frames)
-			self._time_since_last_frame -= self.frame_period
-	return AbstractTextSpinner
+	def update_frame(self):
+		self.frame_index = (self.frame_index + 1) % len(self.frames)
+		self._time_since_last_frame -= self.frame_period
 
-base_class = AbstractTextSpinner(ABC)
+base_class = AbstractTextSpinner
 class TextSpinner(base_class):
 	def __init__(self):
 		self._text = None

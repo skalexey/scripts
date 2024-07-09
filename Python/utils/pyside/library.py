@@ -1,7 +1,7 @@
 import os
 
 from PySide6.QtCore import QRect
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QPushButton
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox
 
 import utils.function
 import utils.method
@@ -95,16 +95,20 @@ def WidgetBase(*classes):
 	# Adding also allows to better diagnose problems caused by passing excessive arguments.
 	class WidgetBase(*classes, Stub):
 		# Support using Qt signatures directly like QPushButton("Click", parent)
-		def __init__(self, *args, parent=NoValue, parent_layout=None, **kwargs):
-			if parent is not NoValue: # Need to distinguish between not passed parent and explicitly passed None as a parent
-				# Expect multiple values error from Qt in the case of provided parent in *args as well. Qt performs the checks after super().__init__ call.
-				kwargs["parent"] = parent
-			if parent_layout is not None and parent:
+		def __init__(self, *args, parent_layout=None, **kwargs):
+			if parent_layout is not None and kwargs.get("parent") is not None:
 				raise ValueError(utils.method.msg("ResourceListWidget: parent and parent_layout cannot be both set"))
 			super().__init__(*args, **kwargs, parent_layout=parent_layout) # Carry over parent_layout to all the mixins
 			if parent_layout is not None:
 				parent_layout.addWidget(self)
 	return WidgetBase
+
+def mixed_class(*classes):
+	# See the comments above of Stub class purpose.
+	class MixedClass(*classes, Stub):
+		pass
+	return MixedClass
+
 
 def clamp_geometry(widget, clamper_widget, geometry=None):
 	# Transform into screen space first
