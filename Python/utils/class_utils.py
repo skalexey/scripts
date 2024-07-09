@@ -1,4 +1,5 @@
 import inspect
+from abc import ABCMeta
 
 import utils.function
 import utils.inspect_utils
@@ -38,3 +39,16 @@ def find_class(class_path_or_name, globals=None): # e.g. 'module.submodule.Class
 		if found_class_path != classpath:
 			return None
 	return cls
+
+class EnforcedABCMeta(ABCMeta):
+	def __call__(cls, *args, **kwargs):
+		# Check if abstract methods are implemented
+		def check_abstractmethod(name, value):
+			if getattr(value, "__isabstractmethod__", False):
+				raise TypeError(f"Can't instantiate abstract class '{cls.__name__}' with not defined abstract method '{name}'")
+		for name, value in cls.__dict__.items():
+			check_abstractmethod(name, value)
+			if name == '__abstractmethods__':
+				for abstract_method in value:
+					check_abstractmethod(abstract_method, getattr(cls, abstract_method))
+		return super().__call__(*args, **kwargs)
