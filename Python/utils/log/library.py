@@ -23,15 +23,21 @@ def redirect_to_file(fpath=None):
 	lock = threading.RLock()
 	class State:
 		def __init__(self):
-			self.flushing = False
+			self.writing = False
+			self.queue = []
+
 	state = State()
 	def on_log(log):
 		full_message, message, level, title, time = log
 		with lock:
-			file.write(f"{full_message}\n")
-			if not state.flushing: # Flush invokes garbage collector that may cause new logs coming from destructors, but it doesn't allow recursive flush calls.
-				state.flushing = True
+			state.queue.append(full_message)
+			if not state.writing: # Flush invokes garbage collector that may cause new logs coming from destructors, but it doesn't allow recursive flush calls.
+				state.writing = True
+				for queued_message in state.queue:
+					file.write(f"{queued_message}\n")
+				state.queue.clear()
 				file.flush()
-				state.flushing = False
+				state.writing = False
+				
 	g_on_log.subscribe(on_log, file)
 	return file
