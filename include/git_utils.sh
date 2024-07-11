@@ -281,7 +281,7 @@ function git_commit()
 
 function git_add_patch()
 {
-	git add --patch
+	git add --patch $@
 }
 
 function add_file_to_commit_interactively()
