@@ -120,7 +120,7 @@ def clamp_geometry(widget, clamper_widget, geometry=None):
 	intersection = r1.intersected(r2)
 	# Transform back to the widget space
 	intersection = map_from_global(widget, intersection)
-	return QRect(intersection)
+	return intersection
 
 def map_to_global(widget, rect):
 	"""
