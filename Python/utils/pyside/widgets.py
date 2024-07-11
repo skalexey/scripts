@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -39,18 +39,25 @@ class ABCQt(ABC, metaclass=CombinedMetaQtABC):
 
 
 class AbstractWidget(ABCQt):
+	on_resized = Signal(QWidget)
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._on_contents_changed()
 
 	def _adjust_size(self):
 		self.adjustSize()
+		self._on_resized()
+
+	def _on_resized(self):
+		self.on_resized.emit(self)
 
 	def _on_contents_changed(self):
 		self._adjust_size()
 
-	def update(self, dt):
-		self._on_contents_changed() # TODO: consider lighter options
+	def update(self, dt, *args, **kwargs):
+		pass
+		# self._on_contents_changed() # TODO: consider lighter options
+		# super().update(*args, **kwargs)
 
 
 class SliderInputWidget(WidgetBase(QWidget)):
@@ -318,6 +325,7 @@ class CustomAdjustSizeMixin(AbstractWidget):
 		geometry = self._adjusted_geometry()
 		self.setFixedSize(geometry.size())
 		self.setGeometry(geometry)
+		self._on_resized()
 
 	def _adjusted_geometry(self):
 		return self.geometry()
