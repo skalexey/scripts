@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from PySide6.QtCore import QRect, QSize, Qt
+from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -255,7 +255,7 @@ class ValueWidget(WidgetBase(QWidget)):
 		return self.value_label.text()
 
 
-class ExpandableWidget(WidgetBase(QWidget)):
+class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)):
 	def __init__(self, title=None, expanded_widget=None, collapsed_widget=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		# Layouting
@@ -323,10 +323,32 @@ class CustomAdjustSizeMixin(AbstractWidget):
 		return self.geometry()
 
 
+class ResizeEventFilter(QObject):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.target_widget = None
+        self.callback = None
+
+    def set_target(self, target_widget, callback):
+        self.target_widget = target_widget
+        self.callback = callback
+        target_widget.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if obj == self.target_widget and event.type() == QEvent.Resize:
+            if self.callback:
+                self.callback(obj, event)
+        return super().eventFilter(obj, event)
+
+
 class ClampGeometryMixin(CustomAdjustSizeMixin):
 	def __init__(self, *args, clamper_widget=None, **kwargs):
 		self._clamper_widget = clamper_widget
 		super().__init__(*args, **kwargs)
+		# Subscribe on resize event of the clamper widget
+		if clamper_widget:
+			self.resize_event_filter = ResizeEventFilter(self)
+			self.resize_event_filter.set_target(clamper_widget, self._on_clamper_resized)
 
 	def _adjusted_geometry(self):
 		geometry = super()._adjusted_geometry()
@@ -338,6 +360,9 @@ class ClampGeometryMixin(CustomAdjustSizeMixin):
 			intersection = utils.pyside.clamp_geometry(self, self._clamper_widget, geometry)
 			return intersection
 		return None
+	
+	def _on_clamper_resized(self, obj, event):
+		self._adjust_size()
 
 class FitContentsMixin(CustomAdjustSizeMixin):
 	def _adjusted_geometry(self):
