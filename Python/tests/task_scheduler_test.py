@@ -1,16 +1,15 @@
-import sys
+import asyncio
+import threading
+from test import *
+from time import sleep
 
+import utils.method
 import utils.profile.profiler
 import utils.text
 from utils.log.logger import Logger
-from utils.task_scheduler import *
+from utils.task_scheduler import TaskScheduler
 
-log = Logger()
-profiler = utils.profile.profiler.TimeProfiler()
-profiler.set_print_function(log.log)
 
-def title(text):
-	return utils.text.title(text, "=", 60)
 class A(TaskScheduler):
 	async def async_method1(self):
 		log("Task 1 started")
@@ -87,17 +86,58 @@ class A(TaskScheduler):
 		self.function_test()
 		log(title("Tests completed"))
 
-def main():
+def test1():
+	log(title("Test 1"))
 	a = A()
+	log(title("End of Test 1"))
 
-	# Call a method that has a name provided in an argument
-	if len(sys.argv) < 2:
-		a.test()
-	else:
-		arg1 = sys.argv[1]
-		function_to_call = getattr(a, arg1)
-		function_to_call()
-	# await a.test()
-	# await a.queue_test()
+def wait_tasks_test():
+	class A:
+		def __init__(self):
+			self.scheduler = TaskScheduler()
+		
+		def update(self, dt):
+			self.scheduler.update(dt)
 
-main()
+		async def async_method_sleep(self):
+			log(utils.method.msg_kw("Started"))
+			await asyncio.sleep(0.3)
+			log(utils.method.msg_kw("Completed"))
+
+		async def async_method_wait(self):
+			log(utils.method.msg_kw("Started"))
+			self.scheduler.wait_all_tasks()
+			log(utils.method.msg_kw("Completed"))
+
+	a = A()
+	a.scheduler.schedule_task(a.async_method_sleep, 1)
+	assert a.scheduler.registered_task_count() == 1
+	assert not a.scheduler.loop.is_running()
+
+	def check_loop_job():
+		assert not a.scheduler.loop.is_running()
+		while not a.scheduler.loop.is_running():
+			pass
+		a.scheduler.wait_all_tasks() # Wait for the tasks to complete from another thread: Ok
+
+	thread = threading.Thread(target=check_loop_job)
+	thread.start()
+	sleep(0.1)
+	a.scheduler.wait_all_tasks()
+	thread.join()
+	assert a.scheduler.registered_task_count() == 0
+
+	f = a.scheduler.schedule_task(a.async_method_wait, 1)
+	assert a.scheduler.registered_task_count() == 1
+	f.cancel()
+	a.update(1)
+	assert a.scheduler.registered_task_count() == 0
+	# f = a.scheduler.schedule_task(a.async_method_wait, 1)
+	# a.update(1)
+
+def test():
+	log(title("Task Scheduler test"))
+	wait_tasks_test()
+	log(title("Task Scheduler test completed"))
+
+run()

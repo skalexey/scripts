@@ -13,6 +13,12 @@ log = Logger()
 profiler = utils.profile.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 
+class LogAddition:
+	def __str__(self):
+		return f"[{threading.current_thread().name}] "
+
+Logger.log_addition = LogAddition()
+
 def title(text):
 	return utils.text.title(text, "=", 60)
 
