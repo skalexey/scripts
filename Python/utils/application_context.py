@@ -24,7 +24,7 @@ class ApplicationContext(GlobalContext):
 
 	@classmethod
 	def current_datetime(cls):
-		return datetime.now()
+		return cls.app.current_datetime()
 
 	@classmethod
 	def current_time(cls):
