@@ -51,7 +51,10 @@ class WeakCallable:
 		return cb(*args, **kwargs)
 
 class Callable(TrackableResource):
-	def __init__(self, callable, caller=None, on_invalidated=None, max_calls=None, invalidate_on_false=None, *args, **kwargs):
+	def __init__(self, callable, caller=None, on_invalidated=None, max_calls=None, invalidate_on_false=None, args=None, kwargs=None, *other_args, **other_kwargs):
+		# Initialized first for repr
+		self._args = args
+		self._kwargs = kwargs
 		self._invalidated = False
 		self._on_invalidated = on_invalidated
 		self.max_calls = max_calls
@@ -138,8 +141,9 @@ class Callable(TrackableResource):
 				log.error(f"Trying to call a callable '{self}' that has reached ({self._call_count}) its max call count {self.max_calls}, but has not unsubscribed yet for some reason. Unsubscribing it ignoring this call.")
 				return None
 		cb_self = self.cb_self
-		_args = [cb_self] + list(args) if cb_self is not None else args
-		result = self.callable(*_args, **kwargs)
+		all_args = list(self._args or []) + list(args)
+		_args = [cb_self] + all_args if cb_self is not None else all_args
+		result = self.callable(*_args, *(self._kwargs or {}), **kwargs)
 		self._call_count += 1
 		if self.invalidate_on_false:
 			if result is False:
