@@ -4,7 +4,7 @@ import utils.class_utils as class_utils
 import utils.collection
 import utils.function
 import utils.serialize as serialize
-from utils.object.attributes_view import *
+from utils.object.attributes_view import AttributesView
 
 
 # This class automatically serializes all the parameters of __init__ methods of all the classes in the inheritance chain.
