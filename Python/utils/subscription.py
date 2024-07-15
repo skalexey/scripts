@@ -13,10 +13,10 @@ log = Logger()
 
 class Subscription:
 	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self._data = OrderedDict()
 		self._priorities = {}
 		self._lock = threading.RLock()
-		super().__init__(*args, **kwargs)
 
 	class CallableInfo(OwnedCallable):
 		def __init__(self, *args, unsubscribe_on_false=None, priority=None, **kwargs):

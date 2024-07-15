@@ -13,12 +13,12 @@ log = Logger()
 
 class Module(TrackableResource, ABC):
 	def __init__(self, module_name=None, *args, **kwargs):
-		assert isinstance(module_name, (str, type(None)))
-		self._module_name = module_name
-		self._settings = None
 		def on_destroyed(info):
 			log.debug(f"Module destroyed: {info.repr}")
 		super().__init__(on_destroyed=on_destroyed, *args, **kwargs)
+		assert isinstance(module_name, (str, type(None)))
+		self._module_name = module_name
+		self._settings = None
 
 	@property
 	def classname(self):
