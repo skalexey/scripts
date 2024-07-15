@@ -162,24 +162,34 @@ class CallInfo:
 # Properties can have getter and setter function bound to the same name
 def functions(obj):
 	result = []
-	if inspect.isfunction(obj):
-		result.append(obj)
-	elif inspect.ismethod(obj):
-		result.append(obj.__func__)
-	elif hasattr(obj, '__func__'):
-		result.append(obj.__func__)
-	elif isinstance(obj, property):
-		attrs = ['fget', 'fset']
-		for name in attrs:
+	if isinstance(obj, property):
+		for name in ['fget', 'fset']:
 			func = getattr(obj, name)
 			if func is not None:
+				assert inspect.isfunction(func)
 				result.append(func)
+	else:
+		func = function(obj)
+		if func is not None:
+			result.append(func)
 	return result
 
-# For methods and functions returns the function bound to the object, for properties returns the getter
+# For methods and functions returns the function bound to the object, for properties returns the getter. To get both getter and setter use functions(obj)
 def function(obj):
-	funcs = functions(obj)
-	return funcs[0] if funcs else None
+	if inspect.isfunction(obj):
+		return obj
+	elif inspect.ismethod(obj):
+		return obj.__func__
+	else:
+		func = getattr(obj, '__func__', None)
+		if func is not None:
+			return func
+		elif isinstance(obj, property):
+			func = obj.fget
+			if func is not None:
+				assert inspect.isfunction(func)
+				return func
+	return None
 
 def cls(obj):
 	if inspect.isclass(obj):
@@ -188,14 +198,13 @@ def cls(obj):
 		return None
 	if inspect.ismethod(obj):
 		return cls(obj.__self__)
-	if hasattr(obj, '__class__'):
-		return obj.__class__
-	return None
+	return getattr(obj, '__class__', None)
 
 _get_class = cls
 
-def call_info():
-	frame = caller_frame()
+def call_info(level=None):
+	_level = (level or 0) - 1
+	frame = caller_frame(_level)
 	return frame_call_info(frame)
 	
 def frame_call_info(frame):
