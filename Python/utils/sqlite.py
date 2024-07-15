@@ -337,10 +337,12 @@ class CursorWrapper:
 		self._cursor = cursor
 		self._lock = lock
 		self._lock.acquire()
+		log.verbose(utils.method.msg("Lock acquired"))
 		super().__init__(*args, **kwargs)
 
 	def __del__(self):
 		self._lock.release()
+		log.verbose(utils.method.msg("Lock released"))
 		utils.lang.clear_resources(self)
 
 	def __getattr__(self, name):

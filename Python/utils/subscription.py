@@ -29,12 +29,14 @@ class Subscription:
 	# Any callable can be passed including another subscription
 	def subscribe(self, callable, subscriber=None, caller=None, max_calls=None, unsubscribe_on_false=None, priority=None):
 		def on_invalidated(cb, self_weak=utils.memory.weak_proxy(self)):
-			log.verbose(utils.function.msg(f"{cb}"))
 			assert not cb.is_valid(), f"Callable {cb} should have been invalidated, but is still valid"
 			if not self_weak.is_alive():
+				log.verbose(utils.function.msg(f"{cb}: self_weak is dead"))
 				return
 			if self_weak.unsubscribe(cb.id):
-				log.verbose(utils.function.msg(f"Unsubscribed invalidated callable: id {cb.id}"))
+				log.verbose(utils.function.msg(f"Unsubscribed invalidated callable: {cb}"))
+			else:
+				log.verbose(utils.function.msg(f"Callable is already unsubscribed: {cb}"))
 		with self._lock:
 			cb = self.CallableInfoCleanOnDestroy(callable, subscriber, caller, on_invalidated=on_invalidated, max_calls=max_calls, unsubscribe_on_false=unsubscribe_on_false, priority=priority)
 			log.verbose(f"subscribe({callable}, {subscriber}) -> {cb.id}")
@@ -79,10 +81,12 @@ class Subscription:
 					self._remove_priority(cb_or_id, cb.priority)
 			else:
 				result = self._unsubscribe_callable(cb_or_id, subscriber)
-		log.debug(f"{f'Unsubscribed' if result else 'Already unsubscribed'} callable {cb_or_id}")
+		log.verbose(f"{f'Unsubscribed' if result else 'Already unsubscribed'} callable {cb_or_id}")
 		return result
 
 	def notify(self, *args, **kwargs):
+		if not self._priorities:
+			return
 		with self._lock:
 			for priority_group in list(self._priorities.values()):
 				for cb_id in priority_group.copy():
