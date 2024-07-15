@@ -56,8 +56,9 @@ def class_of_function_test():
 					return cls
 			method = method.__func__  # Unbind the method for the next part
 
-		if hasattr(method, '__qualname__'):
-			cls_name = method.__qualname__.split('.<locals>', 1)[0].rsplit('.', 1)[0]
+		qualname = getattr(method, '__qualname__', None)
+		if qualname is not None:
+			cls_name = qualname.split('.<locals>', 1)[0].rsplit('.', 1)[0]
 			try:
 				cls = getattr(inspect.getmodule(method), cls_name)
 				if isinstance(cls, type):

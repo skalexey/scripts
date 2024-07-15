@@ -117,7 +117,7 @@ def wait_tasks_test():
 	def check_loop_job():
 		assert not a.scheduler.loop.is_running()
 		while not a.scheduler.loop.is_running():
-			pass
+			sleep(0.01)
 		a.scheduler.wait_all_tasks() # Wait for the tasks to complete from another thread: Ok
 
 	thread = threading.Thread(target=check_loop_job)
@@ -132,8 +132,22 @@ def wait_tasks_test():
 	f.cancel()
 	a.update(1)
 	assert a.scheduler.registered_task_count() == 0
-	# f = a.scheduler.schedule_task(a.async_method_wait, 1)
-	# a.update(1)
+	f = a.scheduler.schedule_task(a.async_method_wait, 1)
+	assert a.scheduler.registered_task_count() == 1
+	def cancel_tasks_job():
+		a.scheduler.cancel_all_tasks()
+		while a.scheduler.registered_task_count() > 0:
+			sleep(0.01)
+	thread = threading.Thread(target=cancel_tasks_job)
+	thread.start()
+	for i in range(3):
+		sleep(0.2)
+	assert a.scheduler.registered_task_count() == 1
+	a.update(1)
+	assert a.scheduler.registered_task_count() == 0
+	thread.join()
+	a.update(1)
+	
 
 def test():
 	log(title("Task Scheduler test"))
