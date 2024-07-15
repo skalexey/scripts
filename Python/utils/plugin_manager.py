@@ -23,7 +23,8 @@ class PluginManager:
 				for name in dir(plugin_module):
 					obj = getattr(plugin_module, name)
 					if inspect.isclass(obj):
-						if hasattr(obj, '__bases__') and Plugin in obj.__bases__:
+						bases = getattr(obj, '__bases__', None)
+						if bases is not None and Plugin in bases:
 							# Check if the plugin name ends with "_plugin"
 							if not plugin_name.endswith("_plugin"):
 								raise ValueError(f"Plugin name '{plugin_name}' must end with '_plugin'")

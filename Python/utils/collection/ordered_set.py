@@ -186,12 +186,12 @@ class OrderedSet(Serializable):
 	
 	def __and__(self, other):
 		# Create using a list comprehension
-		other_keys = other.keys() if hasattr(other, 'keys') else other
+		other_keys = getattr(other, '_keys', other)
 		new = self.__class__([key for key in self._keys if key in other_keys])
 		return new
 	
 	def __iand__(self, other):
-		other_keys = other.keys() if hasattr(other, 'keys') else other
+		other_keys = getattr(other, '_keys', other)
 		for key in self._keys:
 			if key not in other_keys:
 				del self[key]
@@ -199,7 +199,7 @@ class OrderedSet(Serializable):
 	
 	def __xor__(self, other):
 		new = OrderedSet()
-		other_keys = other.keys() if hasattr(other, 'keys') else other
+		other_keys = getattr(other, '_keys', other)
 		for key in self._keys:
 			if key not in other_keys:
 				new.add(key)
@@ -209,7 +209,7 @@ class OrderedSet(Serializable):
 		return new
 	
 	def __ixor__(self, other):
-		other_keys = other.keys() if hasattr(other, 'keys') else other
+		other_keys = getattr(other, '_keys', other)
 		for key in other_keys:
 			if key in self:
 				del self[key]

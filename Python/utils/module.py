@@ -77,20 +77,14 @@ class Module(TrackableResource, ABC):
 		getter_override_name = f"get_{name}"
 
 		if setter is None:
-			if hasattr(self, setter_override_name):
-				def setter_func(self, value):
-					getattr(self, setter_override_name)(value)
-			else:
-				setter_func = self._gen_setting_setter(name)
+			attr = getattr(self, setter_override_name, None)
+			setter_func = inspect_utils.function(attr) if attr is not None else self._gen_setting_setter(name)
 		else:
 			setter_func = setter
 
 		if getter is None:
-			if hasattr(self, getter_override_name):
-				def getter_func(self):
-					return getattr(self, getter_override_name)()
-			else:
-				getter_func = self._gen_setting_getter(name)
+			attr = getattr(self, getter_override_name, None)
+			getter_func = inspect_utils.function(attr) if attr is not None else self._gen_setting_getter(name)
 		else:
 			getter_func = getter
 		
@@ -107,14 +101,16 @@ class Module(TrackableResource, ABC):
 	# By default, it takes the setting value from the main settings file through the settings_manager.
 	def _set_defined_setting_by_name_base(self, name, value, current_value=None, update_setting_func=None):
 		filter_func_name = f"{name}_setter_filter"
-		if hasattr(self, filter_func_name):
-			filtered_value = getattr(self, filter_func_name)(value)
+		attr = getattr(self, filter_func_name, None)
+		if attr is not None:
+			filtered_value = attr(value)
 		else:
 			filtered_value = value
 		self._set_setting_private_variable(name, filtered_value)
 		on_set_name = f"on_{name}_set"
-		if hasattr(self, on_set_name):
-			getattr(self, on_set_name)(filtered_value)
+		attr = getattr(self, on_set_name, None)
+		if attr is not None:
+			attr(filtered_value)
 		_current_value = current_value if current_value is not None else self.get_setting(name)
 		if _current_value == filtered_value:
 			return False # No need to update the setting if it is the same
@@ -122,8 +118,9 @@ class Module(TrackableResource, ABC):
 		if not _update_setting_func(name, filtered_value):
 			return False
 		on_changed_name = f"on_{name}_changed"
-		if hasattr(self, on_changed_name):
-			getattr(self, on_changed_name)(filtered_value)
+		attr = getattr(self, on_changed_name, None)
+		if attr is not None:
+			attr(filtered_value)
 		return True
 
 	def _get_defined_setting_by_name(self, name):

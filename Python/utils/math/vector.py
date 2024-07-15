@@ -3,8 +3,8 @@ from functools import total_ordering
 
 
 def iterate_components(any1, any2):
-	data1 = any1.data if hasattr(any1, "data") else any1
-	data2 = any2.data if hasattr(any2, "data") else any2
+	data1 = getattr(any1, "data", any1)
+	data2 = getattr(any2, "data", any2)
 	return zip(data1, data2)
 
 @total_ordering

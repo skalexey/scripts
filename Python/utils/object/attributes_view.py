@@ -1,3 +1,6 @@
+from utils.lang import NoValue
+
+
 class AttributesView:
 	def __init__(self, obj):
 		self._obj = obj
@@ -17,12 +20,14 @@ class AttributesView:
 		return (key for key, _ in self._non_dunder_attrs())
 
 	def __getitem__(self, key):
-		if hasattr(self._obj, key) and not key.startswith('__'):
-			return getattr(self._obj, key)
+		if not key.startswith('__'):
+			attr = getattr(self._obj, key, NoValue)
+			if attr is not NoValue:
+				return attr
 		raise KeyError(f"'{key}' not found")
 
 	def __contains__(self, key):
-		return hasattr(self._obj, key) and not key.startswith('__')
+		return not key.startswith('__') and hasattr(self._obj, key)
 
 	def __iter__(self):
 		return self.keys()

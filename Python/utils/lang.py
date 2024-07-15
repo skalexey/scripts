@@ -10,9 +10,7 @@ def is_primitive(value):
 	return isinstance(value, (int, float, str, bool, bytes))
 
 def extract_self(bound_method):
-	if hasattr(bound_method, '__self__'):
-		return bound_method.__self__
-	return None
+	return getattr(bound_method, '__self__', None)
 
 def clear_resources(obj):
 	if isinstance(obj, dict):
@@ -64,3 +62,6 @@ class SafeSuper:
 	
 def safe_super(cls, inst):
 	return SafeSuper(cls, inst)
+
+def getattr_noexcept(obj, name, default=NoValue):
+	return obj.__dict__.get(name, default)
