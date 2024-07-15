@@ -1,52 +1,29 @@
 import inspect
 import os
 import threading
-from enum import IntEnum
 
 import utils  # Lazy import
 import utils.inspect_utils as inspect_utils
+from utils.log.log import LogLevel
+from utils.log.log import log as _log
 
-
-class LogLevel(IntEnum):
-	VERBOSE = 0
-	DEBUG = 1
-	LOOP_VERBOSE = 2 # Loop iterations that spam significantly
-	LOOP = 3 # Loop iterations
-	INFO = 4
-	SUCCESS = 5
-	ATTENTION = 6
-	WARNING = 7
-	ERROR = 8
-	CRITICAL = 9
-	PRINT = 10
-
-	def sign(level):
-		level_str = level.name
-		# Find the first letter of each part separated by _
-		split = level_str.split("_")
-		return "".join([s[0] for s in split])
-
-	@classmethod
-	def items(cls):
-		return cls.__members__.items()
-
-	@classmethod
-	def values(cls):
-		return cls.__members__.values()
-
-	@classmethod
-	def keys(cls):
-		return cls.__members__.keys()
 
 class Logger:
 	log_addition = None
-	_lock = threading.Lock()
 
 	def __init__(self, title=None, title_stack_level=1):
+		super().__init__()
 		self.log_level = 0
 		# Take the caller script name from the stack
 		self.log_title = title or os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0]
-		super().__init__()
+		self._on_log = None # Allocated on demand through on_log property
+		self.file = None
+
+	@property
+	def on_log(self):
+		if self._on_log is None:
+			self._on_log = utils.subscription.Subscription()
+		return self._on_log
 
 	def set_log_title(self, title):
 		self.log_title = title
@@ -61,18 +38,14 @@ class Logger:
 	# Variadic arguments
 	def log(self, message, level=LogLevel.PRINT):
 		if level >= self.log_level:
-			# Print the log level,time (hour, minute, second, and microsecond), and the message
-			from datetime import datetime
-			now = datetime.now()
-			current_time = now.strftime("%H:%M:%S.%f")
-			level_sign = LogLevel.sign(level)
-			level_prefix = f"[{level_sign}] " if level_sign else "    "
-			log_title_addition = f"[{self.log_title}]: " if self.log_title else ""
-			log_addition_str = self.log_addition or ""
-			msg = f"{level_prefix}[{current_time}] {log_addition_str}{log_title_addition}{message}"
-			with Logger._lock:
-				print(msg)
-			return msg, message, level, self.log_title, current_time
+			result = _log(message, level, self.log_title, self.log_addition)
+			if self._on_log:
+				self._on_log(result)
+			return result
+
+	def redirect_to_file(self, fpath=None, level=None, *args, **kwargs):
+		self.file = utils.log.redirect_to_file(fpath, level, self.on_log, *args, **kwargs)
+		return self.file
 
 	def _exec(self, expression, globals=None, locals=None):
 		try:
