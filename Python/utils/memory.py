@@ -64,25 +64,25 @@ class Callable(TrackableResource):
 		cb = inspect_utils.function(callable) or callable
 		_on_refobj_destroyed = self.gen_refobj_destroyed_cb()
 		self.callable_ref = weakref.ref(cb, _on_refobj_destroyed)
-		log.debug(utils.function.msg(f"Callable weak reference {self.callable_ref} created"))
+		log.verbose(utils.function.msg(f"Callable weak reference {self.callable_ref} created"))
 		cb_self = caller or utils.lang.extract_self(callable)
 		self.cb_self_ref = weakref.ref(cb_self, _on_refobj_destroyed) if cb_self is not None else None
 		if self.cb_self_ref is not None:
-			log.debug(utils.function.msg(f"Caller weak reference {self.cb_self_ref} created"))
-		super().__init__(*args, **kwargs)
+			log.verbose(utils.function.msg(f"Caller weak reference {self.cb_self_ref} created"))
+		super().__init__(*other_args, **other_kwargs)
 	
 	def __del__(self):
-		log.debug(utils.function.msg_kw())
+		log.verbose(utils.function.msg_kw())
 		if not self.is_invalidated():
 			self._invalidate()
 		utils.lang.safe_super(Callable, self).__del__()
 
 	def gen_refobj_destroyed_cb(self, on_refobj_destroyed=None):
 		def _on_refobj_destroyed(ref, self_weak=WeakProxy(self)):
-			log.debug(utils.function.msg_kw(f"Reference {ref} has been garbage collected"))
 			if self_weak.is_alive():
 				if not self_weak.is_invalidated():
 					self_weak._invalidate()
+			log.verbose(utils.function.msg_kw(f"Reference {ref} has been garbage collected"))
 		return utils.function.glue(_on_refobj_destroyed, on_refobj_destroyed)
 
 	def __repr__(self):
@@ -92,7 +92,7 @@ class Callable(TrackableResource):
 		return self.is_valid()
 
 	def repr_params(self):
-		return f"callable='{self.callable}'"
+		return f"callable='{self.callable}', caller='{self.cb_self}', max_calls={self.max_calls}, invalidate_on_false={self.invalidate_on_false}, args={self._args}, kwargs={self._kwargs}"
 
 	@property
 	def callable(self):
@@ -104,12 +104,12 @@ class Callable(TrackableResource):
 
 	def _invalidate(self):
 		# Keep internal data unchanged for debugging purposes
-		log.debug(utils.function.msg_kw())
 		if self._invalidated:
 			raise RuntimeError(utils.function.msg_kw("Callable has already been invalidated"))
 		self._invalidated = True
 		if self._on_invalidated is not None:
 			self._on_invalidated(self)
+		log.verbose(utils.function.msg_kw())
 
 	def is_valid(self):
 		return not (self._invalidated or self.callable is None)
@@ -168,11 +168,12 @@ class Callable(TrackableResource):
 
 class OwnedCallable(Callable):
 	def __init__(self, callable, owner=None, *args, **kwargs):
+		# Initialized first for repr
 		_on_refobj_destroyed = self.gen_refobj_destroyed_cb()
 		self.owner_ref = weakref.ref(owner, _on_refobj_destroyed) if owner is not None else None
-		super().__init__(callable, *args, **kwargs)
 		if self.owner_ref is not None:
-			log.debug(utils.function.msg(f"Owner weak reference {self.owner_ref} created"))
+			log.verbose(utils.function.msg(f"Owner weak reference {self.owner_ref} created"))
+		super().__init__(callable, *args, **kwargs)
 
 	@classmethod
 	def bind_if_func(cls, callable, owner, *args, **kwargs):
@@ -214,19 +215,21 @@ class SmartCallable(OwnedCallable):
 			return SmartCallable._id
 
 	def __init__(self, callable, owner=None, *args, **kwargs):
+		# Initialized first for repr
 		self.id = self._next_id()
 		super().__init__(callable, owner, *args, **kwargs)
-		
 		if owner is not None:
 			# Add __smartcbs__ attribute as a list of callables to the owner if not present
-			if not hasattr(owner, "__smartcbs__"):
-				owner.__smartcbs__ = OrderedDict()
+			smartcbs = getattr(owner, "__smartcbs__", None)
+			if smartcbs is None:
+				smartcbs = OrderedDict()
+				owner.__smartcbs__ = smartcbs
 			cb = inspect_utils.function(callable) or callable
-			if not owner.__smartcbs__.add(self.id, cb):
+			if not smartcbs.add(self.id, cb):
 				raise RuntimeError(utils.method.msg_kw(f"Callable is already attached to the owner"))
 
 	def __del__(self):
-		log.debug(utils.function.msg_kw())
+		log.verbose(utils.function.msg_kw())
 		owner = self.owner
 		if owner is not None:
 			smartcbs = getattr(owner, "__smartcbs__", None)
