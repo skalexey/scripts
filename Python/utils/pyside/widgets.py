@@ -23,11 +23,14 @@ from PySide6.QtWidgets import (
 
 import utils.class_utils as class_utils
 import utils.lang
+import utils.method
 import utils.pyside
+from utils.log.logger import Logger
 from utils.memory import SmartCallable
 from utils.pyside import WidgetBase
 from utils.text import AbstractTextSpinner
 
+log = Logger()
 
 # Use EnforcedABCMeta instead of ABCMeta since QtWidget metaclass suppresses the abstractmethod checking behavior
 class CombinedMetaQtABC(class_utils.EnforcedABCMeta, type(QWidget)):
@@ -40,6 +43,8 @@ class ABCQt(ABC, metaclass=CombinedMetaQtABC):
 
 class AbstractWidget(ABCQt):
 	on_resized = Signal(QWidget)
+	on_parent_changed = Signal(QWidget)
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._on_contents_changed()
@@ -58,6 +63,11 @@ class AbstractWidget(ABCQt):
 		pass
 		# self._on_contents_changed() # TODO: consider lighter options
 		# super().update(*args, **kwargs)
+
+	def event(self, event):
+		if event.type() == QEvent.ParentChange:
+			self.on_parent_changed.emit(self)
+		return super().event(event)
 
 
 class SliderInputWidget(WidgetBase(QWidget)):
@@ -295,6 +305,7 @@ class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)):
 		self.expand_button.clicked.connect(self._on_collapse_click)
 		if self.expanded_widget is not None:
 			self.expanded_widget.show()
+		log.debug(utils.method.msg_kw())
 
 	def collapse(self):
 		self.expand_button.setText("+")
@@ -302,6 +313,7 @@ class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)):
 		self.expand_button.clicked.connect(self._on_expand_click)
 		if self.expanded_widget is not None:
 			self.expanded_widget.hide()
+		log.debug(utils.method.msg_kw())
 
 
 class DeallocateExpandedWidgetMixin(ABCQt):
@@ -314,10 +326,11 @@ class DeallocateExpandedWidgetMixin(ABCQt):
 		self.expanded_widget = self.create_expanded_widget()
 
 	def collapse(self):
-		super().collapse()
 		if self.expanded_widget is not None:
+			self.expanded_widget.setParent(None)
 			self.expanded_widget.deleteLater()
 			self.expanded_widget = None
+		super().collapse()
 
 
 class CustomAdjustSizeMixin(AbstractWidget):
