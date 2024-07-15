@@ -24,7 +24,7 @@ def redirect_to_file(fpath=None, level=None, subscription=None, *args, **kwargs)
 	_fpath = fpath or f"logs/{log_fname(*args, **kwargs)}"
 	os.makedirs(os.path.dirname(_fpath), exist_ok=True)
 	# Check if the file is already opened
-	verify(not utils.file.is_file_opened_for_writing(_fpath), f"Log file '{_fpath}' is already opened for writing")
+	verify(not utils.file.is_open(_fpath), f"Log file '{_fpath}' is already opened for writing")
 	file = open(_fpath, "a")
 	lock = threading.RLock()
 	class State:
