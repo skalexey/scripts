@@ -22,6 +22,31 @@ class TaskScheduler(TrackableResource):
 	instances: list[weakref.ref] = []
 	on_update = Subscription()
 
+	class LoopOperator:
+		def __init__(self):
+			self.thread_id = None
+
+		def is_operating(self):
+			return self.thread_id is not None
+
+		def is_operating_in_current_thread(self):
+			return self.thread_id == threading.current_thread().name
+
+		def __enter__(self):
+			if self.thread_id is not None:
+				raise RuntimeError(utils.method.msg_kw("Loop is already operating"))
+			if self.loop.is_running():
+				raise RuntimeError("Unknown operator is already running the loop")
+			self.thread_id = threading.current_thread().name
+			return self
+
+		def __call__(self, loop):
+			self.loop = loop
+			return self
+
+		def __exit__(self, exc_type, exc_value, traceback):
+			self.thread_id = None
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.update_interval = kwargs.get("update_interval", 0.1)
@@ -29,8 +54,8 @@ class TaskScheduler(TrackableResource):
 		self._queue = deque()
 		self._current_task_info = None
 		self._loop = None
-		self._thread_id = None
 		self._lock = threading.RLock()
+		self._loop_operator = self.LoopOperator()
 		self.on_update = Subscription()
 		def on_destroyed(ref):
 			TaskScheduler.instances.remove(ref)
@@ -42,12 +67,8 @@ class TaskScheduler(TrackableResource):
 		with self._lock:
 			if self._loop is None:
 				self._loop = asyncio_utils.get_event_loop()
-				self._thread_id = threading.current_thread().ident
 		return self._loop
 
-	def is_current_thread_loop_owner(self):
-		thread_id = threading.current_thread().ident
-		return thread_id == self._thread_id
 
 	class TaskInfo:
 		def __init__(self, function, task = None, future=None):
@@ -85,13 +106,9 @@ class TaskScheduler(TrackableResource):
 			# Suppresses CancelledError exceptions here, but they will still be originally raised in the coros
 			await asyncio.gather(*tasks, return_exceptions=True)
 		try:
-			if self.is_current_thread_loop_owner():
-				if self.loop.is_running():
-					raise RuntimeError("Called wait_all_tasks() from a running task.")
-					# log.warning(utils.method.msg_kw("Called wait_all_tasks() from a running task. It will be ignored"))
-					# return
-				result = self.loop.run_until_complete(wait_tasks())
-			else:
+			if self._loop_operator.is_operating():
+				if self._loop_operator.is_operating_in_current_thread():
+					raise RuntimeError(utils.method.msg_kw("Called wait_all_tasks() from a running task."))
 				log.debug(utils.method.msg_kw("Called wait_all_tasks() from a different thread. Waiting for the tasks to finish in the same loop using asyncio.run_coroutine_threadsafe"))
 				futures = []
 				for task_info in list(self._tasks.values()):
@@ -107,13 +124,17 @@ class TaskScheduler(TrackableResource):
 				future = asyncio.run_coroutine_threadsafe(wait_tasks(), self.loop)
 				result = future.result() # Wait and raise exception if occurred in the end. It will never complete the tasks, but just wait for the owner thread to complete them.
 				log.debug(utils.method.msg_kw(f"other thread waiting result: {result}"))
+			else:
+				with self._loop_operator(self.loop):
+					result = self.loop.run_until_complete(wait_tasks())
 		except BaseException as e:
 			log.error(utils.method.msg_kw(f"Exception occurred while waiting for the tasks: {e}"))
 			raise
 		return result
 
 	def wait(self, future):
-		future.get_loop().run_until_complete(future)
+		with self._loop_operator(self.loop):
+			return future.get_loop().run_until_complete(future)
 	
 	def cancel_all_tasks(self):
 		self._queue.clear()
@@ -125,7 +146,7 @@ class TaskScheduler(TrackableResource):
 	def update(self, dt):
 		log.debug(utils.method.msg_kw())
 		# Create the loop from the updating thread if it doesn't exist
-		self.loop
+		# self.loop
 		# Update the tasks
 		if len(self._tasks) > 0:
 			task_info = next(iter(self._tasks.values()))
@@ -137,7 +158,8 @@ class TaskScheduler(TrackableResource):
 			# verify(not task.cancelled(), "Task is cancelled but it still exists in the tasks list") # The task must be removed from the tasks list in the _on_task_done method
 			if task.cancelled():
 				log.warning("Task is cancelled but it still exists in the tasks list") # The task must be removed from the tasks list in the _on_task_done method
-			future.get_loop().run_until_complete(update_task())
+			with self._loop_operator(self.loop) as o:
+				future.get_loop().run_until_complete(update_task())
 			if future.done():
 				if not future.cancelled():
 					ex = future.exception()
