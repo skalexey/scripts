@@ -1,3 +1,4 @@
+import utils.function
 from utils.log.logger import Logger
 
 log = Logger()
