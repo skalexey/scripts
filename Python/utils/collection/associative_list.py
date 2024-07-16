@@ -66,3 +66,6 @@ class AssociativeList():
 		self._data[key] = value
 		self._id += 1
 		return key
+
+	def __bool__(self):
+		return bool(self._data)
