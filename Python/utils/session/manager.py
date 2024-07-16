@@ -80,10 +80,12 @@ class SessionManager:
 				raise ValueError(utils.function.msg("Session end event received from a session that is not the current session"))
 			self._current_session = None
 			self._session_list[session.id] = session.storage
+			self.app_context.module_manager.call_on_modules("on_session_end", session)
 		session.on_end.subscribe(on_session_end, self, caller=self)
 		session_id = session.id
 		self._session_list[session_id] = session
 		self._current_session = session
+		self.app_context.module_manager.call_on_modules("on_session_start", session)
 		return session
 
 	def _session_bucket_id(self):
