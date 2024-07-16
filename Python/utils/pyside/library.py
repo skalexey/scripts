@@ -155,3 +155,8 @@ def map_from_global(widget, rect):
 	local_rect = QRect(top_left_local, bottom_right_local)
 
 	return local_rect
+
+def global_to_view_scene_pos(view, global_pos):
+	view_pos = view.mapFromGlobal(global_pos)
+	scene_pos = view.mapToScene(view_pos)
+	return scene_pos
