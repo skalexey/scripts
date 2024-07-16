@@ -1,6 +1,7 @@
+import types
 from abc import ABC, abstractmethod
 
-from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt, Signal
+from PySide6.QtCore import QChildEvent, QEvent, QObject, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QAbstractItemView,
@@ -11,6 +12,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QListWidgetItem,
     QMenu,
     QPushButton,
     QSizePolicy,
@@ -42,31 +44,58 @@ class ABCQt(ABC, metaclass=CombinedMetaQtABC):
 
 
 class AbstractWidget(ABCQt):
-	on_resized = Signal(QWidget)
+	on_resized = Signal(QWidget, QSize)
+	on_child_added = Signal(QWidget)
+	on_child_removed = Signal(QWidget)
 	on_parent_changed = Signal(QWidget)
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._on_contents_changed()
 
-	def _adjust_size(self):
-		self.adjustSize()
-		self._on_resized()
+	def adjust_size(self, geometry=None):
+		if geometry is not None:
+			self.setGeometry(geometry)
+			# self._on_resized(geometry.size()) # V0 impl
+		else:
+			self.adjustSize()
+			# self._on_resized(self.geometry().size()) # V0 impl
 
-	def _on_resized(self):
-		self.on_resized.emit(self)
+	def _on_parent_changed(self, parent):
+		self.on_parent_changed.emit(self)
+
+	def _on_resized(self, size):
+		self.on_resized.emit(self, size)
+
+	def _on_child_added(self, child):
+		self.on_child_added.emit(child)
+
+	def _on_child_removed(self, child):
+		self.on_child_removed.emit(child)
 
 	def _on_contents_changed(self):
-		self._adjust_size()
+		self.adjust_size()
 
-	def update(self, dt, *args, **kwargs):
+	def update(self, dt=None, *args, **kwargs):
 		pass
 		# self._on_contents_changed() # TODO: consider lighter options
 		# super().update(*args, **kwargs)
 
 	def event(self, event):
 		if event.type() == QEvent.ParentChange:
-			self.on_parent_changed.emit(self)
+			self._on_parent_changed(self)
+		elif event.type() == QEvent.ChildAdded:
+			child_event = QChildEvent(event)
+			log.verbose(utils.method.msg_kw(f"Child added: {child_event.child()}"))
+			self._on_child_added(child_event.child())
+		elif event.type() == QEvent.ChildRemoved:
+			log.verbose(utils.method.msg_kw(f"Child removed: {event.child()}"))
+			self._on_child_removed(event.child())
+		elif event.type() == QEvent.Resize:
+			log.verbose(utils.method.msg_kw(f"Resized: {self.geometry().size()}")) # assert event.size() == self.geometry().size()
+			self._on_resized(self.geometry().size())
+		elif event.type() == QEvent.Move:
+			log.verbose(utils.method.msg_kw(f"Moved: {self.geometry().topLeft()}"))
 		return super().event(event)
 
 
@@ -249,7 +278,7 @@ class CopyableLabel(WidgetBase(CopyableLabelMixin, QLabel)):
 		clipboard.setText(self.text())
 
 
-class ValueWidget(WidgetBase(QWidget)):
+class ValueWidget(WidgetBase(AbstractWidget, QWidget)):
 	def __init__(self, label, value, fixed_width=None, value_fixed_width=None, parent=None, parent_layout=None, *args, **kwargs):
 		super().__init__(parent=parent, parent_layout=parent_layout, *args, **kwargs)
 		layout = QHBoxLayout()
@@ -257,8 +286,8 @@ class ValueWidget(WidgetBase(QWidget)):
 		if fixed_width is not None:
 			self.setFixedWidth(fixed_width)
 		# Label
-		label_widget = QLabel(label)
-		layout.addWidget(label_widget)
+		self.label_widget = QLabel(label)
+		layout.addWidget(self.label_widget)
 		# Value
 		self.value_label = CopyableLabel(str(value))
 		if value_fixed_width is not None:
@@ -272,21 +301,59 @@ class ValueWidget(WidgetBase(QWidget)):
 		return self.value_label.text()
 
 
-class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)):
+class CustomAdjustSizeMixin(AbstractWidget):
+	def adjust_size(self):
+		geometry = self._adjusted_geometry()
+		size = geometry.size()
+		self.setFixedSize(size)
+		self.setGeometry(geometry)
+		# self._on_resized(size)
+
+	def _adjusted_geometry(self):
+		return self.geometry()
+
+
+class FitContentsMixin(CustomAdjustSizeMixin):
+	def _on_contents_changed(self):
+		super()._on_contents_changed()
+		for child in self.children():
+			if isinstance(child, AbstractWidget):
+				child.adjust_size()
+			elif isinstance(child, QWidget):
+				child.adjustSize()
+
+	def _adjusted_geometry(self):
+		geometry = super()._adjusted_geometry()
+		new_size = self.calculate_size()
+		return QRect(geometry.topLeft(), new_size)
+
+	def _on_child_added(self, child):
+		self._on_contents_changed()
+
+	def _on_child_removed(self, child):
+		self._on_contents_changed()
+
+	def calculate_size(self):
+		# Iterate over all children and calculate the bounding rect
+		geometry = utils.pyside.contents_geometry(self)
+		return geometry.size()
+
+
+class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)): # TODO: Inherit from FitContentsMixin
 	def __init__(self, title=None, expanded_widget=None, collapsed_widget=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		# Layouting
-		self.layout = QVBoxLayout()
-		self.setLayout(self.layout)
+		layout = QVBoxLayout()
+		self.setLayout(layout)
 		self.hlayout = QHBoxLayout()
 		self.hlayout.setAlignment(Qt.AlignLeft)
-		self.layout.addLayout(self.hlayout)
+		layout.addLayout(self.hlayout)
 		# Widgets
 		self.collapsed_widget = collapsed_widget or QLabel(title or "")
 		self.hlayout.addWidget(self.collapsed_widget)
 		self.expanded_widget = expanded_widget
 		if self.expanded_widget is not None:
-			self.layout.addWidget(self.expanded_widget)
+			layout.addWidget(self.expanded_widget)
 		# Expand button
 		self.expand_button = QPushButton("+")
 		self.expand_button.clicked.connect(self._on_expand_click)
@@ -333,17 +400,6 @@ class DeallocateExpandedWidgetMixin(ABCQt):
 		super().collapse()
 
 
-class CustomAdjustSizeMixin(AbstractWidget):
-	def _adjust_size(self):
-		geometry = self._adjusted_geometry()
-		self.setFixedSize(geometry.size())
-		self.setGeometry(geometry)
-		self._on_resized()
-
-	def _adjusted_geometry(self):
-		return self.geometry()
-
-
 class ResizeEventFilter(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -383,17 +439,7 @@ class ClampGeometryMixin(CustomAdjustSizeMixin):
 		return None
 	
 	def _on_clamper_resized(self, obj, event):
-		self._adjust_size()
-
-class FitContentsMixin(CustomAdjustSizeMixin):
-	def _adjusted_geometry(self):
-		geometry = super()._adjusted_geometry()
-		new_size = self.calculate_size()
-		return QRect(geometry.topLeft(), new_size)
-
-	def calculate_size(self):
-		raise NotImplementedError("Subclasses should implement this method.")
-	
+		self.adjust_size()
 
 class FitContentsListMixin(FitContentsMixin):
 	def calculate_size(self):
@@ -422,7 +468,7 @@ class AbstractListWidget(AbstractWidget):
 
 	def add_items(self, items):
 		for item in items:
-			self._add_item(*item)
+			self._add_item(item)
 		self._on_contents_changed()
 
 	def add_item(self, *args, **kwargs):
@@ -436,8 +482,18 @@ class AbstractListWidget(AbstractWidget):
 
 # Mixins logic executed in the order opposite to the inheritance order
 class ListWidget(WidgetBase(ClampGeometryMixin, FitContentsListMixin, CopyableListElementMixin, AbstractListWidget, QListWidget)):
-	def _add_item(self, item_text):
-		self.addItem(item_text)
+	def _add_item(self, item):
+		if isinstance(item, QWidget):
+			_item = QListWidgetItem(self)
+			def on_item_resized(widget, size, _item=_item):
+				_item.setSizeHint(size)
+			item.on_resized.connect(on_item_resized)
+			on_item_resized(item, item.geometry().size())
+			self.setItemWidget(_item, item)
+			return _item
+		else:
+			self.addItem(item)
+			return item
 
 class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, CopyableListElementMixin, AbstractListWidget, QTableWidget)):
 	def __init__(self, *args, **kwargs):
@@ -453,13 +509,28 @@ class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, Copyable
 		self.setHorizontalHeaderItem(self.columnCount() - 1, header_item)
 		self.resizeColumnsToContents()
 
-	def _add_item(self, *column_values):
+	def _add_item(self, column_values):
 		row_position = self.rowCount()
 		self.insertRow(row_position)
 		for column, value in enumerate(column_values):
-			table_item = QTableWidgetItem(str(value) if value is not None else '')
-			self.setItem(row_position, column, table_item)
-	
+			if isinstance(value, QWidget):
+				self.setCellWidget(row_position, column, value)
+				# Adapt the row height to the widget height
+				attr_name = f"on_cell_resized_{row_position}_{column}"
+				def on_cell_resized(self, widget, size, row_position=row_position, column=column):
+					row_height = self.rowHeight(row_position)
+					column_width = self.columnWidth(column)
+					self.setRowHeight(row_position, max(size.height(), row_height))
+					self.setColumnWidth(column, max(size.width(), column_width))
+				# TODO: check if cleaning upon the widget deletion is needed
+				method = types.MethodType(on_cell_resized, self)
+				setattr(self, attr_name, method)
+				method = getattr(self, attr_name)
+				value.on_resized.connect(method)
+			else:
+				table_item = QTableWidgetItem(str(value) if value is not None else '')
+				self.setItem(row_position, column, table_item)
+
 	def sort_by_column(self, column_index):
 		order = self.horizontalHeader().sortIndicatorOrder()
 		self.sortItems(column_index, order)

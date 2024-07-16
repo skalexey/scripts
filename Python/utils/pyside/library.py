@@ -1,7 +1,7 @@
 import os
 
 from PySide6.QtCore import QRect
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox
+from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
 
 import utils.function
 import utils.method
@@ -160,3 +160,15 @@ def global_to_view_scene_pos(view, global_pos):
 	view_pos = view.mapFromGlobal(global_pos)
 	scene_pos = view.mapToScene(view_pos)
 	return scene_pos
+
+def contents_geometry(widget):
+	children = widget.children()
+	global_geometry = QRect()
+	for child in children:
+		if not isinstance(child, QWidget):
+			continue
+		child_geometry = child.geometry()
+		global_child_geometry = utils.pyside.map_to_global(widget, child_geometry)
+		global_geometry = global_geometry.united(global_child_geometry)
+	geometry = utils.pyside.map_from_global(widget, global_geometry)
+	return geometry
