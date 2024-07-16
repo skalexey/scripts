@@ -177,19 +177,18 @@ def functions(obj):
 # For methods and functions returns the function bound to the object, for properties returns the getter. To get both getter and setter use functions(obj)
 def function(obj):
 	if inspect.isfunction(obj):
-		return obj
+		func = obj
 	elif inspect.ismethod(obj):
-		return obj.__func__
+		func = obj.__func__
 	else:
 		func = getattr(obj, '__func__', None)
-		if func is not None:
-			return func
-		elif isinstance(obj, property):
-			func = obj.fget
-			if func is not None:
-				assert inspect.isfunction(func)
-				return func
-	return None
+		if func is None:
+			if isinstance(obj, property):
+				func = obj.fget
+				if func is not None:
+					assert inspect.isfunction(func)
+	unwrapped_func = inspect.unwrap(func)
+	return unwrapped_func
 
 def cls(obj):
 	if inspect.isclass(obj):
