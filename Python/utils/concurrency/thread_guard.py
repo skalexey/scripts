@@ -15,6 +15,7 @@ class ThreadControl:
 
 	def __enter__(self):
 		self._obj._tmp_thread_ids[current_thread().name] += 1
+		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		enter_level = self._obj._tmp_thread_ids[current_thread().name]
