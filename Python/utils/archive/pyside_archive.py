@@ -300,17 +300,17 @@ class ExpandableWidget(WidgetBase(QWidget)):
 	def __init__(self, title=None, expanded_widget=None, collapsed_widget=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		# Layouting
-		self.layout = QVBoxLayout()
+		layout = QVBoxLayout()
 		self.setLayout(self.layout)
 		self.hlayout = QHBoxLayout()
 		self.hlayout.setAlignment(Qt.AlignLeft)
-		self.layout.addLayout(self.hlayout)
+		layout.addLayout(self.hlayout)
 		# Widgets
 		self.collapsed_widget = collapsed_widget or QLabel(title or "")
 		self.hlayout.addWidget(self.collapsed_widget)
 		self.expanded_widget = expanded_widget
 		if self.expanded_widget is not None:
-			self.layout.addWidget(self.expanded_widget)
+			layout.addWidget(self.expanded_widget)
 		# Expand button
 		self.expand_button = QPushButton("+")
 		self.expand_button.clicked.connect(self._on_expand_click)
