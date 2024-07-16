@@ -127,7 +127,7 @@ class Subscription:
 					cb_to_compare = self.CallableInfo(any, subscriber)
 					compare_result = cb == cb_to_compare
 				else:
-					compare_result = cb.owner == any
+					compare_result = cb.owner == any or cb.cb_self == any
 				if compare_result:
 					unsubscribe_ids.append(cb_id)
 					result = True
