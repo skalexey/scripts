@@ -99,9 +99,9 @@ def wait_tasks_test():
 		def update(self, dt):
 			self.scheduler.update(dt)
 
-		async def async_method_sleep(self):
-			log(utils.method.msg_kw("Started"))
-			await asyncio.sleep(0.3)
+		async def async_method_sleep(self, sleep_time=0.3):
+			log(utils.method.msg_kw(f"Started"))
+			await asyncio.sleep(sleep_time)
 			log(utils.method.msg_kw("Completed"))
 
 		async def async_method_wait(self):
@@ -110,6 +110,18 @@ def wait_tasks_test():
 			log(utils.method.msg_kw("Completed"))
 
 	a = A()
+
+	def cancel_tasks_job():
+		sleep(0.1) # Let the main thread to start performing the task for the second test
+		a.scheduler.cancel_all_tasks()
+		while a.scheduler.registered_task_count() > 0:
+			sleep(0.01)
+
+	def run_tasks_job():
+		while a.scheduler.registered_task_count() > 0:
+			a.update(1)
+			log("Update done")
+
 	a.scheduler.schedule_task(a.async_method_sleep, 1)
 	assert a.scheduler.registered_task_count() == 1
 	assert not a.scheduler.loop.is_running()
@@ -127,25 +139,53 @@ def wait_tasks_test():
 	thread.join()
 	assert a.scheduler.registered_task_count() == 0
 
+	log(title("Cancel the wait task"))
 	f = a.scheduler.schedule_task(a.async_method_wait, 1)
 	assert a.scheduler.registered_task_count() == 1
 	f.cancel()
 	a.update(1)
 	assert a.scheduler.registered_task_count() == 0
+
+	log(title("Cancel the wait task from another thread"))
 	f = a.scheduler.schedule_task(a.async_method_wait, 1)
 	assert a.scheduler.registered_task_count() == 1
-	def cancel_tasks_job():
-		a.scheduler.cancel_all_tasks()
-		while a.scheduler.registered_task_count() > 0:
-			sleep(0.01)
+
 	thread = threading.Thread(target=cancel_tasks_job)
 	thread.start()
 	for i in range(3):
 		sleep(0.2)
-	assert a.scheduler.registered_task_count() == 1
-	a.update(1)
 	assert a.scheduler.registered_task_count() == 0
 	thread.join()
+
+	log(title("Complete tasks in parallel"))
+	f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=2)
+	assert a.scheduler.registered_task_count() == 1
+
+	thread = threading.Thread(target=run_tasks_job)
+	thread.start()
+	sleep(0.1)
+	run_tasks_job()
+	thread.join()
+
+	log(title("Cancel from another thread"))
+	f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=3)
+	thread = threading.Thread(target=cancel_tasks_job)
+	thread.start()
+	run_tasks_job()
+	thread.join()
+
+	log(title("Wait future"))
+	f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=0.6)
+	assert a.scheduler.registered_task_count() == 1
+	a.scheduler.wait(f)
+
+	log(title("Cancel another thread and wait"))
+	f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=3)
+	thread = threading.Thread(target=cancel_tasks_job)
+	thread.start()
+	a.scheduler.wait_all_tasks()
+	thread.join()
+
 	a.update(1)
 	
 
