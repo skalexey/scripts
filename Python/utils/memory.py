@@ -143,7 +143,7 @@ class Callable(TrackableResource):
 		cb_self = self.cb_self
 		all_args = list(self._args or []) + list(args)
 		_args = [cb_self] + all_args if cb_self is not None else all_args
-		result = self.callable(*_args, *(self._kwargs or {}), **kwargs)
+		result = self.callable(*_args, **(self._kwargs or {}), **kwargs)
 		self._call_count += 1
 		if self.invalidate_on_false:
 			if result is False:
