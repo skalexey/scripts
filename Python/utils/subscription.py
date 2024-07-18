@@ -88,7 +88,7 @@ class Subscription:
 		if not self._priorities:
 			return
 		with self._lock:
-			for priority_group in list(self._priorities.values()):
+			for priority_group in list(reversed(self._priorities.values())):
 				for cb_id in priority_group.copy():
 					cb = self._data[cb_id]
 					cb(*args, **kwargs)
