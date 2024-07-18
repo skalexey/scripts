@@ -1,4 +1,4 @@
-from utils.collection.ordered_dict import *
+from utils.collection.ordered_dict import OrderedDict
 
 
 class AssociativeList():
@@ -66,6 +66,9 @@ class AssociativeList():
 		self._data[key] = value
 		self._id += 1
 		return key
+	
+	def pop(self, *args, **kwargs):
+		return self._data.pop(*args, **kwargs)
 
 	def __bool__(self):
 		return bool(self._data)
