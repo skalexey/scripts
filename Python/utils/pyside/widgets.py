@@ -83,7 +83,7 @@ class AbstractWidget(ABCQt):
 
 	def event(self, event):
 		if event.type() == QEvent.ParentChange:
-			self._on_parent_changed(self)
+			self._on_parent_changed(self.parent())
 		elif event.type() == QEvent.ChildAdded:
 			child_event = QChildEvent(event)
 			log.verbose(utils.method.msg_kw(f"Child added: {child_event.child()}"))
@@ -450,8 +450,12 @@ class FitContentsListMixin(FitContentsMixin):
 
 class FitContentsTableMixin(FitContentsMixin):
 	def calculate_size(self):
-		total_width = sum(self.columnWidth(i) for i in range(self.columnCount())) + self.verticalScrollBar().sizeHint().width()
-		total_height = sum(self.rowHeight(i) for i in range(self.rowCount())) + self.horizontalScrollBar().sizeHint().height()
+		vertical_scrollbar_width = self.verticalScrollBar().sizeHint().width()
+		horizontal_scrollbar_height = self.horizontalScrollBar().sizeHint().height()
+		header_height = self.horizontalHeader().sizeHint().height()
+		left_header_width = self.verticalHeader().sizeHint().width()
+		total_width = sum(self.columnWidth(i) for i in range(self.columnCount())) + vertical_scrollbar_width + left_header_width
+		total_height = sum(self.rowHeight(i) for i in range(self.rowCount())) + horizontal_scrollbar_height + header_height
 		return QSize(total_width, total_height)
 
 
@@ -507,7 +511,7 @@ class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, Copyable
 		self.insertColumn(self.columnCount())
 		header_item = QTableWidgetItem(column_name)
 		self.setHorizontalHeaderItem(self.columnCount() - 1, header_item)
-		self.resizeColumnsToContents()
+		self._on_contents_changed()
 
 	def _add_item(self, column_values):
 		row_position = self.rowCount()
