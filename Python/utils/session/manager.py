@@ -1,12 +1,15 @@
 import os
+import sys
 
 import utils.file
 import utils.function
 import utils.pyside
 from utils.collection.ordered_dict import OrderedDict
+from utils.log.logger import Logger
 
 from .library import Session, SessionStorage
 
+log = Logger()
 
 class SessionManager:
 	def __init__(self, app_context, *args, **kwargs):
@@ -75,13 +78,15 @@ class SessionManager:
 		if self.screem_if_current_session():
 			return None
 		session = Session(*args, **kwargs)
+		log.info(utils.function.msg(f"Created a new session '{session}'. Set it as current."))
 		def on_session_end(self, session):
 			if self.current_session() != session:
-				raise ValueError(utils.function.msg("Session end event received from a session that is not the current session"))
+				raise ValueError(utils.function.msg("Session end event received from a session that is not the current one"))
 			self._current_session = None
+			log.info(utils.function.msg(f"Session '{session}' has ended. Current session is None"))
 			self._session_list[session.id] = session.storage
 			self.app_context.module_manager.call_on_modules("on_session_end", session)
-		session.on_end.subscribe(on_session_end, self, caller=self)
+		session.on_end.subscribe(on_session_end, self, caller=self, priority=-sys.maxsize)
 		session_id = session.id
 		self._session_list[session_id] = session
 		self._current_session = session
