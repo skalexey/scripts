@@ -7,6 +7,7 @@ import weakref
 from collections import deque
 
 import utils.asyncio_utils as asyncio_utils
+import utils.function
 import utils.method
 from utils.live import verify
 from utils.log.logger import Logger
@@ -25,6 +26,7 @@ class TaskScheduler(TrackableResource):
 	class LoopOperator:
 		def __init__(self):
 			self.thread_id = None
+			self.enter_lock = threading.RLock()
 
 		def is_operating(self):
 			return self.thread_id is not None
@@ -32,20 +34,105 @@ class TaskScheduler(TrackableResource):
 		def is_operating_in_current_thread(self):
 			return self.thread_id == threading.current_thread().name
 
-		def __enter__(self):
-			if self.thread_id is not None:
-				raise RuntimeError(utils.method.msg_kw("Loop is already operating"))
-			if self.loop.is_running():
-				raise RuntimeError("Unknown operator is already running the loop")
-			self.thread_id = threading.current_thread().name
-			return self
+
+		class LoopOperatorEnter:
+			def __init__(self, loop=None, operator=None, *args, **kwargs):
+				super().__init__(*args, **kwargs)
+				self.loop = loop
+				self.operator = operator
+
+			def __getattr__(self, name):
+				return getattr(self.operator, name)
+
+			def _loop_is_operating_msg(self):
+				return utils.method.msg_kw(f"Loop is already operating by '{self.operator.thread_id}'")
+
+			def _on_is_operating_check(self, is_operating):
+				if is_operating:
+					msg = self._loop_is_operating_msg()
+					raise RuntimeError(msg)
+				else:
+					self.operator.thread_id = threading.current_thread().name
+
+			def _is_operating(self):
+				is_operating = self.operator.is_operating()
+				if not is_operating:
+					if self.loop.is_running():
+						raise RuntimeError("Unknown operator is already running the loop")
+				return is_operating
+
+			def __enter__(self):
+				with self.operator.enter_lock:
+					current_thread_id = threading.current_thread().name
+					log.verbose(utils.method.msg_kw(f"Thread '{current_thread_id}' is entering the loop operator"))
+					is_operating = self._is_operating()
+					self._on_is_operating_check(is_operating)
+					log.verbose(utils.method.msg_kw(f"Thread '{current_thread_id}' entered the loop operator"))
+					return self
+			
+			def __exit__(self, exc_type, exc_value, traceback):
+				operator_thread_id = self.operator.thread_id
+				is_owner = operator_thread_id == threading.current_thread().name
+				msg_addition = "" if is_owner else " (not the owner)"
+				log.verbose(utils.method.msg_kw(f"Thread '{operator_thread_id}'{msg_addition} is exiting the loop operator"))
+				if is_owner:
+					self.operator.thread_id = None
+				log.verbose(utils.method.msg_kw(f"Thread '{operator_thread_id}'{msg_addition} exited the loop operator"))
+
+
+		class LoopOperatorEnterCheckIfFree(LoopOperatorEnter):
+			def __init__(self, *args, **kwargs):
+				super().__init__(*args, **kwargs)
+				self._check_result = None
+				self.lock = self.operator.enter_lock # RLock
+
+			def check_result(self):
+				return self._check_result
+
+			def _on_is_operating_check(self, is_operating):
+				self._check_result = not is_operating
+
+			def __enter__(self):
+				log.verbose(utils.method.msg_kw("Trying to acquire the lock"))
+				self.lock.acquire() # Unlock in __exit__
+				log.verbose(utils.method.msg_kw("Lock acquired"))
+				self._check_result = not self._is_operating()
+				return self
+			
+			def __exit__(self, exc_type, exc_value, traceback):
+				if self.lock._is_owned():
+					log.verbose(utils.method.msg_kw("Releasing the lock"))
+					self.lock.release()
+					log.verbose(utils.method.msg_kw("Lock released"))
+
+
+		class LoopOperatorEnterTryUse(LoopOperatorEnter):
+			def __init__(self, *args, **kwargs):
+				super().__init__(*args, **kwargs)
+				self._try_result = None
+
+			def try_result(self):
+				return self._try_result
+
+			def _on_is_operating_check(self, is_operating):
+				if is_operating:
+					log.info(self._loop_is_operating_msg())
+				else:
+					super()._on_is_operating_check(is_operating)
+				self._try_result = not is_operating
+
 
 		def __call__(self, loop):
-			self.loop = loop
-			return self
-
-		def __exit__(self, exc_type, exc_value, traceback):
-			self.thread_id = None
+			params = self.LoopOperatorEnter(loop=loop, operator=self)
+			return params
+		
+		def try_use(self, loop):
+			params = self.LoopOperatorEnterTryUse(loop=loop, operator=self)
+			return params
+		
+		def check_if_free(self, loop):
+			params = self.LoopOperatorEnterCheckIfFree(loop=loop, operator=self)
+			return params
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
@@ -78,21 +165,44 @@ class TaskScheduler(TrackableResource):
 			super().__init__()
 			# self.future = future or asyncio.Future()
 
-	def schedule_task(self, async_function, max_queue_size=0):
-		cb = SmartCallable.bind_if_func(async_function, self)
+	def schedule_task(self, async_function, max_queue_size=0, *args, **kwargs):
+		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
 		with self._lock:
 			registered_task_count = self.registered_task_count(cb)
 			return self._schedule_task(cb, registered_task_count, max_queue_size)
 	
 	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
-	def schedule_function(self, async_function, max_queue_size=0):
-		cb = SmartCallable.bind_if_func(async_function, self)
+	def schedule_function(self, async_function, max_queue_size=0, *args, **kwargs):
+		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
 		with self._lock:
 			registered_function_count = self.registered_task_count(cb)
 			return self._schedule_task(cb, registered_function_count, max_queue_size)
 
 	def run_parallel_task(self, async_function):
 		raise "Not implemented yet."
+
+	def run_until_complete(self, awaitable, on_try_use=None):
+		log.debug(utils.method.msg_kw())
+		try:
+			with self._loop_operator.try_use(self.loop) as operator:
+				try_result = operator.try_result()
+				if on_try_use is not None:
+					on_try_use(try_result)
+				if try_result is True:
+					log.debug(utils.method.msg_kw(f"Running the task until complete"))
+					result = self.loop.run_until_complete(awaitable)
+					log.verbose(utils.method.msg_kw(f"run_until_complete result: {result}"))
+				else:
+					if operator.is_operating_in_current_thread():
+						raise RuntimeError(utils.method.msg_kw("Called run_until_complete() from a running task."))
+					log.debug(utils.method.msg_kw("Called run_until_complete() from a different thread. Pereforming the task in the same loop using asyncio.run_coroutine_threadsafe"))
+					future = asyncio.run_coroutine_threadsafe(awaitable, self.loop)
+					result = future.result() # Wait and raise exception if occurred in the end. It will never complete the tasks, but just wait for the owner thread to complete them.
+					log.verbose(utils.method.msg_kw(f"other thread run_until_complete result: {result}"))
+		except BaseException as e:
+			log.error(utils.method.msg_kw(f"Exception occurred while running the awaitable: {e}"))
+			raise
+		return result
 
 	def wait_all_tasks(self):
 		if len(self._tasks) == 0:
@@ -105,38 +215,37 @@ class TaskScheduler(TrackableResource):
 		async def wait_tasks():
 			# Suppresses CancelledError exceptions here, but they will still be originally raised in the coros
 			await asyncio.gather(*tasks, return_exceptions=True)
-		try:
-			if self._loop_operator.is_operating():
-				if self._loop_operator.is_operating_in_current_thread():
+		with self._loop_operator.check_if_free(self.loop) as operator:
+			if operator.check_result() is False:
+				if operator.is_operating_in_current_thread():
 					raise RuntimeError(utils.method.msg_kw("Called wait_all_tasks() from a running task."))
 				log.debug(utils.method.msg_kw("Called wait_all_tasks() from a different thread. Waiting for the tasks to finish in the same loop using asyncio.run_coroutine_threadsafe"))
 				futures = []
 				for task_info in list(self._tasks.values()):
 					futures.append(task_info.future)
 				async def wait_tasks():
-					last_exception = None
 					for future in futures:
 						try: # Allow all the tasks to complete
 							await future
 						except BaseException as e:
 							log.error(utils.method.msg_kw(f"Exception occurred while waiting for a task future '{future}': {e}"))
-							last_exception = e
-				future = asyncio.run_coroutine_threadsafe(wait_tasks(), self.loop)
-				result = future.result() # Wait and raise exception if occurred in the end. It will never complete the tasks, but just wait for the owner thread to complete them.
-				log.debug(utils.method.msg_kw(f"other thread waiting result: {result}"))
 			else:
-				with self._loop_operator(self.loop):
-					result = self.loop.run_until_complete(wait_tasks())
-		except BaseException as e:
-			log.error(utils.method.msg_kw(f"Exception occurred while waiting for the tasks: {e}"))
-			raise
+				log.debug(utils.method.msg_kw(f"Running {len(tasks)} tasks until complete"))
+
+			def on_try_use(try_result): # TODO: incapsulate if possible
+				log.verbose(utils.function.msg_kw("Lock released"))
+				operator.enter_lock.release()
+				assert operator.enter_lock._is_owned() is False
+
+			result = self.run_until_complete(wait_tasks(), on_try_use)
 		return result
 
 	def wait(self, future):
-		with self._loop_operator(self.loop):
-			return future.get_loop().run_until_complete(future)
+		verify(self._loop is not None and future.get_loop() == self._loop, utils.method.msg_kw("Foreign future provided"))
+		return self.run_until_complete(future) # Future's loop must equal to self.loop is this future was created by this TaskScheduler, but if someone decides to pass here a future of another origin, then it does not make sense to execute in this scheduler.
 	
 	def cancel_all_tasks(self):
+		log.debug(utils.method.msg_kw(f"Cancelling {len(self._tasks)} tasks"))
 		self._queue.clear()
 		for task_info in list(self._tasks.values()):
 			task_info.task.cancel()
@@ -158,8 +267,10 @@ class TaskScheduler(TrackableResource):
 			# verify(not task.cancelled(), "Task is cancelled but it still exists in the tasks list") # The task must be removed from the tasks list in the _on_task_done method
 			if task.cancelled():
 				log.warning("Task is cancelled but it still exists in the tasks list") # The task must be removed from the tasks list in the _on_task_done method
-			with self._loop_operator(self.loop) as o:
-				future.get_loop().run_until_complete(update_task())
+			with self._loop_operator.try_use(self.loop) as operator:
+				if operator.try_result() is True:
+					self.loop.run_until_complete(update_task())
+				# TODO: process exceptions in the current operator
 			if future.done():
 				if not future.cancelled():
 					ex = future.exception()
