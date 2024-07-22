@@ -175,3 +175,48 @@ def contents_geometry(widget):
 		global_geometry = global_geometry.united(global_child_geometry)
 	geometry = utils.pyside.map_from_global(widget, global_geometry)
 	return geometry
+
+def restack_widget(widget, index):
+	parent = widget.parentWidget()
+	if parent is None:
+		raise ValueError("The widget has no parent")
+
+	layout = parent.layout()
+
+	if layout is not None:
+		# Widget is managed by a layout
+		current_index = layout.indexOf(widget)
+		if current_index == -1:
+			raise ValueError("The widget is not found in the parent's layout")
+		
+		# Check if the widget is already at the desired position
+		target_index = index if index >= 0 else (layout.count() + index)
+		if current_index == target_index:
+			return  # Already in the desired position, no need to re-add
+
+		# Detach the widget from the layout and re-add
+		layout.takeAt(current_index)
+		layout.insertWidget(target_index, widget)
+	else:
+		# Widget is a direct child of the parent without a layout
+		children = parent.children()
+		
+		target_index = index if index >= 0 else (len(children) + index)
+		if children[target_index] == widget:
+			return  # Already in the desired position, no need to re-add
+
+		if index != -1 and index < len(children):
+			children.remove(widget)
+			children.insert(index, widget)
+
+def QSize_gt(size1, size2):
+	return size1.width() > size2.width() and size1.height() > size2.height()
+
+def QSize_ge(size1, size2):
+	return size1.width() >= size2.width() and size1.height() >= size2.height()
+
+def QSize_lt(size1, size2):
+	return size1.width() < size2.width() and size1.height() < size2.height()
+
+def QSize_le(size1, size2):
+	return size1.width() <= size2.width() and size1.height() <= size2.height()
