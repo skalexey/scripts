@@ -521,21 +521,21 @@ class DeallocateExpandedWidgetMixin(ABCQt):
 
 
 class ResizeEventFilter(QObject):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.target_widget = None
-        self.callback = None
+	def __init__(self, parent=None):
+		super().__init__(parent)
+		self.target_widget = None
+		self.callback = None
 
-    def set_target(self, target_widget, callback):
-        self.target_widget = target_widget
-        self.callback = callback
-        target_widget.installEventFilter(self)
+	def set_target(self, target_widget, callback):
+		self.target_widget = target_widget
+		self.callback = callback
+		target_widget.installEventFilter(self)
 
-    def eventFilter(self, obj, event):
-        if obj == self.target_widget and event.type() == QEvent.Resize:
-            if self.callback:
-                self.callback(obj, event)
-        return super().eventFilter(obj, event)
+	def eventFilter(self, obj, event):
+		if obj == self.target_widget and event.type() == QEvent.Resize:
+			if self.callback:
+				self.callback(obj, event)
+		return super().eventFilter(obj, event)
 
 
 class ClampGeometryMixin(CustomAdjustSizeMixin):
