@@ -662,3 +662,18 @@ class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, Copyable
 	def _on_contents_changed(self):
 		self.resizeColumnsToContents()
 		super()._on_contents_changed()
+			
+class SectionWidget(WidgetBase(AbstractWidget, QWidget)):
+	def __init__(self, title=None, title_style=None, layout_cls=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		_layout_cls = layout_cls or QVBoxLayout
+		layout = _layout_cls()
+		self.setLayout(layout)
+		self.title_label = None
+		if title is not None:
+			title_label = QLabel(title)
+			_title_style = title_style or "font: 12pt Arial; font-weight: bold;"
+			title_label.setStyleSheet(_title_style)
+			title_label.setAlignment(Qt.AlignCenter)
+			layout.addWidget(title_label)
+			self.title_label = title_label
