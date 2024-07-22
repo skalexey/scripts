@@ -4,11 +4,9 @@ from abc import ABC, abstractmethod
 from PySide6.QtCore import QChildEvent, QEvent, QObject, QRect, QSize, Qt, Signal
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QApplication,
     QCheckBox,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -28,8 +26,10 @@ import utils.lang
 import utils.method
 import utils.pyside
 from utils.log.logger import Logger
+from utils.math.range import Range
 from utils.memory import SmartCallable
 from utils.pyside import WidgetBase
+from utils.subscription import Subscription
 from utils.text import AbstractTextSpinner
 
 log = Logger()
@@ -100,15 +100,15 @@ class AbstractWidget(ABCQt):
 
 
 class SliderInputWidget(WidgetBase(QWidget)):
-	def __init__(self, label, min_value, max_value, default_value, on_changed, slider_fixed_width=None, value_label_fixed_width=None, fixed_width=None, parent=None, parent_layout=None, *args, **kwargs):
-		super().__init__(parent=parent, parent_layout=parent_layout, *args, **kwargs)
-		self._on_changed = SmartCallable.bind_if_func(on_changed, self) if on_changed is not None else None
+	def __init__(self, label, min_value, max_value, default_value, on_changed=None, slider_fixed_width=None, value_label_fixed_width=None, fixed_width=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.set_on_value_changed(on_changed)
 		if fixed_width is not None:
 			self.setFixedWidth(fixed_width)
 		layout = QHBoxLayout()
 		self.setLayout(layout)
-		label_widget = QLabel(label)
-		layout.addWidget(label_widget)
+		_label_widget = QLabel(label) if isinstance(label, str) else label
+		layout.addWidget(_label_widget)
 		self.slider = QSlider(Qt.Horizontal)
 		self.slider.setMinimum(min_value)
 		self.slider.setMaximum(max_value)
@@ -121,6 +121,9 @@ class SliderInputWidget(WidgetBase(QWidget)):
 			self.value_label.setFixedWidth(value_label_fixed_width)
 		layout.addWidget(self.value_label)
 		self.slider.valueChanged.connect(self.on_value_changed)
+
+	def value(self):
+		return self.slider.value()
 
 	def set_value(self, value):
 		current_value = self.slider.value()
@@ -141,11 +144,135 @@ class SliderInputWidget(WidgetBase(QWidget)):
 	def set_min(self, value):
 		self.slider.setMinimum(value)
 
+	def set_range(self, min_value, max_value):
+		self.slider.setRange(min_value, max_value)
+
+	def set_on_value_changed(self, on_changed):
+		self._on_changed = SmartCallable.bind_if_func(on_changed, self) if on_changed is not None else None
+
 	def on_value_changed(self, value):
 		_value = self._on_changed(value) if self._on_changed else None
 		if _value is None:
 			_value = value
-		self.value_label.setText(str(_value))
+		self._update_value_label(_value)
+
+	def _update_value_label(self, value):
+		self.value_label.setText(str(value))
+
+
+class NegativeInfinitySliderMixin:
+	def _update_value_label(self, value):
+		if value < 0:
+			self.value_label.setText("∞")
+		else:
+			super()._update_value_label(value)
+
+
+class RangeSliderWidget(WidgetBase(QWidget)):
+	def __init__(self, min_value, max_value, default_min_value, default_max_value, on_changed=None, fixed_width=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.on_range_changed = Subscription()
+		if on_changed is not None:
+			_on_changed = SmartCallable.bind_if_func(on_changed, self)
+			self.on_range_changed.subscribe(_on_changed)
+		if fixed_width is not None:
+			self.setFixedWidth(fixed_width)
+		layout = QHBoxLayout()
+		self.setLayout(layout)
+		range_label_left = QLabel(str(default_min_value))
+		layout.addWidget(range_label_left)
+		self.range_label_left = range_label_left
+		slider_left = QSlider(Qt.Horizontal)
+		slider_left.setMinimum(min_value)
+		slider_left.setMaximum(max_value)
+		slider_left.setValue(default_min_value)
+		slider_left.valueChanged.connect(self._on_slider_value_changed)
+		layout.addWidget(slider_left)
+		self.slider_left = slider_left
+
+		slider_right = QSlider(Qt.Horizontal)
+		slider_right.setMinimum(min_value)
+		slider_right.setMaximum(max_value)
+		slider_right.setValue(default_max_value)
+		slider_right.valueChanged.connect(self._on_slider_value_changed)
+		layout.addWidget(slider_right)
+		self.slider_right = slider_right
+		range_label_right = QLabel(str(default_max_value))
+		layout.addWidget(range_label_right)
+		self.range_label_right = range_label_right
+
+	def set_range(self, *args):
+		if len(args) == 1:
+			if isinstance(args[0], Range):
+				min, max = args[0].min, args[0].max
+			elif isinstance(args[0], tuple) or isinstance(args[0], list):
+				min, max = args[0]
+			else:
+				raise ValueError(utils.method.msg("Invalid argument type"))
+		elif len(args) == 2:
+			min, max = args
+		else:
+			raise ValueError(utils.method.msg("Invalid number of arguments"))
+		self.slider_left.setRange(min, max)
+		self.slider_right.setRange(min, max)
+		if self.slider_left.value() > self.slider_right.value():
+			self.slider_left.setValue(self.slider_right.value())
+
+	def range(self):
+		return Range(self.slider_left.value(), self.slider_right.value())
+
+	def set_minimum_width(self, width):
+		half_width = width // 2
+		self.slider_left.setMinimumWidth(half_width)
+		self.slider_right.setMinimumWidth(half_width)
+
+
+	def set_enabled(self, enabled):
+		self.slider_left.setEnabled(enabled)
+		self.slider_right.setEnabled(enabled)
+
+	def _on_slider_value_changed(self, value):
+		# Disconnect signal handlers temporarily to avoid recursive calls and to make only one slider to trigger the change
+		self.slider_left.valueChanged.disconnect()
+		self.slider_right.valueChanged.disconnect()
+		left_value = self.slider_left.value()
+		right_value = self.slider_right.value()
+		if left_value > right_value:
+			slider_to_update = self.slider_left if value == right_value else self.slider_right
+			slider_to_update.setValue(value)
+			right_value = left_value = value
+		self.range_label_left.setText(str(left_value))
+		self.range_label_right.setText(str(right_value))
+		self.on_range_changed.notify(left_value, right_value)
+		# Reconnect signal handlers
+		self.slider_left.valueChanged.connect(self._on_slider_value_changed)
+		self.slider_right.valueChanged.connect(self._on_slider_value_changed)
+
+
+class PairWidget(WidgetBase(AbstractWidget, QWidget)):
+	def __init__(self, left, right, fixed_width=None, right_fixed_width=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		layout = QHBoxLayout()
+		self.setLayout(layout)
+		if fixed_width is not None:
+			self.setFixedWidth(fixed_width)
+		# Left widget
+		left_widget = QLabel(left) if isinstance(left, str) else left
+		layout.addWidget(left_widget)
+		self.left_widget = left_widget
+		# Right widget
+		right_widget = QLabel(right) if isinstance(right, str) else right
+		if right_fixed_width is not None:
+			self.right_label.setFixedWidth(right_fixed_width)
+		layout.addWidget(right_widget)
+		self.right_widget = right_widget
+
+
+class RangeSliderInputWidget(PairWidget):
+	def __init__(self, label, min_value, max_value, default_min_value, default_max_value, on_changed, fixed_width=None, *args, **kwargs):
+		slider = RangeSliderWidget(min_value, max_value, default_min_value, default_max_value, on_changed, parent_layout)
+		self.slider = slider
+		super().__init__(label, slider, *args, **kwargs)
 
 
 class LineInputWidget(WidgetBase(QWidget)):
@@ -278,27 +405,20 @@ class CopyableLabel(WidgetBase(CopyableLabelMixin, QLabel)):
 		clipboard.setText(self.text())
 
 
-class ValueWidget(WidgetBase(AbstractWidget, QWidget)):
-	def __init__(self, label, value, fixed_width=None, value_fixed_width=None, parent=None, parent_layout=None, *args, **kwargs):
-		super().__init__(parent=parent, parent_layout=parent_layout, *args, **kwargs)
-		layout = QHBoxLayout()
-		self.setLayout(layout)
-		if fixed_width is not None:
-			self.setFixedWidth(fixed_width)
-		# Label
-		self.label_widget = QLabel(label)
-		layout.addWidget(self.label_widget)
-		# Value
-		self.value_label = CopyableLabel(str(value))
-		if value_fixed_width is not None:
-			self.value_label.setFixedWidth(value_fixed_width)
-		layout.addWidget(self.value_label)
+class ValueWidget(PairWidget):
+	def __init__(self, label, value, *args, **kwargs):
+		value_label = CopyableLabel(str(value))
+		super().__init__(label, value_label, *args, **kwargs)
+
+	@property
+	def value_label(self):
+		return self.right_widget
 
 	def set_value(self, value):
-		self.value_label.setText(str(value))
+		self.right_widget.setText(str(value))
 
 	def value(self):
-		return self.value_label.text()
+		return self.right_widget.text()
 
 
 class CustomAdjustSizeMixin(AbstractWidget):
