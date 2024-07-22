@@ -271,14 +271,14 @@ class PairWidget(WidgetBase(AbstractWidget, QWidget)):
 
 class RangeSliderInputWidget(PairWidget):
 	def __init__(self, label, min_value, max_value, default_min_value, default_max_value, on_changed, fixed_width=None, *args, **kwargs):
-		slider = RangeSliderWidget(min_value, max_value, default_min_value, default_max_value, on_changed, parent_layout)
+		slider = RangeSliderWidget(min_value, max_value, default_min_value, default_max_value, on_changed)
 		self.slider = slider
 		super().__init__(label, slider, *args, **kwargs)
 
 
 class LineInputWidget(WidgetBase(QWidget)):
-	def __init__(self, label, default_value, on_changed, input_fixed_width=None, fixed_width=None, parent=None, parent_layout=None, *args, **kwargs):
-		super().__init__(parent=parent, parent_layout=parent_layout, *args, **kwargs)
+	def __init__(self, label, default_value, on_changed, input_fixed_width=None, fixed_width=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self._on_changed = SmartCallable.bind_if_func(on_changed, self) if on_changed is not None else None
 		if fixed_width is not None:
 			self.setFixedWidth(fixed_width)
@@ -310,8 +310,8 @@ class LineInputWidget(WidgetBase(QWidget)):
 
 
 class CheckboxWidget(WidgetBase(QWidget)):
-	def __init__(self, label, default_value, on_changed, fixed_width=None, parent=None, parent_layout=None, *args, **kwargs):
-		super().__init__(parent=parent, parent_layout=parent_layout, *args, **kwargs)
+	def __init__(self, label, default_value, on_changed, fixed_width=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self._on_changed = SmartCallable.bind_if_func(on_changed, self) if on_changed is not None else None
 		if fixed_width is not None:
 			self.setFixedWidth(fixed_width)
@@ -388,8 +388,8 @@ class CopyableLabelMixin(CopyableMixin):
 
 
 class CopyableLabel(WidgetBase(CopyableLabelMixin, QLabel)):
-	def __init__(self, text="", parent=None, *args, **kwargs):
-		super().__init__(text, parent, *args, **kwargs)
+	def __init__(self, text="", *args, **kwargs):
+		super().__init__(text, *args, **kwargs)
 		self.setTextInteractionFlags(Qt.TextSelectableByMouse)  # Enable text selection
 		self.setContextMenuPolicy(Qt.CustomContextMenu)  # Enable custom context menu
 		self.customContextMenuRequested.connect(self.show_context_menu)
