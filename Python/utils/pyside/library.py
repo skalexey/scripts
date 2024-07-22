@@ -105,7 +105,10 @@ def WidgetBase(*classes):
 
 def mixed_class(*classes):
 	# See the comments above of Stub class purpose.
-	class MixedClass(*classes, Stub):
+	_classes = list(classes)
+	if not isinstance(classes[-1], Stub):
+		_classes.append(Stub)
+	class MixedClass(*_classes):
 		pass
 	return MixedClass
 
