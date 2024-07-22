@@ -29,6 +29,7 @@ from utils.log.logger import Logger
 from utils.math.range import Range
 from utils.memory import SmartCallable
 from utils.pyside import WidgetBase
+from utils.pyside.auto_layout import AutoLayout
 from utils.subscription import Subscription
 from utils.text import AbstractTextSpinner
 
