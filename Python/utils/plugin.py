@@ -1,4 +1,4 @@
-from include.module import Module
+from utils.module import Module
 
 
 class Plugin(Module):
