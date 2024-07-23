@@ -3,7 +3,8 @@ import types
 from functools import partial
 from test import *
 
-from PySide6.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
 from utils.application_context import ApplicationContext
 from utils.memory import SmartCallable, weak_self_class, weak_self_method
 from utils.profile.refmanager import RefManager
@@ -18,6 +19,7 @@ class TestApplication(Application):
 
 app_context = ApplicationContext()
 app = TestApplication(app_context, [])
+app_context.app = app
 window = QMainWindow()
 window.setWindowTitle("Circular Reference Test")
 layout = QVBoxLayout()
@@ -26,8 +28,9 @@ central_widget.setLayout(layout)
 window.setCentralWidget(central_widget)
 
 def qt_test():
-	multiple_values_test()
-	circular_ref_test()
+	# multiple_values_test()
+	# circular_ref_test()
+	geometry_test()
 	window.show()
 	log("app.exec()")
 	app.exec()
@@ -47,6 +50,50 @@ def multiple_values_test():
 	
 	c = ChildOwner(window)
 
+def geometry_test():
+	log(title("Geometry Test"))
+	no_layout_widget_test()
+	layout_widget_test()
+	log(title("End of Geometry Test"))
+
+def no_layout_widget_test():
+	log(title("No Layout Widget Test"))
+	w1 = QWidget()
+	window.centralWidget().layout().addWidget(w1)
+	assert w1.size() == QSize(640, 480), "w1.size() should be of the default size QSize(640, 480)"
+	w1.adjustSize()
+	w1.adjustSize()
+	w1.adjustSize()
+	assert w1.size() == QSize(640, 480), "w1.size() should still be of the default size QSize(640, 480) since there are no children"
+	for i in range(15):
+		btn = QPushButton(f"Button {i}", w1)
+		btn.move(i * 50, i * 50)
+		log(f"Button {i}: {btn.geometry()}")
+	l1 = QLabel("Label 1", w1)
+	log(f"Label 1: {l1.geometry()}")
+	log(f"w1: geometry={w1.geometry()}, rect={w1.rect()}, frameGeometry={w1.frameGeometry()}, childrenRect={w1.childrenRect()}, contentsRect={w1.contentsRect()}, sizeHint={w1.sizeHint()}")
+	assert not w1.geometry().contains(w1.childrenRect()), "w1.geometry() should be less than w1.childrenRect()"
+	w1.adjustSize()
+	assert w1.size() != QSize(640, 480), "w1.size() should not be QSize(640, 480) after adjustSize()"
+	assert w1.geometry().contains(w1.childrenRect()), "w1.geometry() should be equal to w1.childrenRect()"
+	assert w1.geometry() == w1.childrenRect(), "w1.geometry() should be equal to w1.childrenRect()"
+	log(f"w1 after adjustSize(): geometry={w1.geometry()}, rect={w1.rect()}, frameGeometry={w1.frameGeometry()}, childrenRect={w1.childrenRect()}, contentsRect={w1.contentsRect()}, sizeHint={w1.sizeHint()}")
+	log(title("End of No Layout Widget Test"))
+
+def layout_widget_test():
+	log(title("Layout Widget Test"))
+	w1 = QWidget()
+	window.centralWidget().layout().addWidget(w1)
+	layout = QVBoxLayout()
+	w1.setLayout(layout)
+	assert w1.size() == QSize(640, 480), "w1.size() should still be of default size QSize(640, 480)"
+	l1 = QLabel("Label 1")
+	layout.addWidget(l1)
+	assert w1.size() == QSize(640, 480), "w1.size() should still be of default size QSize(640, 480)"
+	log(f"w1: geometry={w1.geometry()}, rect={w1.rect()}, frameGeometry={w1.frameGeometry()}, childrenRect={w1.childrenRect()}, contentsRect={w1.contentsRect()}, sizeHint={w1.sizeHint()}")
+	w1.adjustSize()
+	assert w1.size() != QSize(640, 480), "w1.size() should not be QSize(640, 480) after adjustSize()"
+	log(title("End of Layout Widget Test"))
 
 def circular_ref_test():
 	log(title("Circular Reference Test"))
