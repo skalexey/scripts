@@ -452,7 +452,7 @@ class FitContentsMixin(CustomAdjustSizeMixin):
 
 	def calculate_size(self):
 		# Iterate over all children and calculate the bounding rect
-		geometry = utils.pyside.contents_geometry(self)
+		geometry = utils.pyside.children_geometry(self)
 		return geometry.size()
 
 
