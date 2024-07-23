@@ -1,7 +1,15 @@
 import os
 
-from PySide6.QtCore import QRect
-from PySide6.QtWidgets import QFileDialog, QInputDialog, QMessageBox, QWidget
+from PySide6.QtCore import QObject, QPoint, QRect, QSize
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QFileDialog,
+    QInputDialog,
+    QLayout,
+    QLayoutItem,
+    QMessageBox,
+    QWidget,
+)
 
 import utils.function
 import utils.method
@@ -151,30 +159,45 @@ def map_from_global(widget, rect):
 	:return: A new QRect in the local coordinate space of the widget.
 	"""
 	# Transform the top-left and bottom-right corners from global coordinates to local coordinates
-	top_left_local = widget.mapFromGlobal(rect.topLeft())
-	bottom_right_local = widget.mapFromGlobal(rect.bottomRight())
+	widget_relative_to = _widget(widget)
+	top_left_local = widget_relative_to.mapFromGlobal(rect.topLeft())
+	bottom_right_local = widget_relative_to.mapFromGlobal(rect.bottomRight())
 
 	# Create a new QRect from the transformed points
 	local_rect = QRect(top_left_local, bottom_right_local)
 
 	return local_rect
 
+def widget(widget):
+	if isinstance(widget, QLayoutItem):
+		return widget.widget() or parent_widget(widget.layout())
+	elif isinstance(widget, QLayout):
+		return parent_widget(widget)
+	elif isinstance(widget, QWidget):
+		return widget
+	return None
+
+_widget = widget
+
 def global_to_view_scene_pos(view, global_pos):
 	view_pos = view.mapFromGlobal(global_pos)
 	scene_pos = view.mapToScene(view_pos)
 	return scene_pos
 
-def contents_geometry(widget):
-	children = widget.children()
-	global_geometry = QRect()
-	for child in children:
-		if not isinstance(child, QWidget):
-			continue
-		child_geometry = child.geometry()
-		global_child_geometry = utils.pyside.map_to_global(widget, child_geometry)
-		global_geometry = global_geometry.united(global_child_geometry)
-	geometry = utils.pyside.map_from_global(widget, global_geometry)
-	return geometry
+def parent_widget(widget):
+	if isinstance(widget, QLayoutItem):
+		internals = layout_item_internals(widget)
+		return internals.parentWidget()
+	return widget.parentWidget()
+
+def global_geometry(widget):
+	parent = parent_widget(widget)
+	return QRect(parent.mapToGlobal(QPoint(0, 0)), widget.geometry().size())
+
+def global_rect(widget):
+	assert widget.size() == widget.rect().size()
+	parent = widget.parent()
+	return QRect(parent.mapToGlobal(QPoint(0, 0)), widget.size())
 
 def restack_widget(widget, index):
 	parent = widget.parentWidget()
@@ -220,3 +243,83 @@ def QSize_lt(size1, size2):
 
 def QSize_le(size1, size2):
 	return size1.width() <= size2.width() and size1.height() <= size2.height()
+
+def foreach_internals(widget, func, depth=0, max_depth=None):
+	if max_depth is not None and depth >= max_depth:
+		return
+
+	def go_deeper(child):
+		foreach_internals(child, func, depth+1, max_depth)
+
+	if isinstance(widget , QLayout):
+		for i in range(widget.count()):
+			child = widget.itemAt(i)
+			func(child)
+			go_deeper(child)
+	elif isinstance(widget, QLayoutItem):
+		child = widget_internals(widget)
+		func(child)
+		go_deeper(child)
+		return
+	else:
+		children_attr = getattr(widget, "children", None)
+		if children_attr is not None:
+			assert isinstance(widget, (QWidget, QObject))
+			assert callable(children_attr)
+			children = children_attr()
+			for child in children:
+				func(child)
+				go_deeper(child)
+			return
+
+def layout_item_internals(layout_item):
+	return layout_item.widget() or layout_item.layout()
+
+def foreach_not_hidden_child(widget, func, *args, **kwargs):
+	def job(child):
+		if isinstance(child, QLayout):
+			foreach_internals(child, job, max_depth=1)
+			return
+		if not hasattr(child, "geometry"):
+			return
+		if hasattr(child, "isHidden"):
+			if child.isHidden():
+				# log.debug(f"Child {child} is hidden. Its geometry will be ignored, but here it is: {child.geometry()}.")
+				return
+		func(child)
+	foreach_internals(widget, job, *args, **kwargs)
+
+def children_geometry(widget):
+	if isinstance(widget, QWidget):
+		return widget.childrenRect() # It does effectively the same as the code below, but more efficiently since it is a native call
+	result = None
+	def job(child):
+		nonlocal result
+		child_geometry = child.geometry()
+		result = result.united(child_geometry) if result is not None else child_geometry
+	foreach_not_hidden_child(widget, job, max_depth=1)
+	return result or QRect()
+
+def foreach_geometry_influencer(widget, func):
+	def job(child):
+		contents_geom = children_geometry(child)
+		rect = child.rect() if hasattr(child, "rect") else QRect(QPoint(0, 0), child.geometry().size())
+		if rect.contains(contents_geom):
+			func(child)
+		else:
+			foreach_geometry_influencer(child, func)
+	foreach_not_hidden_child(widget, job)
+
+def collect_geometry_influencers(widget):
+	result = []
+	def job(child):
+		result.append(child)
+	foreach_geometry_influencer(widget, job)
+	return result
+
+def collect_not_hidden_children(widget):
+	result = []
+	def job(child):
+		result.append(child)
+	foreach_not_hidden_child(widget, job)
+	return result
