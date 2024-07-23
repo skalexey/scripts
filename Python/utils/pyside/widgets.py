@@ -665,12 +665,20 @@ class SectionWidget(WidgetBase(AbstractWidget, QWidget)):
 		super().__init__(*args, **kwargs)
 		_layout_cls = layout_cls or QVBoxLayout
 		layout = _layout_cls()
-		self.setLayout(layout)
+		self._layout = layout
 		self.title_label = None
 		if title is not None:
+			root_layout = QVBoxLayout()
+			self.setLayout(root_layout)
 			title_label = QLabel(title)
 			_title_style = title_style or "font: 12pt Arial; font-weight: bold;"
 			title_label.setStyleSheet(_title_style)
 			title_label.setAlignment(Qt.AlignCenter)
-			layout.addWidget(title_label)
+			root_layout.addWidget(title_label)
 			self.title_label = title_label
+			root_layout.addLayout(layout)
+		else:
+			self.setLayout(layout)
+
+	def layout(self):
+		return self._layout
