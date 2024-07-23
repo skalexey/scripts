@@ -1,5 +1,5 @@
 from PySide6.QtCore import QPoint, QRect, QSize, Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy
+from PySide6.QtWidgets import QHBoxLayout, QLayout, QLayoutItem, QSizePolicy
 
 import utils.function
 import utils.method
@@ -18,7 +18,7 @@ class ItemInfo:
 
 	@property
 	def internals(self):
-		return self.item.widget() or self.item.layout()
+		return utils.pyside.layout_item_internals(self.item)
 
 	def __repr__(self):
 		return f"{self.__class__.__name__}(item={self.internals}, rect={self.rect}, spacing={self.spacing}, new_row={self.new_row})"
@@ -49,7 +49,7 @@ class ItemInfo:
 
 	def _calculate_size(self):
 		widget = self.item.widget()
-		size = QSize()
+		size = QSize(0, 0)
 		if widget:
 			size = widget.sizeHint()
 		else:
@@ -61,6 +61,7 @@ class ItemInfo:
 				size_hint = layout.sizeHint()
 				assert QSize_ge(size_hint, size) # Layouts expand to fit all the space available, but can not be smaller than the sum of their children
 		return size
+
 
 class AutoLayout(QLayout):
 	def __init__(self, parent=None, margin=0, spacing=-1):
@@ -96,10 +97,7 @@ class AutoLayout(QLayout):
 		return self.minimumSize()
 
 	def minimumSize(self):
-		size = QSize()
-		for item_info in self._items:
-			size = size.expandedTo(item_info.item.minimumSize())
-		size += QSize(2 * self.contentsMargins().top(), 2 * self.contentsMargins().top())
+		size = utils.pyside.children_geometry(self).size()
 		return size
 
 	def count(self):
@@ -126,7 +124,6 @@ class AutoLayout(QLayout):
 		return layout_info.rect.height()
 
 	def setGeometry(self, rect):
-		log.debug(utils.method.msg_kw())
 		super().setGeometry(rect)
 		layout_info = self._do_layout(rect)
 		layout_info.distribute_space()
@@ -193,6 +190,7 @@ class AutoLayout(QLayout):
 		
 		def distribute_space(self):
 			if not self.rows:
+				# log.debug(utils.method.msg_kw("No rows to distribute space to"))
 				return
 			for row in self.rows:
 				remaining_space = self.rect.width() - row.size.width()
