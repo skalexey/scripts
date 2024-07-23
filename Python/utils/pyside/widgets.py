@@ -253,6 +253,7 @@ class RangeSliderWidget(WidgetBase(QWidget)):
 class PairWidget(WidgetBase(AbstractWidget, QWidget)):
 	def __init__(self, left, right, fixed_width=None, right_fixed_width=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
 		layout = QHBoxLayout()
 		self.setLayout(layout)
 		if fixed_width is not None:
@@ -264,7 +265,7 @@ class PairWidget(WidgetBase(AbstractWidget, QWidget)):
 		# Right widget
 		right_widget = QLabel(right) if isinstance(right, str) else right
 		if right_fixed_width is not None:
-			self.right_label.setFixedWidth(right_fixed_width)
+			right_widget.setFixedWidth(right_fixed_width)
 		layout.addWidget(right_widget)
 		self.right_widget = right_widget
 
@@ -276,25 +277,20 @@ class RangeSliderInputWidget(PairWidget):
 		super().__init__(label, slider, *args, **kwargs)
 
 
-class LineInputWidget(WidgetBase(QWidget)):
-	def __init__(self, label, default_value, on_changed, input_fixed_width=None, fixed_width=None, *args, **kwargs):
-		super().__init__(*args, **kwargs)
+class LineInputWidget(PairWidget):
+	def __init__(self, label, default_value, on_changed, *args, **kwargs):
+		line_edit = QLineEdit()
+		super().__init__(label, line_edit, *args, **kwargs)
 		self._on_changed = SmartCallable.bind_if_func(on_changed, self) if on_changed is not None else None
-		if fixed_width is not None:
-			self.setFixedWidth(fixed_width)
-		layout = QHBoxLayout()
-		self.setLayout(layout)
-		label_widget = QLabel(label)
-		layout.addWidget(label_widget)
-		self.line_edit = QLineEdit()
 		if default_value is not None:
 			t = type(default_value)
 			assert t is str or t is int or t is float or t is bool
 			self.line_edit.setText(str(default_value))
-		if input_fixed_width is not None:
-			self.line_edit.setFixedWidth(input_fixed_width)
-		layout.addWidget(self.line_edit)
 		self.line_edit.textChanged.connect(self.on_text_changed)
+
+	@property
+	def line_edit(self):
+		return self.right_widget
 
 	def set_value(self, value):
 		self.line_edit.setText(str(value))
