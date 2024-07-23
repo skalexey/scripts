@@ -274,7 +274,8 @@ class WeakProxy:
 
 	def deref(self):
 		return self._ref()
-	
+
+
 def weak_self_method(method):
 	@wraps(method)
 	def wrapper(self, *args, **kwargs):
