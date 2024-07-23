@@ -378,3 +378,67 @@ class ResizableListWidget(WidgetBase(FitContentsMixin, CopyableMixin, QListWidge
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.adjustSize()
+
+
+def children_geometry(widget):
+	log.debug(utils.function.msg_kw())
+	geometry = None
+	def job(child):
+		nonlocal geometry
+		if isinstance(child, QLayout):
+			foreach_internals(child, job, max_depth=1)
+			return
+		if not hasattr(child, "geometry"):
+			return
+		if hasattr(child, "isHidden"):
+			if child.isHidden():
+				log.debug(f"Child {child} is hidden. Its geometry will be ignored, but here it is: {child.geometry()}.")
+				return
+		
+		child_geometry = child.geometry()
+		# child_geometry = QRect(child.pos(), child.size()) if hasattr(child, "size") else child.geometry()
+		# Parent check is not used by widget.childrenRect()
+		# child_parent = child.parent()
+		# parent_rect = child_parent.rect() if hasattr(child.parent(), "rect") else QRect(QPoint(0, 0), child.parent().geometry().size())
+		# if isinstance(child_parent, QWidget):
+		# 	if not parent_rect.contains(child_geometry):
+		# 		log.debug(f"Child {child} geometry {child_geometry} is not contained in its parent {child.parent()} rect {parent_rect}. Ignore it")
+		# 	# Clamp the child geometry to the parent rect
+		# 	child_geometry = child_geometry.intersected(parent_rect)
+		child_text_addition = f" text: '{child.text()}" if hasattr(child, "text") else ""
+		log.debug(f"Child {child} geometry: {child_geometry}{child_text_addition}")
+		geometry = geometry.united(child_geometry) if geometry is not None else child_geometry
+	foreach_internals(widget, job, max_depth=1)
+	# qt_contents_geom = widget.contentsRect()
+	# assert geometry == qt_contents_geom
+	geometry = geometry or QRect()
+	if hasattr(widget, "childrenRect"):
+		qt_children_rect = widget.childrenRect()
+		assert geometry == qt_children_rect
+	v1 = children_geometry_v1(widget)
+	if v1 != geometry:
+		children_geometry(widget)
+	assert geometry == v1
+	return geometry
+
+def foreach_internals_layouts_widgets(widget, func, depth=0, max_depth=None):
+	if max_depth is not None and depth >= max_depth:
+		return
+
+	def go_deeper(child):
+		foreach_internals_layouts_widgets(child, func, depth+1, max_depth)
+
+	if isinstance(widget, QWidget):
+		children = widget.children()
+		for child in children:
+			func(child)
+			go_deeper(child)
+	elif isinstance(widget, QLayout):
+		for i in range(widget.count()):
+			child = widget.itemAt(i)
+			func(child)
+			go_deeper(child)
+	elif isinstance(widget, QLayoutItem):
+		child = layout_item_internals(widget)
+		func(child)
+		go_deeper(child)
