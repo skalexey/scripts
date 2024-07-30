@@ -103,6 +103,16 @@ function git_untracked()
 	fi
 }
 
+function git_is_untracked()
+{
+	local file=$1
+	if git status --short | grep -q "?? $file"; then
+		return 0  # true
+	else
+		return 1  # false
+	fi
+}
+
 function uncommitted_changes()
 {
 	if git_not_staged || git_untracked; then
@@ -282,6 +292,15 @@ function git_commit()
 function git_add_patch()
 {
 	git add --patch $@
+}
+
+function git_add_smart()
+{
+	if git_is_untracked $1; then
+		git add $1
+	else
+		git_add_patch $1
+	fi
 }
 
 function add_file_to_commit_interactively()
