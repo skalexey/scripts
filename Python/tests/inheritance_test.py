@@ -12,30 +12,30 @@ def init_test():
 	log(title("Init Test"))
 	class A:
 		def __init__(self):
-			log("A.__init__()")
+			log(utils.method.msg_kw())
 			super().__init__()
 
 	class B(A):
 		def __init__(self):
-			log("B.__init__()")
+			log(utils.method.msg_kw())
 			super().__init__()
 
 	class C:
 		def __init__(self):
-			log("C.__init__()")
+			log(utils.method.msg_kw())
 
 	class D(A, C):
 		def __init__(self):
-			log("D.__init__()")
+			log(utils.method.msg_kw())
 			super().__init__()
 
 	class E:
 		def __init__(self):
-			log("E.__init__()")
+			log(utils.method.msg_kw())
 
 	class F(A, E):
 		def __init__(self):
-			log("F.__init__()")
+			log(utils.method.msg_kw())
 			A.__init__(self)
 			E.__init__(self)
 			super().__init__()
@@ -100,10 +100,34 @@ def abc_test():
 
 	log(title("End of ABC Test"))
 
+def same_method_test():
+	class A:
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+
+		def f(self):
+			log(utils.method.msg_kw())
+
+	class B:
+		def __init__(self):
+			log(utils.method.msg_kw())
+
+		def f(self):
+			log(utils.method.msg_kw())
+
+	class C(A, B):
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+	c = C()
+	c.f()
+
 def test():
 	log(title("Inheritance Test"))
 	# init_test()
-	abc_test()
+	# abc_test()
+	same_method_test()
 	log(title("End of Inheritance Test"))
 
 run()
