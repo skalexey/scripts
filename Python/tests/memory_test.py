@@ -1,8 +1,8 @@
 from test import *
 
 from utils.concurrency.thread_local_proxy import ThreadLocalProxy
-from utils.memory.proxy import Proxy
 from utils.memory.weakly_allocated import WeaklyAllocated
+from utils.proxy import Proxy
 
 
 def memory_test():

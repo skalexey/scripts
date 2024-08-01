@@ -1,7 +1,7 @@
 from test import *
 
 import utils.method
-from utils.memory.proxy import Proxy
+from utils.proxy import Proxy
 
 
 def property_test():
