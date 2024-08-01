@@ -1,11 +1,16 @@
 import asyncio
 import threading
-import weakref
 
 import utils.collection
+import utils.debug
 import utils.lang
+import utils.method
 from utils.collection.ordered_dict import OrderedDict
 from utils.collection.ordered_set import OrderedSet
+from utils.concurrency.nodeadlock import NoDeadLock
+from utils.concurrency.parameterized_lock import ParameterizedLock
+from utils.context import GlobalContext
+from utils.live import verify
 from utils.log.logger import Logger
 from utils.memory import OwnedCallable, SmartCallable
 
@@ -17,6 +22,9 @@ class Subscription:
 		self._data = OrderedDict()
 		self._priorities = {}
 		self._lock = threading.RLock()
+		if utils.debug.is_debug():
+			self._lock = ParameterizedLock(threading.RLock(), except_on_timeout=True)
+			self._lock.set_constant_args(timeout=0.3)
 
 	class CallableInfo(OwnedCallable):
 		def __init__(self, *args, unsubscribe_on_false=None, priority=None, **kwargs):
@@ -27,7 +35,7 @@ class Subscription:
 		pass
 
 	# Any callable can be passed including another subscription
-	def subscribe(self, callable, subscriber=None, caller=None, max_calls=None, unsubscribe_on_false=None, priority=None):
+	def _subscribe(self, callable, subscriber=None, caller=None, max_calls=None, unsubscribe_on_false=None, priority=None):
 		def on_invalidated(cb, self_weak=utils.memory.weak_proxy(self)):
 			assert not cb.is_valid(), f"Callable {cb} should have been invalidated, but is still valid"
 			if not self_weak.is_alive():
@@ -43,7 +51,10 @@ class Subscription:
 			assert cb.id not in self._data.keys()
 			self._data[cb.id] = cb
 			self._assign_priority(cb.id, cb.priority)
-		return cb.id
+		return cb
+	
+	def subscribe(self, *args, **kwargs):
+		return self._subscribe(*args, **kwargs).id
 	
 	def _assign_priority(self, cb_id, priority):
 		priority_group = self._priorities.get(priority)
@@ -88,12 +99,23 @@ class Subscription:
 		if not self._priorities:
 			return
 		with self._lock:
-			for priority_group in list(reversed(self._priorities.values())):
+			priorities = list(self._priorities.values())
+			cb_locks = []
+			for priority_group in priorities:
+				for i, cb_id in enumerate(priority_group):
+					cb = self._data[cb_id]
+					cb_locks.append(cb._invalidate_lock)
+					log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
+		with NoDeadLock(*cb_locks, self._lock, timeout=3) as ndl:
+			if not ndl.locked():
+				raise RuntimeError("Failed to acquire all locks in time of 3 seconds")
+			for priority_group in reversed(priorities):
 				for cb_id in priority_group.copy():
 					cb = self._data[cb_id]
 					cb(*args, **kwargs)
-					if not cb.is_valid(): # Should be unsubscribed through on_invalidated callback
-						if self.is_subscribed(cb.id):
+					# if cb.is_invalidated(): # Should be unsubscribed through on_invalidated callback
+					if cb._invalidated: # Use is_invalidated() if haven't locked _invalidate_lock manually as above.
+						if self.is_subscribed(cb.id): # Should be unsubscribed through on_invalidated callback if invalidated
 							raise RuntimeError(f"Callable {cb} has been invalidated, but not unsubscribed")
 
 	def wait(self, timeout=None):
@@ -135,5 +157,63 @@ class Subscription:
 			self.unsubscribe(cb_id)
 		return result
 
+	def subscriber_count(self):
+		return len(self._data)
+
 	def __call__(self, *args, **kwargs):
 		self.notify(*args, **kwargs)
+
+# Notification happens only once and any subscriptions following the notification trigger the notification on the subscriber.
+class OneTimeSubscriptionBase(Subscription):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._result = None
+
+	def _set_result(self, *args, **kwargs):
+		self.notify(*args, **kwargs)
+
+	def _reset_result(self):
+		self._result = None
+
+	def notify(self, *args, **kwargs):
+		verify(self._result is None, utils.method.msg("Result is already set"))
+		self._result = args, kwargs
+		super().notify(*args, **kwargs)
+
+	def subscribe(self, callable, subscriber=None, *args, **kwargs):
+		cb = super()._subscribe(callable, subscriber, *args, **kwargs)
+		if self._result is not None:
+			cb(self._result)
+
+class OneTimeSubscription(OneTimeSubscriptionBase):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def result(self, timeout=None):
+		if self._result is None:
+			if not self.wait(timeout):
+				raise TimeoutError(utils.method.msg_kw("Timeout occured while waiting for event"))
+		return self._result
+	
+	def set_result(self, *args, **kwargs):
+		self._set_result(*args, **kwargs)
+
+	def reset_result(self):
+		self._reset_result()
+
+
+class Event(OneTimeSubscriptionBase):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	def set(self):
+		self._set_result()
+
+	def is_set(self):
+		return self._result is not None
+
+	def reset(self):
+		self._result = None
+
+	def notify(self): # Override for making no args allowed
+		super().notify()
