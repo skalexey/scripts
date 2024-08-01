@@ -1,11 +1,21 @@
 import types
 from abc import ABC, abstractmethod
 
-from PySide6.QtCore import QChildEvent, QEvent, QObject, QRect, QSize, Qt, Signal
+from PySide6.QtCore import (
+    QChildEvent,
+    QEvent,
+    QObject,
+    QRect,
+    QSize,
+    Qt,
+    QTimer,
+    Signal,
+)
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -682,3 +692,31 @@ class SectionWidget(WidgetBase(AbstractWidget, QWidget)):
 
 	def layout(self):
 		return self._layout
+
+class SpinnerDialog(QDialog):
+	def __init__(self):
+		super().__init__()
+		self.setWindowTitle("Processing...")
+		self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.CustomizeWindowHint)
+		
+		layout = QVBoxLayout()
+		self.label = QLabel("Loading...")
+		self.spinner = TextSpinner()
+
+		layout.addWidget(self.label)
+		layout.addWidget(self.spinner)
+		self.setLayout(layout)
+
+		# Update spinner text periodically to simulate spinning
+		self.timer = QTimer(self)
+		self.timer.timeout.connect(self.update_spinner)
+		self.timer.start(100)  # Adjust the interval as needed
+
+	def update_spinner(self):
+		current_text = self.spinner.text()
+		new_text = current_text[-1] + current_text[:-1]  # Simple text rotation
+		self.spinner.setText(new_text)
+
+	def closeEvent(self, event):
+		self.timer.stop()
+		super().closeEvent(event)

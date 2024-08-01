@@ -1,8 +1,8 @@
 import os
 
-from PySide6.QtCore import QObject, QPoint, QRect, QSize
+from PySide6.QtCore import QObject, QPoint, QRect
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QAbstractItemView,
     QFileDialog,
     QInputDialog,
     QLayout,
@@ -53,6 +53,34 @@ def attention_message(title=None, message=None):
 
 	def job():
 		return QMessageBox.warning(None, _title, message)
+
+	return GlobalContext.app.do_in_main_thread(job)
+
+spinner_dialog = None
+
+def show_spinner_message(title, message):
+	log.info(utils.function.msg_kw())
+	global spinner_dialog
+
+	def job():
+		global spinner_dialog
+		if spinner_dialog is not None:
+			spinner_dialog.close()
+
+		spinner_dialog = utils.pyside.widgets.SpinnerDialog()
+		spinner_dialog.show()
+
+	return GlobalContext.app.do_in_main_thread(job)
+
+def close_spinner_message():
+	log.info(utils.function.msg_kw())
+	global spinner_dialog
+
+	def job():
+		global spinner_dialog
+		if spinner_dialog is not None:
+			spinner_dialog.accept()
+			spinner_dialog = None
 
 	return GlobalContext.app.do_in_main_thread(job)
 
@@ -324,3 +352,10 @@ def collect_not_hidden_children(widget):
 		result.append(child)
 	foreach_not_hidden_child(widget, job)
 	return result
+
+def qcolor(color):
+	if isinstance(color, str):
+		return QColor(color)
+	elif isinstance(color, QColor):
+		return color
+	return None
