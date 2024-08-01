@@ -24,18 +24,17 @@ class PacketServer(utils.net.server.Server, ABC):
 		self._incoming_packets = {} # Buffer per address
 
 	def _handle_client_connection(self, conn):
-		with conn:
-			log(utils.method.msg_kw(f"Connected"))
-			while True:
-				try:
-					data = self._next_packet(conn)
-					if not data:
-						break
-					if not self._process_packet(data):
-						break
-				except Exception as e:
-					log(utils.method.msg_kw(f"Error handling incoming packet: '{e!r}'"))
-					raise
+		log(utils.method.msg_kw(f"Connected"))
+		while True:
+			try:
+				data = self._next_packet(conn)
+				if not data:
+					break
+				if not self._process_packet(data):
+					break
+			except Exception as e:
+				log(utils.method.msg_kw(f"Error handling incoming packet: '{e!r}'"))
+				raise
 
 	@abstractmethod
 	def _process_packet(self, data) -> bool: # Return True to continue handling packets
@@ -63,6 +62,8 @@ class PacketServer(utils.net.server.Server, ABC):
 				return packet.data
 
 	def _next_data(self, conn):
+		if not conn:
+			return None, None
 		buffer, addr = self._buffer
 		if not buffer:
 			data, addr = conn.recvfrom(self.max_buffer_size)

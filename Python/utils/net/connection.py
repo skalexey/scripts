@@ -40,4 +40,8 @@ class Connection(ABC):
 
 	def __bool__(self):
 		# Call __bool__ on the socket object
-		return bool(self.socket)
+		if not bool(self.socket):
+			return False
+		if not self.socket.fileno() != -1:
+			return False
+		return True
