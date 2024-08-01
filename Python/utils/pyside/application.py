@@ -6,7 +6,7 @@ from datetime import datetime
 from PySide6.QtCore import QEvent, QTimer
 from PySide6.QtWidgets import QApplication
 
-import utils.debug
+import utils.debug.debug_detector
 from utils.collection.associative_list import AssociativeList
 from utils.log.logger import Logger
 from utils.subscription import Subscription
@@ -87,7 +87,7 @@ class Application(QApplication):
 		self.on_update(dt)
 
 	def check_debug_timespan(self):
-		debug_timespan = utils.debug.debug_timespan(self)
+		debug_timespan = utils.debug.debug_detector.debug_timespan(self)
 		if debug_timespan != 0:
 			log.debug(utils.method.msg_kw(f"Debug timespan: {debug_timespan}"))
 			self.last_time = None

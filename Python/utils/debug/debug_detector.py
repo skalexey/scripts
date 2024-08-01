@@ -1,7 +1,8 @@
 import threading
 from datetime import datetime
+from time import sleep
 
-from utils.context import GlobalContext
+import utils  # Lazy import for less important modules
 from utils.subscription import Subscription
 
 
@@ -14,7 +15,8 @@ class DebugDetector:
 		self.on_debug_detected.subscribe(self._on_debug_detected)
 		self._last_check_time = None
 		self._last_debug_timespan_checkin = set()
-		self._thread = threading.Thread(target=self._debug_detection_job)
+		self._thread = threading.Thread(target=self._debug_detection_job, name="DebugDetector")
+		self._thread.start()
 
 	def _on_debug_detected(self):
 		self._last_debug_timespan_checkin.clear()
@@ -37,6 +39,14 @@ class DebugDetector:
 		return self.last_debug_timespan
 
 	def _debug_detection_job(self):
-		while True:
+		main_thread = threading.main_thread()
+		while main_thread.is_alive():
 			self.check_debug_detection()
-			threading.thread.sleep(0.1)
+			sleep(0.1)
+
+debug_detector = DebugDetector()
+
+def debug_timespan(checker):
+	if utils.debug.is_debug():
+		return debug_detector.grab_last_debug_timespan(checker)
+	return 0
