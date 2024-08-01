@@ -62,3 +62,20 @@ def safe_super(cls, inst):
 
 def getattr_noexcept(obj, name, default=NoValue):
 	return obj.__dict__.get(name, default)
+
+def compare_exceptions(e1, e2):
+	return type(e1) == type(e2) and e1.args == e2.args
+	
+
+# Safe __enter__ decorator that catches exceptions and calls __exit__ upon encountering one, then re-raises the exception
+# Example usage:
+# @safe_enter
+# def __enter__(self):
+def safe_enter(func):
+	def wrapper(self):
+		try:
+			return func(self)
+		except Exception as e:
+			self.__exit__(type(e), e, e.__traceback__)
+			raise
+	return wrapper

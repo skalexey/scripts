@@ -1,6 +1,7 @@
 import threading
 from abc import ABC, abstractmethod
 
+from utils.lang import safe_enter
 from utils.log.logger import Logger
 
 log = Logger()
@@ -189,6 +190,7 @@ class DebugAbstractLock(SingleThreadOwnershipEntity, ABC):
 		self._acquire_release_lock.release()
 		return True
 
+	@safe_enter
 	def __enter__(self):
 		self.acquire()
 		return self
