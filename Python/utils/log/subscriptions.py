@@ -1,4 +1,5 @@
-from utils.log.logger import Logger, LogLevel
+from utils.log.logger import LogLevel
+from utils.log.server import LogServer
 from utils.subscription import Subscription
 
 g_on_log_level = [Subscription() for _ in range(len(LogLevel))]
@@ -14,13 +15,12 @@ def _init():
 		_globals[f"g_on_log_{level_name}"] = subscription
 		g_on_log_level[value] = subscription
 	# Override the log method to notify a particular subscription
-	base_log = Logger.log
-	def log(self, msg, level=LogLevel.PRINT):
-		result = base_log(self, msg, level)
-		if result is not None:
-			g_on_log_level[level.value].notify(result)
-			g_on_log.notify(result)
-			return result
-	Logger.log = log
+	base_log = LogServer.on_log
+	def log(self, packet):
+		_log = base_log(self, packet)
+		g_on_log_level[packet.level.value].notify(_log)
+		g_on_log.notify(_log)
+		return _log
+	LogServer.on_log = log
+
 _init()
-	

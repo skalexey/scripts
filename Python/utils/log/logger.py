@@ -1,11 +1,12 @@
 import inspect
 import os
-import threading
 
-import utils  # Lazy import
+import utils  # Lazy import for less important modules
 import utils.inspect_utils as inspect_utils
-from utils.log.log import LogLevel
-from utils.log.log import log as _log
+import utils.log
+from utils.log import Log, LogLevel, TitleAddition, _gen_log_funcs
+from utils.log import log as _g_log
+from utils.log import log_to_server
 
 
 class Logger:
@@ -14,10 +15,13 @@ class Logger:
 	def __init__(self, title=None, title_stack_level=1):
 		super().__init__()
 		self.log_level = 0
+		self.log_addition = None
+		self.connection = None
 		# Take the caller script name from the stack
-		self.log_title = title or os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0]
+		self.set_log_title(title or os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0])
 		self._on_log = None # Allocated on demand through on_log property
 		self.file = None
+		self._log = _g_log
 
 	@property
 	def on_log(self):
@@ -27,25 +31,44 @@ class Logger:
 
 	def set_log_title(self, title):
 		self.log_title = title
+		if self.log_addition is not None:
+			if not isinstance(self.log_addition, TitleAddition):
+				raise ValueError("Cannot set log title when log addition is not empty")
+		self.log_addition = TitleAddition(title)
 
 	def set_log_level(self, level):
 		self.log(f"Setting log level to {level}")
 		self.log_level = level
 
-	def __call__(self, message, level=LogLevel.PRINT):
-		self.log(message, level)
+	def __call__(self, *args, **kwargs):
+		self.log(*args, **kwargs)
 
 	# Variadic arguments
-	def log(self, message, level=LogLevel.PRINT):
+	def log(self, message, level=LogLevel.PRINT, addition=None):
 		if level >= self.log_level:
-			result = _log(message, level, self.log_title, self.log_addition)
+			args = (message, level, self.log_title, (str(self.log_addition or "") + str(addition or "")) or None)
+			result = self._log(*args)
 			if self._on_log:
 				self._on_log(result)
 			return result
 
 	def redirect_to_file(self, fpath=None, level=None, *args, **kwargs):
+		utils.live.verify(self.file is None, "File already opened for writing")
 		self.file = utils.log.redirect_to_file(fpath, level, self.on_log, *args, **kwargs)
 		return self.file
+	
+	def close_connection(self):
+		if self.connection:
+			self.on_log.unsubscribe(self.connection)
+			self.connection.close()
+			self.connection = None
+	
+	def redirect_to_server(self, address):
+		utils.live.verify(self.connection is None, "Connection already established")
+		self.connection = utils.log.redirect_to_server(address, self.on_log)
+		def log(*args, **kwargs):
+			return log_to_server(self.connection, *args, **kwargs)
+		self._log = log
 
 	def _exec(self, expression, globals=None, locals=None):
 		try:
@@ -79,15 +102,9 @@ class Logger:
 
 # Generate log_<level_name> functions
 def _init():
-	def log_fn(level_name, level_value):
-		def log_level(self, msg):
-			result = self.log(msg, level_value)
-			# result: (msg, message, level, self.log_title, current_time)
-			return result
-		return log_level
-	for key, value in LogLevel.items():
-		name = key.lower()
-		setattr(Logger, f"{name}", log_fn(name, value))
+	funcs = _gen_log_funcs(Logger.log)
+	for level_name, func in funcs.items():
+		setattr(Logger, f"{level_name}", func)
 
 _init()
 # Discouraged global monolite interface.
@@ -112,30 +129,9 @@ def logger():
 	if calling_module_name not in loggers:
 		loggers[calling_module_name] = Logger()
 	return loggers[calling_module_name]
-
+	
 def set_log_title(title):
 	logger().set_log_title(title)
 
 def set_log_level(level):
 	logger().set_log_level(level)
-
-def log(message, level=LogLevel.PRINT):
-	logger().log(message, level=LogLevel.PRINT)
-
-def log_debug(message):
-	logger().log_debug(message)
-
-def log_info(message):
-	logger().log_info(message)
-
-def log_warning(message):
-	logger().log_warning(message)
-
-def log_error(message):
-	logger().log_error(message)
-
-def log_critical(message):
-	logger().log_critical(message)
-
-def log_verbose(message):
-	logger().log_verbose(message)
