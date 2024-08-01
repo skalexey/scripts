@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+import utils  # Lazy import for less important modules
 import utils.function
 import utils.method
 from utils.context import GlobalContext

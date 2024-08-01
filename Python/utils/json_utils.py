@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 
-import utils  # Lazy import
+import utils  # Lazy import for less important modules
 import utils.file
 import utils.function
 from utils.log.logger import Logger

@@ -2,7 +2,7 @@ import os
 import threading
 from abc import ABC, abstractmethod
 
-import utils  # Lazy import
+import utils  # Lazy import for less important modules
 import utils.method
 import utils.subscriptions
 from utils.live import verify

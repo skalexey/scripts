@@ -1,9 +1,9 @@
-from utils.log.logger import Logger
+import utils.function
+from utils.log import log_error
 
-log = Logger()
 
 def verify(condition, error):
 	if not condition:
-		msg = f"Verification failed: {error}"
-		log.error(msg)
+		msg = utils.function.msg(f"Verification failed: {error}")
+		log_error(msg)
 		raise error if isinstance(error, BaseException) else Exception(msg)

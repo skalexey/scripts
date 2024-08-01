@@ -2,7 +2,7 @@
 
 import threading
 
-import utils  # Lazy import
+import utils  # Lazy import for less important modules
 from utils.concurrency.abstract_lock import AbstractLock
 
 

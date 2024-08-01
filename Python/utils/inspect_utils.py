@@ -1,7 +1,7 @@
 import inspect
 import itertools
 
-import utils  # Lazy import
+import utils  # Lazy import for less important modules
 import utils.function
 
 

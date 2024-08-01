@@ -1,5 +1,5 @@
-import utils  # Lazy import
-from utils.subscription import Subscription
+from utils.log import log
+from utils.subscription import Event, Subscription
 
-on_exit = Subscription()
-on_exit.subscribe(lambda: utils.log.log.log("Exiting..."), on_exit)
+on_exit = Event()
+on_exit.subscribe(lambda: log("Exiting..."), on_exit) # Called manually or by the main thread monitor

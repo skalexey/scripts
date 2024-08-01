@@ -12,7 +12,7 @@ import utils.inspect_utils as inspect_utils
 import utils.json_utils as json_utils
 import utils.lang
 import utils.method
-import utils.serialize  # Lazy import
+import utils.serialize  # Lazy import for less important modules
 import utils.string
 from utils.collection.ordered_set import OrderedSet
 from utils.log.logger import Logger
@@ -150,8 +150,6 @@ def class_attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=
 	call_info = inspect_utils.frame_call_info(_caller_frame)
 	base_params = utils.method.params(getattr(utils.serialize.Serializable, call_info.co_name))
 	args -= base_params
-	if len(args) > 0:
-		print("args", args)
 	all_attrs.update(args)
 	# Distribute
 	not_supported_params = OrderedSet()

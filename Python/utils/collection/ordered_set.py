@@ -1,4 +1,3 @@
-import collections
 from functools import total_ordering
 
 import utils.function
