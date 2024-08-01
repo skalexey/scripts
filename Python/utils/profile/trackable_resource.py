@@ -29,6 +29,9 @@ class TrackableResourceInfo:
 	def info(self):
 		return self.repr # By default. Opened for further improvements.
 	
+	def __repr__(self):
+		return f"{self.__class__.__name__}(id={self.id}, repr={self.repr}, lifetime={self.lifetime})"
+	
 class TrackableResource:
 	resources = AssociativeList()
 	def __repr__(self):
