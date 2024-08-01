@@ -339,6 +339,7 @@ def test():
 	log(title("Task Scheduler test"))
 	validation_test()
 	for i in range(99):
+		log(utils.function.msg(f"Iteration {i}"))
 		tasks_test()
 	log(title("Task Scheduler test completed"))
 

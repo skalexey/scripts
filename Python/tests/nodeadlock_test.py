@@ -15,7 +15,7 @@ lock1 = threading.Lock()
 lock2 = threading.Lock()
 lock3 = threading.Lock()
 custom_lock = RandomLock()
-locks = [lock1, lock2, lock2]
+locks = [lock1, lock2, custom_lock]
 
 def safe_function(blocking, timeout):
 	random.shuffle(locks)

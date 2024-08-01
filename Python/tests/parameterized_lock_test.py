@@ -65,7 +65,7 @@ class TestParameterizedLock(unittest.TestCase):
 		with self.assertRaises(RuntimeError) as tc:
 			with self.context_manager(timeout=0.3):
 				self.assertFalse(self.context_manager.acquired())
-		self.assertEqual(str(tc.exception), "Failed to acquire the lock")
+		self.assertEqual(str(tc.exception), "Failed to acquire the lock in time")
 		self.assertFalse(self.context_manager.acquired())
 		# Release the lock after the test
 		self.lock.release()

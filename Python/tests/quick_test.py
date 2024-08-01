@@ -1,3 +1,4 @@
+import re
 from test import *
 
 
@@ -53,11 +54,44 @@ def for_enumerate_test():
 	for i, v in enumerate([1, 2, 3], start=2):
 		log(f"i: {i}, v: {v}")
 
+def re_test():
+	def f(msg):
+		# Find only first occurance that is alwais in the beginning of the line
+		regex = r"^\[([^\]]+)\]"
+		# Print all found occurances:
+		for match in re.finditer(regex, msg):
+		 	log(f"match: {match.group(1)}")
+		# Print the first found occurance:
+		result = re.search(regex, msg)
+		if result:
+			result = result.group(1)
+			log(f"result: {result}")
+
+	f("Hello [world]")
+	f("Hello [world] [world2]")
+	f("Hello [world] [world2] [world3]")
+	f("[fsdifj] Hello [world] [world2] [world3]")
+
+def timestamp_test():
+	log(f"Timestamp: {time()}")
+
+def none_access_error_test():
+	def catch_test():
+		try:
+			a = None
+			a.x()
+		except AttributeError as e:
+			log(f"Caught AttributeError: {e}")
+			return
+		assert False, "Did not catch AttributeError"
+	catch_test()
+
 def test():
 	log(title("Quick Test"))
 
-	for_enumerate_test()
+	none_access_error_test()
 	
 	log(title("End of Quick Test"))
+
 
 run()

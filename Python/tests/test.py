@@ -14,11 +14,14 @@ import utils.log
 import utils.profile.profiler
 import utils.text
 from utils.log.logger import Logger, LogLevel
-from utils.subscription import *
 
 log = Logger()
 # TODO: it makes infinite recursion in Subscription.notify
-log_files = utils.log.redirect_to_file_levels(LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
+# log_files = utils.log.redirect_to_file_levels(LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
+log_server_port = 36912
+utils.log.start_server(log_server_port, LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
+utils.log.redirect_to_server(f"localhost:{log_server_port}")
+sleep(1)
 profiler = utils.profile.profiler.TimeProfiler()
 profiler.set_print_function(log.log)
 
