@@ -11,7 +11,9 @@ from utils.log.logger import Logger
 
 log = Logger()
 
-class NoDeadLock:
+# This class is used to acquire multiple locks at once without the risk of deadlocks using algorithm similar to the Banker's.
+# Not sharable between threads. Assumed to be used in a particular moment and then destroyed.
+class ScopedLock:
 	def __init__(self, *locks, blocking: bool=True, timeout: Optional[float]=-1):
 		super().__init__()
 		# log.debug(utils.method.msg_kw())
@@ -86,7 +88,7 @@ class NoDeadLock:
 			lock.release()
 
 	def locked(self) -> bool:
-		return self.acquired_locks
+		return bool(self.acquired_locks)
 
 	@safe_enter
 	def __enter__(self):

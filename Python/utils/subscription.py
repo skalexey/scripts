@@ -9,8 +9,8 @@ import utils.lang
 import utils.method
 from utils.collection.ordered_dict import OrderedDict
 from utils.collection.ordered_set import OrderedSet
-from utils.concurrency.nodeadlock import NoDeadLock
 from utils.concurrency.parameterized_lock import ParameterizedLock
+from utils.concurrency.scoped_lock import ScopedLock
 from utils.context import GlobalContext
 from utils.live import verify
 from utils.log.logger import Logger
@@ -121,7 +121,7 @@ class Subscription:
 						cb = self._data[cb_id]
 						cb_locks.append(cb._invalidate_lock)
 						log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
-				with NoDeadLock(*cb_locks, timeout=0) as ndl: # TODO: Consider non blocking, or a bit more bigger timeout
+				with ScopedLock(*cb_locks, timeout=0) as ndl: # TODO: Consider non blocking, or a bit more bigger timeout
 					if not ndl.locked():
 						sleep(0.01)
 						continue

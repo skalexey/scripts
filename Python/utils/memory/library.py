@@ -60,7 +60,7 @@ class Callable(TrackableResource):
 		self._kwargs = kwargs
 		self._invalidated = False
 		self._on_invalidated = on_invalidated
-		self._invalidate_lock = threading.RLock() # Test it more with Lock with turned off logs in ParameterizedLock and NoDeadLock
+		self._invalidate_lock = threading.RLock() # Test it more with Lock with turned off logs in ParameterizedLock and ScopedLock
 		if not GlobalContext.is_live:
 			self._invalidate_lock = ParameterizedLock(self._invalidate_lock)
 			self._invalidate_lock.set_constant_args(timeout=3)
