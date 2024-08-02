@@ -7,7 +7,7 @@ import utils.file
 import utils.method
 import utils.net.tcp.server
 from utils.live import verify
-from utils.log import compose_log_message, print_log
+from utils.log import Log, compose_log_message, print_log
 from utils.log.logger import LogLevel
 from utils.net.packet_server import PacketServer
 from utils.net.server import log
@@ -21,14 +21,6 @@ class LogServer(PacketServer, UDPServer):
 		self.storage_path = "logs"
 		self.print_logs = True
 		self.file_lock = threading.Lock()
-
-	@property
-	def print_logs(self):
-		return self._log_func == print_log
-	
-	@print_logs.setter
-	def print_logs(self, value):
-		self._log_func = print_log if value else compose_log_message
 
 	def _process_packet(self, data):
 		try:
@@ -63,19 +55,20 @@ class LogServer(PacketServer, UDPServer):
 
 	def on_log(self, packet):
 		# Parse level as the sequence of characters between '[' and ']' in the beginning of the message
-		full_message = None
+		log = None
 		for file_info in self.files.values():
 			if packet.level >= file_info.level:
-				if full_message is None:
-					log = self._log_func(packet.message, packet.level, packet.title, packet.addition, packet.timestamp)
-					full_message = log.full_message
+				if log is None:
+					log = Log(packet=packet)
 				file = file_info.file
 				with self.file_lock:
 					if file.closed:
 						continue
-					file.write(f"{full_message}\n")
+					file.write(f"{log.full_message}\n")
 					file.flush()
-		return full_message
+				if self.print_logs:
+					print(log.full_message)
+		return log
 
 	# Redirects logs with level move or equal than the given level into a separate file
 	def open_files(self, *levels):

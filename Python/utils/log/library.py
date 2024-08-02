@@ -60,17 +60,19 @@ LogLevel._gen_sign_map()
 
 
 class LogPacket:
-	def __init__(self, timestamp, message, level, title=None, addition=None):
+	def __init__(self, timestamp, message, level, title=None, addition=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		assert isinstance(level, LogLevel)
 		self.timestamp = timestamp
 		self.message = message
 		self.level = level
 		self.title = title
-		self.addition = addition
+		self.addition = str(g_addition or "") + str(addition or "")
 
 class Log:
-	def __init__(self, message, level, title=None, addition=None, timestamp=None):
-		self.packet = LogPacket(timestamp, message, level, title, addition)
+	def __init__(self, message=None, level=None, title=None, addition=None, timestamp=None, packet=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.packet = packet or LogPacket(timestamp, message, level, title, addition)
 		self._full_message = None
 		self._datetime = None
 
@@ -105,8 +107,7 @@ def compose_log_message(message, level=LogLevel.PRINT, log_title=None, log_addit
 		_datetime = "no time"
 	level_sign = LogLevel.sign(level)
 	level_prefix = f"[{level_sign}] " if level_sign else "    "
-	log_addition_str = str(g_addition or "") + str(log_addition or "")
-	msg = f"{level_prefix}[{_datetime}] {log_addition_str}{message}"
+	msg = f"{level_prefix}[{_datetime}] {str(log_addition or '')}{message}"
 	return msg, _datetime
 
 # Variadic arguments
@@ -314,4 +315,5 @@ def store(data, prefix=''):
 	store_to_file(prefix + log_fname(), data)
 
 def set_global_addition(addition):
+	global g_addition
 	g_addition = addition
