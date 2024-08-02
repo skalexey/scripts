@@ -1,6 +1,8 @@
 import asyncio
 import threading
+from time import sleep, time
 
+import utils  # Lazy import for less important modules
 import utils.collection
 import utils.debug
 import utils.lang
@@ -98,25 +100,40 @@ class Subscription:
 	def notify(self, *args, **kwargs):
 		if not self._priorities:
 			return
-		with self._lock:
-			priorities = list(self._priorities.values())
-			cb_locks = []
-			for priority_group in priorities:
-				for i, cb_id in enumerate(priority_group):
-					cb = self._data[cb_id]
-					cb_locks.append(cb._invalidate_lock)
-					log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
-		with NoDeadLock(*cb_locks, self._lock, timeout=3) as ndl:
-			if not ndl.locked():
-				raise RuntimeError("Failed to acquire all locks in time of 3 seconds")
-			for priority_group in reversed(priorities):
-				for cb_id in priority_group.copy():
-					cb = self._data[cb_id]
-					cb(*args, **kwargs)
-					# if cb.is_invalidated(): # Should be unsubscribed through on_invalidated callback
-					if cb._invalidated: # Use is_invalidated() if haven't locked _invalidate_lock manually as above.
-						if self.is_subscribed(cb.id): # Should be unsubscribed through on_invalidated callback if invalidated
-							raise RuntimeError(f"Callable {cb} has been invalidated, but not unsubscribed")
+		last_time = time()
+		elapsed_time = 0
+		attempt = 0
+		while True:
+			attempt += 1
+			current_time = time()
+			dt = current_time - last_time
+			debug_timespan = utils.debug.debug_detector.debug_timespan(self)
+			elapsed_time += dt - debug_timespan
+			assert elapsed_time >= 0, f"Elapsed time is negative: {elapsed_time}"
+			if elapsed_time > 3:
+				raise RuntimeError(utils.method.msg(f"Failed to acquire all locks in time of 3 seconds (self={self})"))
+			last_time = current_time
+			with self._lock:
+				cb_locks = []
+				priorities = self._priorities.values()
+				for priority_group in priorities:
+					for i, cb_id in enumerate(priority_group):
+						cb = self._data[cb_id]
+						cb_locks.append(cb._invalidate_lock)
+						log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
+				with NoDeadLock(*cb_locks, timeout=0) as ndl: # TODO: Consider non blocking, or a bit more bigger timeout
+					if not ndl.locked():
+						sleep(0.01)
+						continue
+					for priority_group in list(reversed(priorities)): # Copy is needed due to the fact that callables can be unsubscribed through the notification call
+						for cb_id in priority_group.copy():
+							cb = self._data[cb_id]
+							cb(*args, **kwargs)
+							# if cb.is_invalidated(): # Should be unsubscribed through on_invalidated callback
+							if cb._invalidated: # Use is_invalidated() if haven't locked _invalidate_lock manually as above.
+								if self.is_subscribed(cb.id): # Should be unsubscribed through on_invalidated callback if invalidated
+									raise RuntimeError(f"Callable {cb} has been invalidated, but not unsubscribed")
+					break
 
 	def wait(self, timeout=None):
 		event = threading.Event()
