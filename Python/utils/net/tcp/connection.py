@@ -11,20 +11,34 @@ class Connection(utils.net.connection.Connection):
 			self.connect()
 
 	def connect(self):
-		self.socket.connect(self.address)
+		with self.lock:
+			self.socket.connect(self.address)
 
 	def listen(self):
-		self.socket.bind(self.address)
-		self.socket.listen()
+		with self.lock:
+			self.socket.bind(self.address)
+			self.socket.listen()
 
 	def accept(self):
-		return self.socket.accept()
+		with self.lock:
+			if self:
+				return self.socket.accept()
+			return None
 
 	def send(self, data):
-		self.socket.sendall(data)
+		with self.lock:
+			if self:
+				return self.socket.sendall(data)
+		return None
 
 	def recvfrom(self, size):
-		return self.socket.recv(size), self.address
+		with self.lock:
+			if self:
+				return self.socket.recv(size), self.address
+			return None, None
 
 	def close(self):
-		self.socket.close()
+		with self.lock:
+			if self:
+				return self.socket.close()
+			return None

@@ -62,11 +62,11 @@ class PacketServer(utils.net.server.Server, ABC):
 				return packet.data
 
 	def _next_data(self, conn):
-		if not conn:
-			return None, None
 		buffer, addr = self._buffer
 		if not buffer:
 			data, addr = conn.recvfrom(self.max_buffer_size)
+			if data is None:
+				return None, None
 			buffer.set_data(data)
 			self._buffer = (buffer, addr)
 		return buffer, addr

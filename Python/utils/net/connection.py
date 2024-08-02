@@ -1,3 +1,4 @@
+import threading
 from abc import ABC, abstractmethod
 
 
@@ -7,6 +8,7 @@ class Connection(ABC):
 		super().__init__(*args, **kwargs)
 		self.address = address
 		self.socket = None
+		self.lock = threading.RLock()
 
 	@abstractmethod
 	def connect(self):
@@ -29,14 +31,16 @@ class Connection(ABC):
 		return message
 
 	def close(self):
-		self.socket.close()
+		with self.lock:
+			self.socket.close()
 
 	def __enter__(self):
 		return self
 	
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		if self.socket:
-			self.close()
+		with self.lock:
+			if self:
+				self.close()
 
 	def __bool__(self):
 		# Call __bool__ on the socket object
