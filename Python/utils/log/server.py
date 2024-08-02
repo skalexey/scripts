@@ -6,6 +6,7 @@ import utils  # Lazy import for less important modules
 import utils.file
 import utils.method
 import utils.net.tcp.server
+from utils.debug import wrap_debug_lock
 from utils.live import verify
 from utils.log import Log, compose_log_message, print_log
 from utils.log.logger import LogLevel
@@ -19,8 +20,8 @@ class LogServer(PacketServer, UDPServer):
 		super().__init__()
 		self.files = {}
 		self.storage_path = "logs"
-		self.print_logs = True
-		self.file_lock = threading.Lock()
+		self.print_logs = False
+		self.file_lock = wrap_debug_lock(threading.Lock())
 
 	def _process_packet(self, data):
 		try:

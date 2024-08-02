@@ -2,14 +2,13 @@ import threading
 import weakref
 from functools import partial, wraps
 
-import utils.debug
 import utils.function
 import utils.inspect_utils as inspect_utils
 import utils.lang
 import utils.method
 from utils.collection.ordered_dict import OrderedDict
-from utils.concurrency.parameterized_lock import ParameterizedLock
 from utils.context import GlobalContext
+from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 from utils.profile.trackable_resource import TrackableResource
 
@@ -60,10 +59,7 @@ class Callable(TrackableResource):
 		self._kwargs = kwargs
 		self._invalidated = False
 		self._on_invalidated = on_invalidated
-		self._invalidate_lock = threading.RLock() # Test it more with Lock with turned off logs in ParameterizedLock and ScopedLock
-		if not GlobalContext.is_live:
-			self._invalidate_lock = ParameterizedLock(self._invalidate_lock)
-			self._invalidate_lock.set_constant_args(timeout=3)
+		self._invalidate_lock = wrap_debug_lock(threading.RLock()) # Test it more with Lock with turned off logs in ParameterizedLock and ScopedLock
 		self.max_calls = max_calls
 		self._call_count = 0
 		self.invalidate_on_false = invalidate_on_false or False
@@ -222,10 +218,7 @@ class OwnedCallable(Callable):
 
 class SmartCallable(OwnedCallable):
 	_id = -1
-	_lock = threading.Lock()
-	if utils.debug.is_debug():
-		_lock = ParameterizedLock(_lock, except_on_timeout=True)
-		_lock.set_constant_args(timeout=3)
+	_lock = wrap_debug_lock(threading.Lock())
 	# Thread-safe global callback id generator
 
 	@staticmethod

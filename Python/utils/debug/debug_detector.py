@@ -3,6 +3,7 @@ from datetime import datetime
 from time import sleep
 
 import utils  # Lazy import for less important modules
+from utils.debug import wrap_debug_lock
 from utils.subscription import Subscription
 
 
@@ -10,7 +11,7 @@ class DebugDetector:
 	def __init__(self):
 		self.debug_detection_threshold = 1.0
 		self.last_debug_timespan = 0
-		self.debug_detection_lock = threading.Lock()
+		self.debug_detection_lock = wrap_debug_lock(threading.Lock())
 		self.on_debug_detected = Subscription()
 		self.on_debug_detected.subscribe(self._on_debug_detected)
 		self._last_check_time = None

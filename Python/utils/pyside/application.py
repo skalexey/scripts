@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 import utils.debug.debug_detector
 from utils.collection.associative_list import AssociativeList
+from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 from utils.subscription import Subscription
 
@@ -23,7 +24,7 @@ class Application(QApplication):
 	def __init__(self, context, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.context = context
-		self._post_event_lock = threading.Lock()
+		self._post_event_lock = wrap_debug_lock(threading.Lock())
 		update_interval = 1 / 60  # 60 FPS
 		self.dt_limit = sys.maxsize # TODO: Tests. Move to settings. Remove from Live config
 		# Run a global update loop in Qt thread
@@ -31,7 +32,7 @@ class Application(QApplication):
 		self.timer.timeout.connect(self.update)
 		self.timer.start(update_interval * 1000)  # Update every 1000 milliseconds (1 second)
 		self._last_time = None
-		self._time_lock = threading.RLock()
+		self._time_lock = wrap_debug_lock(threading.RLock())
 		self.on_time_invalidated = Subscription()
 		self.on_update_jobs = AssociativeList()
 		self.installEventFilter(self)

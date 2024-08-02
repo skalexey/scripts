@@ -175,7 +175,7 @@ def redirect_to_file(fpath=None, level=None, subscription=None, *args, **kwargs)
 	# Check if the file is already opened
 	utils.live.verify(not utils.file.is_open(_fpath), f"Log file '{_fpath}' is already opened for writing")
 	file = open(_fpath, "a")
-	lock = threading.RLock()
+	lock = utils.debug.wrap_debug_lock(threading.RLock())
 	class State:
 		def __init__(self):
 			self.writing = False

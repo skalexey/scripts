@@ -6,6 +6,7 @@ import threading
 from datetime import datetime
 
 import utils.lang
+from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 
 log = Logger("sqlite_utils")
@@ -351,7 +352,7 @@ class CursorWrapper:
 
 class Connection:
 	def __init__(self, db_fpath, *args, **kwargs):
-		self._lock = threading.RLock()
+		self._lock = wrap_debug_lock(threading.RLock())
 		self.db_fpath = db_fpath
 		self.connection = sqlite3.connect(db_fpath, check_same_thread=False)
 		super().__init__(*args, **kwargs)

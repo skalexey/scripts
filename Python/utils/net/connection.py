@@ -1,6 +1,8 @@
 import threading
 from abc import ABC, abstractmethod
 
+from utils.debug import wrap_debug_lock
+
 
 # Supposed to be opened right away upon creation
 class Connection(ABC):
@@ -8,7 +10,7 @@ class Connection(ABC):
 		super().__init__(*args, **kwargs)
 		self.address = address
 		self.socket = None
-		self.lock = threading.RLock()
+		self.lock = wrap_debug_lock(threading.RLock())
 
 	@abstractmethod
 	def connect(self):

@@ -7,6 +7,7 @@ import threading
 import utils.class_utils as class_utils
 import utils.function
 import utils.log.logger
+from utils.debug import wrap_debug_lock
 from utils.profile.profiler import TimeProfiler
 
 profiler = TimeProfiler()
@@ -14,7 +15,8 @@ profiler = TimeProfiler()
 log = utils.log.logger.Logger()
 
 _module_cache = None
-_cache_lock = threading.Lock()
+_cache_lock = wrap_debug_lock(threading.Lock())
+
 _cache_is_loading = None
 
 

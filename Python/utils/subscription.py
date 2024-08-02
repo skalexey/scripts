@@ -4,14 +4,13 @@ from time import sleep, time
 
 import utils  # Lazy import for less important modules
 import utils.collection
-import utils.debug
 import utils.lang
 import utils.method
 from utils.collection.ordered_dict import OrderedDict
 from utils.collection.ordered_set import OrderedSet
-from utils.concurrency.parameterized_lock import ParameterizedLock
 from utils.concurrency.scoped_lock import ScopedLock
 from utils.context import GlobalContext
+from utils.debug import wrap_debug_lock
 from utils.live import verify
 from utils.log.logger import Logger
 from utils.memory import OwnedCallable, SmartCallable
@@ -23,10 +22,7 @@ class Subscription:
 		super().__init__(*args, **kwargs)
 		self._data = OrderedDict()
 		self._priorities = {}
-		self._lock = threading.RLock()
-		if utils.debug.is_debug():
-			self._lock = ParameterizedLock(threading.RLock(), except_on_timeout=True)
-			self._lock.set_constant_args(timeout=0.3)
+		self._lock = wrap_debug_lock(threading.RLock(), timeout=0.3)
 
 	class CallableInfo(OwnedCallable):
 		def __init__(self, *args, unsubscribe_on_false=None, priority=None, **kwargs):

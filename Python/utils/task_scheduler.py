@@ -6,10 +6,9 @@ import weakref
 from collections import deque
 
 import utils.asyncio_utils as asyncio_utils
-import utils.debug
 import utils.function
 import utils.method
-from utils.concurrency.parameterized_lock import ParameterizedLock
+from utils.debug import wrap_debug_lock
 from utils.lang import safe_enter
 from utils.live import verify
 from utils.log.logger import Logger
@@ -32,10 +31,7 @@ class TaskScheduler(TrackableResource):
 		self._queue = deque()
 		self._current_task_info = None
 		self._loop = None
-		self._lock = threading.RLock()
-		if utils.debug.is_debug():
-			self._lock = ParameterizedLock(self._lock, except_on_timeout=True)
-			self._lock.set_constant_args(timeout=3) # For debugging
+		self._lock = wrap_debug_lock(threading.RLock())
 		self._loop_operator = self.LoopOperator()
 		self.on_update = Subscription()
 		def on_destroyed(ref):
@@ -378,10 +374,7 @@ class TaskScheduler(TrackableResource):
 	class LoopOperator:
 		def __init__(self):
 			self.thread_id = None
-			self.enter_lock = threading.RLock()
-			if utils.debug.is_debug():
-				self.enter_lock = ParameterizedLock(self.enter_lock, except_on_timeout=True)
-				self.enter_lock.set_constant_args(timeout=3)
+			self.enter_lock = wrap_debug_lock(threading.RLock())
 			self.on_released = OneTimeSubscription()
 
 		def is_operating(self):

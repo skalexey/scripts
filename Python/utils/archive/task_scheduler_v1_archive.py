@@ -9,6 +9,7 @@ from collections import deque
 import utils.asyncio_utils as asyncio_utils
 import utils.function
 import utils.method
+from utils.debug import wrap_debug_lock
 from utils.live import verify
 from utils.log.logger import Logger
 from utils.memory import SmartCallable
@@ -309,7 +310,7 @@ class TaskScheduler(TrackableResource):
 	class LoopOperator:
 		def __init__(self):
 			self.thread_id = None
-			self.enter_lock = threading.RLock()
+			self.enter_lock = wrap_debug_lock(threading.RLock())
 
 		def is_operating(self):
 			return self.thread_id is not None

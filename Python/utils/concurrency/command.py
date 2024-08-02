@@ -3,6 +3,7 @@ import threading
 from collections import deque
 
 import utils.method
+from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 from utils.profile.trackable_callable import TrackableOwnedCallable
 
@@ -22,14 +23,14 @@ class Command(TrackableOwnedCallable):
 class CommandQueue:
 	def __init__(self):
 		self._queue = None
-		self._lock = threading.Lock()
+		self._lock = wrap_debug_lock(threading.Lock())
 
 	def reset(self):
 		if self._queue and len(self._queue) > 1:
 			msg_addition = f" and the processing is ongoing" if self._lock.is_locked() else ""
 			raise Exception(utils.method.msg_kw(f"queue is not empty{msg_addition}")) # TODO: comment out if not critical
 		self._queue = None
-		self._lock = threading.RLock()
+		self._lock = wrap_debug_lock(threading.RLock())
 
 	def add_command(self, cb, *args, **kwargs):
 		log.debug(utils.method.msg_kw())
