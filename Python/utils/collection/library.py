@@ -50,3 +50,19 @@ def as_set(value):
 	if isinstance(value, set):
 		return value
 	return {value}
+
+def exclude(from_, what):
+	result = from_.__class__()
+	items_attr = getattr(from_, "items", None)
+	if items_attr is not None:
+		for key, value in items_attr():
+			if key not in what:
+				result[key] = value
+		return result
+	values_attr = getattr(from_, "values", None)
+	if values_attr is not None:
+		for value in values_attr():
+			if value not in what:
+				result.add(value)
+		return result
+	return [value for value in from_ if value not in what]
