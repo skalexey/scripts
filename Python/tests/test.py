@@ -56,7 +56,7 @@ def timeout(seconds=10):
 					sleep(0.1)
 
 			result = [None, None]
-			thread = threading.Thread(target=target)
+			thread = threading.Thread(target=target, name="TimeoutThread")
 			thread.start()
 			try:
 				result[0] = func(*args, **kwargs)

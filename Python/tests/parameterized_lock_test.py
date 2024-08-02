@@ -64,7 +64,21 @@ class TestParameterizedLock(unittest.TestCase):
 		self.lock.acquire()
 		with self.assertRaises(RuntimeError) as tc:
 			with self.context_manager(timeout=0.3):
-				self.assertFalse(self.context_manager.acquired())
+				self.assertTrue(False) # Should be never reached
+		self.assertEqual(str(tc.exception), "Failed to acquire the lock in time")
+		self.assertFalse(self.context_manager.acquired())
+		# Release the lock after the test
+		self.lock.release()
+
+	@timeout(1)
+	def test_failed_enter_with_exception_noargs(self):
+		# Acquire the lock manually to force the context manager to fail
+		self.context_manager = ParameterizedLock(self.lock, except_on_timeout=True)
+		self.context_manager.set_constant_args(timeout=0.3)
+		self.lock.acquire()
+		with self.assertRaises(RuntimeError) as tc:
+			with self.context_manager:
+				self.assertTrue(False) # Should be never reached
 		self.assertEqual(str(tc.exception), "Failed to acquire the lock in time")
 		self.assertFalse(self.context_manager.acquired())
 		# Release the lock after the test

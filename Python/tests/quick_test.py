@@ -86,10 +86,26 @@ def none_access_error_test():
 		assert False, "Did not catch AttributeError"
 	catch_test()
 
+def lock_with_test():
+	import threading
+
+	# Using Lock with the with statement
+	lock = threading.Lock()
+
+	with lock as acquired_lock:
+		print("Lock acquired:", acquired_lock is lock)  # Output: Lock acquired: True
+
+	# Using RLock with the with statement
+	rlock = threading.RLock()
+
+	with rlock as acquired_rlock:
+		print("RLock acquired:", acquired_rlock is rlock)  # Output: RLock acquired: True
+
+
 def test():
 	log(title("Quick Test"))
 
-	none_access_error_test()
+	lock_with_test()
 	
 	log(title("End of Quick Test"))
 
