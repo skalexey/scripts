@@ -92,14 +92,14 @@ def lock_with_test():
 	# Using Lock with the with statement
 	lock = threading.Lock()
 
-	with lock as acquired_lock:
-		print("Lock acquired:", acquired_lock is lock)  # Output: Lock acquired: True
+	with lock as acquired:
+		print("Lock acquired:", acquired)  # Output: Lock acquired: True
 
 	# Using RLock with the with statement
 	rlock = threading.RLock()
 
-	with rlock as acquired_rlock:
-		print("RLock acquired:", acquired_rlock is rlock)  # Output: RLock acquired: True
+	with rlock as acquired:
+		print("RLock acquired:", acquired)  # Output: RLock acquired: True
 
 
 def test():
