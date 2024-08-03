@@ -56,13 +56,13 @@ class Application(QApplication):
 			return True
 		return super().eventFilter(obj, event)
 
-	def do_in_main_thread(self, func):
+	def do_in_main_thread(self, func, *args, **kwargs):
 		main_thread = threading.main_thread()
 		if threading.current_thread() == main_thread:
 			return func()
 		future = concurrent.futures.Future()
 		def job():
-			result = func()
+			result = func(*args, **kwargs)
 			future.set_result(result)
 		with self._post_event_lock:
 			event = Application.JobEvent(job)
