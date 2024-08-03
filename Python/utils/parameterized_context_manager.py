@@ -16,6 +16,7 @@ class ParameterizedContextManagerState():
 		self.on_enter_result = NoValue
 		self.args = args
 		self.kwargs = kwargs
+		self._is_manually_entered = False
 
 	@property
 	def cm(self):
@@ -23,11 +24,13 @@ class ParameterizedContextManagerState():
 
 	@safe_enter
 	def __enter__(self):
-		self.cm._on_state_enter(self)
-		self.on_enter_result = self.cm._enter(*self.args, **self.kwargs)
+		self.on_enter_result = self.cm._enter_from_state(self)
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
+		if exc_value is not None:
+			if self._is_manually_entered:
+				return None # Do not call exit callback if the state was manually entered since there should be manual exit as well.
 		result = self.cm._on_state_exit(exc_type, exc_value, traceback, self)
 		self.cm._exit(self, exc_type, exc_value, traceback)
 		# self.on_enter_result = NoValue
@@ -35,6 +38,10 @@ class ParameterizedContextManagerState():
 
 	def enter_result(self):
 		return self.on_enter_result
+
+	def _manual_enter(self):
+		self._is_manually_entered = True
+		return self.__enter__()
 
 	def __repr__(self):
 		return f"{self.__class__.__name__}(cm={self.cm}, on_enter_result={self.on_enter_result}, args={self.args}, kwargs={self.kwargs})"
@@ -79,7 +86,7 @@ class ParameterizedContextManagerBase(ABC):
 		return self._enter_state(state)
 
 	def __exit__(self, exc_type, exc_value, traceback):
-		self._exit_state(exc_type, exc_value, traceback)
+		self._exit_state(exc_type, exc_value, traceback) # Call state.__exit__ since it is not called by manually entered state.
 
 	def _check_state_to_exit(self, state, current_state):
 		if state is not None:
@@ -93,13 +100,13 @@ class ParameterizedContextManagerBase(ABC):
 		return None
 
 	def _exit_state(self, exc_type=None, exc_value=None, traceback=None, state=None):
-		curret_state = self.state
-		result = self._check_state_to_exit(state, curret_state)
-		curret_state.__exit__(exc_type, exc_value, traceback)
+		current_state = self.state
+		result = self._check_state_to_exit(state, current_state)
+		current_state.__exit__(exc_type, exc_value, traceback)
 		return result
 		
 	def _enter_state(self, state):
-		return state.__enter__()
+		return state._manual_enter()
 
 	def _on_state_enter(self, state):
 		state_stack = getattr(self._thread_local, "state_stack", None)
@@ -107,10 +114,14 @@ class ParameterizedContextManagerBase(ABC):
 			self._thread_local.state_stack = state_stack = []
 		state_stack.append(state)
 
+	def _enter_from_state(self, state):
+		self._on_state_enter(state)
+		return self._enter(*state.args, **state.kwargs)
+
 	@abstractmethod
 	def _enter(self, *args, **kwargs): # -> any
 		pass
-
+		
 	def _exit(self, state, exc_type, exc_value, traceback):
 		if state.on_enter_result == self._exit_cb_condition:
 			return self._exit_by_condition(exc_type, exc_value, traceback)
