@@ -73,7 +73,7 @@ class Application(QApplication):
 		self.on_update_jobs.add(func)
 
 	def on_update(self, dt):
-		self.context.module_manager.call_on_modules("on_update", dt)
+		self.context.module_manager.call_on_modules("on_update", dt=dt)
 
 	def update(self):
 		current_time = self.context.current_time()

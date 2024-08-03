@@ -641,6 +641,9 @@ class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, Copyable
 		if call_contents_changed:
 			self._on_contents_changed()
 
+	def clear_contents(self, call_contents_changed=True):
+		self.setRowCount(0)
+
 	def add_column(self, column_name):
 		self.insertColumn(self.columnCount())
 		header_item = QTableWidgetItem(column_name)
