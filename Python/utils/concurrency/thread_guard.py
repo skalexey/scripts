@@ -1,4 +1,5 @@
 
+import threading
 from collections import defaultdict
 from functools import wraps
 from threading import current_thread
@@ -46,7 +47,10 @@ def is_lock(value):
 	return hasattr(value, '__enter__')
 
 def is_thread(value):
-	return hasattr(value, 'ident')
+	if isinstance(value, threading.Thread):
+		return True
+	return False
+	# return hasattr(value, 'ident')
 
 def thread_check(method_func):
 	@wraps(method_func)
