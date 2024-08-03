@@ -103,8 +103,10 @@ class Subscription:
 			attempt += 1
 			current_time = time()
 			dt = current_time - last_time
-			debug_timespan = utils.debug.debug_detector.debug_timespan(self)
-			elapsed_time += dt - debug_timespan
+			elapsed_time += dt
+			if attempt > 1:
+				debug_timespan = utils.debug.debug_detector.debug_timespan(self)
+				elapsed_time -= debug_timespan
 			assert elapsed_time >= 0, f"Elapsed time is negative: {elapsed_time}"
 			if elapsed_time > 3:
 				raise RuntimeError(utils.method.msg(f"Failed to acquire all locks in time of 3 seconds (self={self})"))
