@@ -107,8 +107,8 @@ class Callable(TrackableResource):
 
 	def _invalidate(self):
 		# Keep internal data unchanged for debugging purposes
-		with self._invalidate_lock as lock: # _invalidated flag can be checked through is_valid() with an assumption that the attached _on_invalidated callback was called (e.g. against existing subscriptions in notify() call to ensure subscriptions were unsubscribed in self._on_invalidated callback),
-			if not lock.acquired():
+		with self._invalidate_lock as acquired: # _invalidated flag can be checked through is_valid() with an assumption that the attached _on_invalidated callback was called (e.g. against existing subscriptions in notify() call to ensure subscriptions were unsubscribed in self._on_invalidated callback),
+			if not acquired:
 				raise RuntimeError(utils.function.msg_kw("Failed to acquire the lock to invalidate the callable"))
 			# therefore the lock is needed to glue setting _invalicated flag with _on_invalidated call into an atomic operation.
 			if self._invalidated:
@@ -125,8 +125,8 @@ class Callable(TrackableResource):
 	# Checks if the callable was invalidated. Atomic with _invalidate() call.
 	def is_invalidated(self):
 		# with self._invalidate_lock:
-		with self._invalidate_lock as lock:
-			if not lock.acquired():
+		with self._invalidate_lock as acquired:
+			if not acquired:
 				raise RuntimeError(utils.function.msg_kw("Failed to acquire the lock in time"))
 			return self._invalidated
 
