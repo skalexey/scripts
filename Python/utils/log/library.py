@@ -154,11 +154,11 @@ def log_to_server(connection, message, level=LogLevel.PRINT, log_title=None, log
 		# Pack all the data into a packet <packet size:4bytes><packet data>
 		timestamp = time()
 		log = Log(message, level, log_title, log_addition, timestamp)
+		print(log.full_message)
 		try:
 			packet_data = pickle.dumps(log.packet)
 			data = struct.pack('>I', len(packet_data)) + packet_data
 			connection.send(data)
-			# connection.sendto(message, server_address)
 		except Exception as e:
 			print(f"Failed to send log to server: '{e!r}'. Log message: {log.full_message}")
 			if not isinstance(e, ImportError):
