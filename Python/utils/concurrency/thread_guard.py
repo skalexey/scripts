@@ -1,4 +1,4 @@
-
+import inspect
 import threading
 from collections import defaultdict
 from functools import wraps
@@ -52,12 +52,12 @@ def is_thread(value):
 	return False
 	# return hasattr(value, 'ident')
 
-def thread_check(method_func):
+def thread_check(method_func, cls):
 	@wraps(method_func)
 	def wrapper(self, *args, **kwargs):
 		# log.verbose(f"Checking thread access for thread '{current_thread().name}' to method '{method_func.__name__}'")
 		if not self._is_thread_allowed(current_thread()):
-			raise RuntimeError(f"Method '{method_func.__name__}' can only be called from any of allowed threads: {self._allowed_thread_ids}. Current thread: '{current_thread().name}'")
+			raise RuntimeError(f"Method '{cls.__name__}.{method_func.__name__}' can only be called from any of allowed threads: {self._allowed_thread_ids}. Current thread: '{current_thread().name}'")
 		# log.verbose(f"	Thread access granted for method '{method_func.__name__}'")
 		return method_func(self, *args, **kwargs)
 	return wrapper
@@ -69,14 +69,14 @@ def apply_thread_check(cls):
 			# Decorate property getter
 			func = attr_value.fget
 			if not hasattr(func, '_allow_any_thread'):
-				attr_value = attr_value.getter(thread_check(func))
+				attr_value = attr_value.getter(thread_check(func, cls))
 			# Decorate property setter
 			func = attr_value.fset
 			if func and not hasattr(func, '_allow_any_thread'):
-				attr_value = attr_value.setter(thread_check(func))
+				attr_value = attr_value.setter(thread_check(func, cls))
 			setattr(cls, attr_name, attr_value)
-		elif callable(attr_value) and not hasattr(attr_value, '_allow_any_thread') and attr_name != '__init__' and attr_name != '_is_thread_allowed':
-			setattr(cls, attr_name, thread_check(attr_value))
+		elif inspect.isfunction(attr_value) and not hasattr(attr_value, '_allow_any_thread') and attr_name != '__init__' and attr_name != '_is_thread_allowed':
+			setattr(cls, attr_name, thread_check(attr_value, cls))
 	return cls
 
 # ThreadGuard class allows to restrict methods, properties, and writing access to only specific threads.
@@ -94,6 +94,9 @@ class ThreadGuard:
 
 	def allow_thread(self, thread):
 		self._allowed_thread_ids.add(thread.name)
+
+	def allow_thread_name(self, thread_name):
+		self._allowed_thread_ids.add(thread_name)
 
 	def __setattr__(self, name, value):
 		if is_thread(value):
