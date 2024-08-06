@@ -61,9 +61,9 @@ class TestThreadCheck(unittest.TestCase):
 				self.a.method_1()
 			log(f"Exception message: {str(context.exception)}")
 			self.assertIn("can only be called", str(context.exception))
-		t = threading.Thread(target=target)
-		t.start()
-		t.join()
+		thread = threading.Thread(target=target)
+		thread.start()
+		thread.join()
 
 	def test_method_2_in_any_thread(self):
 		def target():
@@ -74,9 +74,9 @@ class TestThreadCheck(unittest.TestCase):
 				executed = False
 				log(f"Exception message: {str(e)}")
 			self.assertTrue(executed)
-		t = threading.Thread(target=target)
-		t.start()
-		t.join()
+		thread = threading.Thread(target=target)
+		thread.start()
+		thread.join()
 
 	def test_attribute_access_in_main_thread(self):
 		self.a.some_attr = "New value"  # Should not raise any exception
@@ -88,9 +88,9 @@ class TestThreadCheck(unittest.TestCase):
 				self.a.some_attr = "New value"
 			log(f"Exception message: {str(context.exception)}")
 			self.assertIn("Method '__setattr__' can only be called from any of allowed threads", str(context.exception))
-		t = threading.Thread(target=target)
-		t.start()
-		t.join()
+		thread = threading.Thread(target=target)
+		thread.start()
+		thread.join()
 
 	def test_allow_any_thread_with_lock_in_any_thread(self):
 		def target():
@@ -101,9 +101,9 @@ class TestThreadCheck(unittest.TestCase):
 				executed = False
 				log(f"Exception message: {str(e)}")
 			self.assertTrue(executed)
-		t = threading.Thread(target=target)
-		t.start()
-		t.join()
+		thread = threading.Thread(target=target)
+		thread.start()
+		thread.join()
 
 	def test_get_attr(self):
 		log(utils.method.msg_kw(f"Attr value: {self.a.some_attr}"))
@@ -121,9 +121,9 @@ class TestThreadCheck(unittest.TestCase):
 	def test_get_attr_other_thread(self):
 		def target():
 			log(utils.method.msg_kw(f"Attr value: {self.a.some_attr}"))
-		t = threading.Thread(target=target)
-		t.start()
-		t.join()
+		thread = threading.Thread(target=target)
+		thread.start()
+		thread.join()
 
 if __name__ == '__main__':
 	unittest.main()
