@@ -6,11 +6,11 @@ def is_debug():
 	attr = getattr(GlobalContext, "is_live", None)
 	return (attr or False) is False
 
-def wrap_debug_lock(lock, timeout=None, *args, **kwargs):
+def wrap_debug_lock(lock, blocking=True, timeout=None, *args, **kwargs):
 	if is_debug():
 		_lock = ParameterizedLock(lock, except_on_timeout=True)
 		_timeout = timeout if timeout is not None else 3
-		_lock.set_constant_args(_timeout, *args, **kwargs)
+		_lock.set_constant_args(blocking, _timeout, *args, **kwargs)
 	else:
 		_lock = lock
 	return _lock
