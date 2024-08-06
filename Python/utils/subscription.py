@@ -105,7 +105,7 @@ class Subscription:
 					for i, cb_id in enumerate(priority_group):
 						cb = self._data[cb_id]
 						cb_locks.append(cb._invalidate_lock)
-						log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
+						# log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
 				with ScopedLock(*cb_locks, timeout=0) as ndl: # TODO: Consider non blocking, or a bit more bigger timeout
 					if not ndl.locked():
 						sleep(0.01)

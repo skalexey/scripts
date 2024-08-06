@@ -51,4 +51,5 @@ class EnforcedABCMeta(ABCMeta):
 			if name == '__abstractmethods__':
 				for abstract_method in value:
 					check_abstractmethod(abstract_method, getattr(cls, abstract_method))
-		return super().__call__(*args, **kwargs)
+		super_obj = super() # For debugging super_obj.__thisclass__.__mro__[1]
+		return super_obj.__call__(*args, **kwargs)

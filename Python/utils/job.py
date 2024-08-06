@@ -5,10 +5,10 @@ from utils.subscription import Subscription
 
 class Job(TrackableResource):
 	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
 		self.on_done = Subscription()
 		self.on_cancel = Subscription()
 		self._cancelled = False
-		super().__init__(*args, **kwargs)
 
 	def update(self, dt):
 		if self.is_done():

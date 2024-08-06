@@ -12,6 +12,6 @@ def do_async(func, *args, **kwargs):
 		finally:
 			future.set_result(result)
 
-	t = threading.Thread(target=job, args=args, kwargs=kwargs)
-	t.start()
+	thread = threading.Thread(target=job, args=args, kwargs=kwargs)
+	thread.start()
 	return future
