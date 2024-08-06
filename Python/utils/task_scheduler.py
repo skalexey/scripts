@@ -8,6 +8,11 @@ from collections import deque
 import utils.asyncio_utils as asyncio_utils
 import utils.function
 import utils.method
+from utils.concurrency.thread_guard import (
+    ThreadGuard,
+    allow_any_thread,
+    allow_any_thread_with_lock,
+)
 from utils.debug import wrap_debug_lock
 from utils.lang import safe_enter
 from utils.live import verify
@@ -20,7 +25,7 @@ log = Logger()
 
 
 # This class runs any async function passed to it and returns a future that can be awaited on
-class TaskScheduler(TrackableResource):
+class TaskScheduler(TrackableResource, ThreadGuard):
 	instances: list[weakref.ref] = []
 	on_update = Subscription()
 
@@ -40,6 +45,7 @@ class TaskScheduler(TrackableResource):
 		TaskScheduler.instances.append(ref)
 
 	@property
+	@allow_any_thread
 	def loop(self):
 		with self._lock:
 			if self._loop is None:
@@ -49,6 +55,7 @@ class TaskScheduler(TrackableResource):
 	def tasks(self):
 		return self._tasks
 
+	@allow_any_thread
 	def schedule_task(self, async_function, max_queue_size=0, *args, **kwargs):
 		log.debug(utils.method.msg_kw())
 		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
@@ -57,6 +64,7 @@ class TaskScheduler(TrackableResource):
 			return self._schedule_task(cb, registered_task_count, max_queue_size)
 	
 	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
+	@allow_any_thread
 	def schedule_function(self, async_function, max_queue_size=0, *args, **kwargs):
 		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
 		with self._lock:
@@ -66,6 +74,7 @@ class TaskScheduler(TrackableResource):
 	def run_parallel_task(self, async_function):
 		raise "Not implemented yet."
 
+	@allow_any_thread
 	def run_until_complete(self, awaitable):
 		log.debug(utils.method.msg_kw())
 		try:
@@ -181,6 +190,7 @@ class TaskScheduler(TrackableResource):
 		return result
 
 
+	@allow_any_thread
 	def wait_all_tasks(self, timeout=None):
 		log.debug(utils.method.msg_kw())
 		if self._loop_operator.is_operating_in_current_thread():
@@ -197,6 +207,7 @@ class TaskScheduler(TrackableResource):
 		return self.run_until_complete_for(tasks, timeout)
 	
 
+	@allow_any_thread
 	# Returns the result of the future in the case of a successful completion
 	def wait(self, future):
 		verify(self._loop is not None and future.get_loop() == self._loop, utils.method.msg_kw("Foreign future provided"))
@@ -226,6 +237,7 @@ class TaskScheduler(TrackableResource):
 			return collect_results(True)
 		return collect_results(False)
 
+	@allow_any_thread
 	# Returns False in the case of a timeout. Otherwise, always True
 	def complete_all_tasks(self, timeout=None):
 		result = self.wait_all_tasks(timeout)
@@ -245,6 +257,7 @@ class TaskScheduler(TrackableResource):
 		def __bool__(self):
 			return not self.timedout
 
+	@allow_any_thread
 	# Returns WaitForResult object that contains the result of the future in the case of a successful completion and a timedout flag
 	def wait_for(self, future, timeout):
 		result = self.run_until_complete_for([future], timeout)
@@ -288,9 +301,11 @@ class TaskScheduler(TrackableResource):
 			self.on_update.notify(taken_time)
 			TaskScheduler.on_update.notify(self, taken_time)
 
+	@allow_any_thread_with_lock("_lock")
 	def registered_task_count(self, function=None):
 		return self.task_in_work_count(function) + self.queue_size(function)
 	
+	@allow_any_thread_with_lock("_lock")
 	def queue_size(self, function=None):
 		if function is not None:
 			return sum(1 for task_info in self._queue if task_info.function == function)
@@ -303,17 +318,18 @@ class TaskScheduler(TrackableResource):
 
 	def _schedule_task(self, async_function, registered_task_count, max_queue_size=0):
 		log.debug(utils.method.msg_kw())
-		# Locked by the caller method
-		if 0 <= max_queue_size >= registered_task_count:
-			task_info = self._create_task_info(async_function)
-			self._queue.append(task_info)
-			if self._current_task_info is None:
-				return self._run_next()
-			else:
-				return task_info.future
-		# Don't fit by queue size
-		log.debug(utils.method.msg_kw(f"Task scheduling has been ignored due to the queue size limit"))
-		return None
+		with self._lock:
+			# Locked by the caller method
+			if 0 <= max_queue_size >= registered_task_count:
+				task_info = self._create_task_info(async_function)
+				self._queue.append(task_info)
+				if self._current_task_info is None:
+					return self._run_next()
+				else:
+					return task_info.future
+			# Don't fit by queue size
+			log.debug(utils.method.msg_kw(f"Task scheduling has been ignored due to the queue size limit"))
+			return None
 
 	def _create_task_info(self, async_function):
 		future = self.loop.create_future()
