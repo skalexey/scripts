@@ -14,6 +14,7 @@ from utils.debug import wrap_debug_lock
 from utils.live import verify
 from utils.log.logger import Logger
 from utils.memory import OwnedCallable, SmartCallable
+from utils.timed_loop import timed_loop
 
 log = Logger()
 
@@ -96,21 +97,7 @@ class Subscription:
 	def notify(self, *args, **kwargs):
 		if not self._priorities:
 			return
-		last_time = time()
-		elapsed_time = 0
-		attempt = 0
-		while True:
-			attempt += 1
-			current_time = time()
-			dt = current_time - last_time
-			elapsed_time += dt
-			if attempt > 1:
-				debug_timespan = utils.debug.debug_detector.debug_timespan(self)
-				elapsed_time -= debug_timespan
-			assert elapsed_time >= 0, f"Elapsed time is negative: {elapsed_time}"
-			if elapsed_time > 3:
-				raise RuntimeError(utils.method.msg(f"Failed to acquire all locks in time of 3 seconds (self={self})"))
-			last_time = current_time
+		for state in timed_loop(3):
 			with self._lock:
 				cb_locks = []
 				priorities = self._priorities.values()
@@ -132,6 +119,8 @@ class Subscription:
 								if self.is_subscribed(cb.id): # Should be unsubscribed through on_invalidated callback if invalidated
 									raise RuntimeError(f"Callable {cb} has been invalidated, but not unsubscribed")
 					break
+		if state.timedout:
+			raise RuntimeError(utils.method.msg(f"Failed to acquire all locks in time of 3 seconds (self={self})"))
 
 	def wait(self, timeout=None):
 		event = threading.Event()
