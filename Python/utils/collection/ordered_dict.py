@@ -21,6 +21,12 @@ class OrderedDict(OrderedSet):
 		super().__init__(keys, **kwargs) # Assign manually, since assigning algorithm uses collection, an can be configured working with OrderedDict
 		self._list = list or []
 
+	@classmethod
+	def from_dict(cls, dictionary):
+		keys = list(dictionary.keys())
+		values = list(dictionary.values())
+		return cls(keys, values)
+
 	def _serialize_mapping(self):
 		mapping = super()._serialize_mapping()
 		mapping.update({
