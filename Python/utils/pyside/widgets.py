@@ -265,7 +265,7 @@ class RangeSliderWidget(WidgetBase(QWidget)):
 class PairWidget(WidgetBase(AbstractWidget, QWidget)):
 	def __init__(self, left, right, fixed_width=None, right_fixed_width=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
-		self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+		self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
 		layout = QHBoxLayout()
 		self.setLayout(layout)
 		if fixed_width is not None:
@@ -425,6 +425,9 @@ class ValueWidget(PairWidget):
 
 	def set_value(self, value):
 		self.right_widget.setText(str(value))
+
+	def set_title(self, title):
+		self.left_widget.setText(title)
 
 	def value(self):
 		return self.right_widget.text()
