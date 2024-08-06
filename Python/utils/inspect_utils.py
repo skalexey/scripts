@@ -32,24 +32,26 @@ def current_function_signature(custom_frame=None, args_format=None, ignore_first
 	return signature_str(func, call_info.cls, frame, args_format=args_format, ignore_first=ignore_first)
 
 def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=None):
+	_func = inspect.unwrap(func)
 	_frame = frame or caller_frame()
 	_args_format = "names" if args_format is None else args_format
-	_cls = cls or _get_class(func)
+	_cls = cls or _get_class(_func)
 	class_name = _cls.__name__ if _cls is not None else None
 	_ignore_first = 1 if ignore_first or (class_name and ignore_first is None) else 0
 	class_name_addition = f"{class_name}." if class_name is not None else ""
 	if not _args_format:
 		args_sig = "()"
 	else:
-		sig = inspect.signature(func)
+		sig = inspect.signature(_func)
 		if _args_format == "names":
-			params = utils.function.params(func)
+			params = utils.function.params(_func)
 			names = list(params.keys())[_ignore_first:]
 			args_sig = f"({', '.join(name for name in names)})"
 		else:
 			call_info = frame_call_info(_frame)
-			if call_info.function != func:
-				raise ValueError(f"Function mismatch. Provided: '{func}', what frame contains: '{call_info.function}'")
+			unwrapped_call_info_function = inspect.unwrap(call_info.function)
+			if unwrapped_call_info_function != _func:
+				raise ValueError(f"Function mismatch. Provided: '{_func}', what frame contains: '{unwrapped_call_info_function}'")
 			all_args = utils.function.args(out=None, validate=False, custom_frame=_frame)
 			args = all_args[_ignore_first:]
 			if _args_format == "values":
@@ -66,7 +68,7 @@ def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=Non
 				args_sig = f"({kwargs_repr})"
 			else:
 				raise ValueError(f"Unexpected value for args: {args_format}")
-	return f"{class_name_addition}{func.__name__}{args_sig}"
+	return f"{class_name_addition}{_func.__name__}{args_sig}"
 
 def frame_function(frame):
 	call_info = frame_call_info(frame)
@@ -117,14 +119,17 @@ class CallInfo:
 						cls_method = cls.__dict__.get(co_name, None) # Method or function
 						cls_func = function(cls_method) # Function
 						if cls_func is not None:
-							if cls_func.__code__ == frame.f_code: # Function and class determined
-								self.function = cls_func
-								self.cls = cls
-								self.caller = obj
-								# An instance has only one method per name, so this call may not be of the method
-								if method_func.__code__ == frame.f_code:
-									self.method = method_func
-									return
+							unwrapped_function = inspect.unwrap(cls_func)
+							for f in [cls_func, unwrapped_function]:
+								if f.__code__ == frame.f_code: # Function and class determined
+									self.function = f
+									self.cls = cls
+									self.caller = obj
+									# An instance has only one method per name, so this call may not be of the method
+									if method_func.__code__ == frame.f_code:
+										self.method = method_func
+										return
+									break
 					if self.function is not None:
 						return
 			# raise ValueError(f"Couldn't retrieve call information for the code object '{co_name}'")
@@ -187,8 +192,8 @@ def function(obj):
 				func = obj.fget
 				if func is not None:
 					assert inspect.isfunction(func)
-	unwrapped_func = inspect.unwrap(func)
-	return unwrapped_func
+	# Don't unwrap
+	return func
 
 def cls(obj):
 	if inspect.isclass(obj):
