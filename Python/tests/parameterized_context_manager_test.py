@@ -40,6 +40,25 @@ class TestParameterizedContextManager(unittest.TestCase):
 
 		self.on_enter.reset_mock()
 
+
+	def test_constant_args_parameterized_enter(self):
+		self.context_manager.set_constant_args(1, 2, key1='value', key2="value2")
+		with self.context_manager(4, key2="overridden") as state:
+			self.on_enter.assert_called_once_with(self.obj, 4, 2, key1='value', key2="overridden")
+			self.assertTrue(state.enter_result())
+
+		self.on_enter.reset_mock()
+
+		with self.context_manager as state:
+			self.on_enter.assert_called_once_with(self.obj, 1, 2, key1='value', key2="value2")
+			self.assertTrue(state.enter_result())
+
+		# State keeps the last values
+		self.assertTrue(state.enter_result())
+		self.assertTrue(len(self.context_manager._thread_local.state_stack) == 0)
+
+		self.on_enter.reset_mock()
+
 	def test_exit_by_condition_call(self):
 		with self.context_manager(1, 2, key='value') as state:
 			self.assertTrue(state.enter_result())

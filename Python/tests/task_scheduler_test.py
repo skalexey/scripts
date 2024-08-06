@@ -214,6 +214,7 @@ def tasks_test():
 		assert a.scheduler.registered_task_count() == 1
 
 		thread = threading.Thread(target=cancel_tasks_job)
+		a.scheduler.allow_thread(thread)
 		thread.start()
 		for i in range(3):
 			sleep(0.2)
@@ -224,8 +225,8 @@ def tasks_test():
 		log(title("Complete tasks in parallel"))
 		f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=0.6)
 		assert a.scheduler.registered_task_count() == 1
-
 		thread = threading.Thread(target=run_tasks_job)
+		a.scheduler.allow_thread(thread)
 		thread.start()
 		sleep(0.1)
 		run_tasks_job()
@@ -235,6 +236,7 @@ def tasks_test():
 		log(title("Cancel from another thread"))
 		f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=3)
 		thread = threading.Thread(target=cancel_tasks_job)
+		a.scheduler.allow_thread(thread)
 		thread.start()
 		run_tasks_job()
 		thread.join()
@@ -250,6 +252,7 @@ def tasks_test():
 		log(title("Wait all and cancel from another thread"))
 		f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=3)
 		thread = threading.Thread(target=cancel_tasks_job)
+		a.scheduler.allow_thread(thread)
 		thread.start()
 		result = a.scheduler.wait_all_tasks()
 		assert isinstance(result.result[0], asyncio.CancelledError)
@@ -264,6 +267,7 @@ def tasks_test():
 		log(title("Wait and cancel from another thread"))
 		f = a.scheduler.schedule_task(a.async_method_sleep, 1, sleep_time=3)
 		thread = threading.Thread(target=cancel_tasks_job)
+		a.scheduler.allow_thread(thread)
 		thread.start()
 		log(utils.function.msg_kw("Waiting for the task to complete"))
 		result = a.scheduler.wait(f)
