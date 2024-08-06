@@ -4,7 +4,6 @@ from time import sleep
 
 import utils  # Lazy import for less important modules
 from utils.debug import wrap_debug_lock
-from utils.subscription import Subscription
 
 
 class DebugDetector:
@@ -12,12 +11,20 @@ class DebugDetector:
 		self.debug_detection_threshold = 1.0
 		self.last_debug_timespan = 0
 		self.debug_detection_lock = wrap_debug_lock(threading.Lock())
-		self.on_debug_detected = Subscription()
-		self.on_debug_detected.subscribe(self._on_debug_detected)
+		self._on_debug_detected_subscription = None # Created on demand through on_debug_detected property 
 		self._last_check_time = None
 		self._last_debug_timespan_checkin = set()
 		self._thread = threading.Thread(target=self._debug_detection_job, name="DebugDetector")
 		self._thread.start()
+
+	@property
+	def on_debug_detected(self):
+		result = self._on_debug_detected_subscription
+		if result is None:
+			result = utils.subscription.Subscription()
+			self._on_debug_detected_subscription = result
+			self.on_debug_detected.subscribe(self._on_debug_detected)
+		return result
 
 	def _on_debug_detected(self):
 		self._last_debug_timespan_checkin.clear()
@@ -29,7 +36,7 @@ class DebugDetector:
 			self._last_check_time = current_time
 			if dt > self.debug_detection_threshold:
 				self.last_debug_timespan = dt
-				self.on_debug_detected()
+				self.on_debug_detected.notify()
 
 	def grab_last_debug_timespan(self, checker):
 		self.check_debug_detection()
