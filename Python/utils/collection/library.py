@@ -66,3 +66,15 @@ def exclude(from_, what):
 				result.add(value)
 		return result
 	return [value for value in from_ if value not in what]
+
+def merge_list_into(what, to):
+	for index, value in enumerate(what):
+		if index < len(to):
+			to[index] = value
+		else:
+			to.append(value)
+
+def merge_lists(what, to):
+	result = list(to)
+	merge_list_into(what, result)
+	return result
