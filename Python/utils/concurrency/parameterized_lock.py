@@ -43,7 +43,18 @@ class ParameterizedLock(ParameterizedContextManagerBase, AbstractLock):
 		self._owner = None
 
 	def acquire(self, *args, **kwargs):
-		state = self._create_state(*args, **kwargs)
+		# Merge arguments
+		_args, _kwargs = self._merge_into_constant_args(args, kwargs)
+		blocking = _args[0] if _args else _kwargs.get("blocking", True)
+		timeout = _args[1] if len(_args) > 1 else _kwargs.get("timeout", -1)
+		# Remove timeout after merge if not blocking
+		if not blocking:
+			if len(_args) > 1:
+				_args[1] = -1
+			else:
+				_kwargs["timeout"] = -1
+		# Create state
+		state = self._create_state(*_args, **_kwargs)
 		self._enter_state(state)
 		acquired = state.acquired()
 		self._locked = acquired
@@ -73,9 +84,9 @@ class ParameterizedLock(ParameterizedContextManagerBase, AbstractLock):
 	def _create_state(self, *args, **kwargs):
 		return ParameterizedLockState(self, *args, **kwargs)
 
-	def _enter(self, timeout=-1, *args, **kwargs):
+	def _enter(self, blocking=True, timeout=-1, *args, **kwargs):
 		# print(utils.method.msg_kw(f"Acquiring lock '{self._obj}'"))
-		result = self._obj.acquire(*args, timeout=timeout, **kwargs)
+		result = self._obj.acquire(blocking, timeout, *args, **kwargs)
 		if not result:
 			if timeout >= 0:
 				if self._except_on_timeout is not None:
