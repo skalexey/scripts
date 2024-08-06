@@ -35,6 +35,8 @@ import utils.class_utils as class_utils
 import utils.lang
 import utils.method
 import utils.pyside
+from utils.collection.ordered_dict import OrderedDict
+from utils.live import verify
 from utils.log.logger import Logger
 from utils.math.range import Range
 from utils.memory import SmartCallable
@@ -467,6 +469,10 @@ class FitContentsMixin(CustomAdjustSizeMixin):
 
 
 class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)): # TODO: Inherit from FitContentsMixin
+	on_collapsed = Signal()
+	on_expanded = Signal()
+	on_state_changed = Signal(bool)
+
 	def __init__(self, title=None, expanded_widget=None, collapsed_widget=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		# Layouting
@@ -494,20 +500,40 @@ class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)): # TODO: Inherit fro
 		self.collapse()
 
 	def expand(self):
+		if self.is_expanded():
+			return False
 		self.expand_button.setText("-")
 		self.expand_button.clicked.disconnect()
 		self.expand_button.clicked.connect(self._on_collapse_click)
 		if self.expanded_widget is not None:
 			self.expanded_widget.show()
+		self.on_expanded.emit()
+		self.on_state_changed.emit(True)
 		log.debug(utils.method.msg_kw())
+		return True
 
 	def collapse(self):
+		if not self.is_expanded():
+			return False
 		self.expand_button.setText("+")
 		self.expand_button.clicked.disconnect()
 		self.expand_button.clicked.connect(self._on_expand_click)
 		if self.expanded_widget is not None:
 			self.expanded_widget.hide()
+		self.on_collapsed.emit()
+		self.on_state_changed.emit(False)
 		log.debug(utils.method.msg_kw())
+		return True
+
+	def set_expanded(self, expanded):
+		if expanded:
+			self.expand()
+		else:
+			self.collapse()
+
+	def is_expanded(self):
+		expanded_widget = self.expanded_widget
+		return expanded_widget is not None and not expanded_widget.isHidden()
 
 
 class DeallocateExpandedWidgetMixin(ABCQt):
@@ -516,15 +542,21 @@ class DeallocateExpandedWidgetMixin(ABCQt):
 		pass
 
 	def expand(self):
-		super().expand()
+		if self.is_expanded():
+			return False
+		assert self.expanded_widget is None
 		self.expanded_widget = self.create_expanded_widget()
+		self.expanded_widget.hide()
+		return super().expand()
 
 	def collapse(self):
+		if not super().collapse():
+			return False
 		if self.expanded_widget is not None:
 			self.expanded_widget.setParent(None)
 			self.expanded_widget.deleteLater()
 			self.expanded_widget = None
-		super().collapse()
+		return True
 
 
 class ResizeEventFilter(QObject):
@@ -590,6 +622,56 @@ class CopyableListElementMixin(CopyableMixin):
 	def text_to_copy(self, context_menu_event):
 		item = self.itemAt(context_menu_event.pos())
 		return item.text() if item else None
+
+
+class DataTableMixin(ABCQt):
+	column_titles: OrderedDict = None
+	def __init__(self, data=None, excluded_columns=None, *args, **kwargs):
+		self._data_list = None
+		super().__init__(*args, **kwargs)
+		verify(self.column_titles is not None, utils.method.msg("Column_titles must be defined"))
+		self.columns = self.column_titles.copy()
+		if excluded_columns is not None:
+			self.columns = utils.collection.exclude(self.column_titles, excluded_columns)
+		self.update(0, data)
+
+	def gen_table_values(self): # From self._data_list
+		rows = []
+		for data in self._data_list:
+			values = []
+			for col in self.columns.keys():
+				value = self.column_value(data, col)
+				values.append(value)
+			rows.append(values)
+		return rows
+
+	@abstractmethod
+	def column_value(self, data, column):
+		pass
+
+	def _on_data_list_changed(self, previous_data_list):
+		pass
+
+	def update(self, dt=None, data=None, force=False):
+		if not force:
+			if data is None:
+				return
+			if self._data_list == data:
+				return
+			else:
+				self._data_list = data.copy()
+				self._on_data_list_changed(data)
+				# Clear the table
+				self.clear(call_contents_changed=False)
+				# Add columns
+				for title in self.columns.values():
+					self.add_column(title)
+		else:
+			self.clear_contents(call_contents_changed=False)
+		# Fill the rows
+		items = self.gen_table_values()
+		self.add_items(items)
+		super().update(dt)
 
 
 class AbstractListWidget(AbstractWidget):
@@ -730,3 +812,59 @@ class SpinnerDialog(QDialog):
 	def closeEvent(self, event):
 		self.timer.stop()
 		super().closeEvent(event)
+
+
+class ExpandableDataWidget(DeallocateExpandedWidgetMixin, ExpandableWidget):
+	def __init__(self, data=None, excluded_columns=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._data_list = None
+		self._excluded_columns = excluded_columns
+		self.update(data=data)
+
+	# TODO: move to ExpandableWidget (or a separate mixin if makes sense)
+	def on_data_widget_resized(self, obj, size):
+		log.debug(utils.method.msg_kw())
+		log.debug(utils.method.msg(f"data geometry: {obj.geometry()}"))
+		log.debug(utils.method.msg(f"current geometry: {self.geometry()}"))
+		geometry = self.geometry()
+		data_widget_geometry = obj.geometry()
+		data_widget_size = data_widget_geometry.size()
+		size_diff = size - data_widget_size
+		final_size = geometry.size() + size_diff
+		geometry.setSize(final_size)
+		# self.adjust_size(geometry)
+		self.adjust_size()
+		obj.adjust_size()
+		log.debug(utils.method.msg(f"new geometry: {self.geometry()}"))
+	
+	def on_data_widget_parent_changed(self, obj):
+		self.adjust_size()
+
+	def expand(self):
+		if not super().expand():
+			return False
+		self.expanded_widget.on_resized.connect(self.on_data_widget_resized)
+		self.expanded_widget.on_parent_changed.connect(self.on_data_widget_parent_changed)
+		# def on_item_widget_resized(obj, size):
+		# 	widget.adjust_size()
+		# item.on_resized.connect(on_item_widget_resized)
+		# self.expanded_widget.show() # TODO: Needed?
+		return True
+
+	def update(self, data=None, *args, **kwargs):
+		if data is not None:
+			self._data_list = data
+		self.collapsed_widget.update(data)
+		if self.expanded_widget is not None:
+			self.expanded_widget.update(data=data)
+		super().update(*args, **kwargs)
+
+	class CollapsedWidget(ValueWidget):
+		def __init__(self, *args, **kwargs):
+			super().__init__(*args, **kwargs)
+		
+		def update(self, data=None, *args, **kwargs):
+			if data is not None:
+				count = len(data)
+				self.set_value(count)
+			super().update(*args, **kwargs)
