@@ -21,17 +21,7 @@ class Serializable:
 
 	def serialize(self, ignore=None, serializer=None, allow_extension=False, **param_overrides):
 		_serializer = serializer or serialize.to_json_struct
-		init_params = utils.serialize.collect_all_params(self.__class__)
-		for param_name in utils.collection.as_set(ignore):
-			init_params.pop(param_name, None)
-		# Process overridings
-		custom_mapping = self._serialize_mapping()
-		attrs = AttributesView(self)
-		utils.collection.fill_dict(init_params, attrs, ignore=custom_mapping)
-		for param_name, attr_name in custom_mapping.items():
-			if param_name in init_params:
-				if attr_name is not None:
-					init_params[param_name] = attrs[attr_name]
+		init_params = self.collect_attributes(ignore=ignore)
 		if "classpath" in init_params:
 			raise Exception(utils.function.msg(f"'classpath' is a reserved name for serialization and cannot be used as a parameter name"))
 		classpath = class_utils.class_path(self.__class__)
@@ -46,6 +36,20 @@ class Serializable:
 		serialized = _serializer(_init_parms, overwrite=False)
 		return serialized
 	
+	def collect_attributes(self, ignore=None):
+		init_params = utils.serialize.collect_all_params(self.__class__)
+		for param_name in utils.collection.as_set(ignore):
+			init_params.pop(param_name, None)
+		# Process overridings
+		custom_mapping = self._serialize_mapping()
+		attrs = AttributesView(self)
+		utils.collection.fill_dict(init_params, attrs, ignore=custom_mapping)
+		for param_name, attr_name in custom_mapping.items():
+			if param_name in init_params:
+				if attr_name is not None:
+					init_params[param_name] = attrs[attr_name]
+		return init_params
+
 	# def collect_init_args(self):
 	# It will take the values from the previous frame automatically, but can be provided with a dictionary of values if is called from another level.
 	def assign_all_attrs(self, values):
@@ -91,6 +95,11 @@ class Serializable:
 	def deserialize_into_self(self, data, deserializer=None, carry_over_additional_kwargs=False, **additional_kwargs):
 		attrs = serialize.attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=False, **additional_kwargs)[0]
 		self.assign_all_attrs(attrs)
+
+	# As a bonus
+	def copy(self):
+		init_params = self.collect_attributes()
+		return self.__class__(**init_params)
 
 class DBSerializable(Serializable):
 	def serialize(self, ignore=None, **kwargs):
