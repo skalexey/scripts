@@ -24,6 +24,9 @@ class Controller:
 			self.timedout = True
 		self.last_time = current_time
 		return not self.timedout
+	
+	def __repr__(self):
+		return f"{self.__class__.__name__}(attempt={self.attempt}, elapsed_time={self.elapsed_time}, timedout={self.timedout})"
 
 def timed_loop(timeout):
 	controller = Controller()
