@@ -36,6 +36,7 @@ import utils.lang
 import utils.method
 import utils.pyside
 from utils.collection.ordered_dict import OrderedDict
+from utils.collection.weak_list import WeakList
 from utils.live import verify
 from utils.log.logger import Logger
 from utils.math.range import Range
@@ -638,9 +639,9 @@ class DataTableMixin(ABCQt):
 			self.columns = utils.collection.exclude(self.column_titles, excluded_columns)
 		self.update(0, data)
 
-	def gen_table_values(self): # From self._data_list
+	def gen_table_values(self, data_list):
 		rows = []
-		for data in self._data_list:
+		for data in data_list:
 			values = []
 			for col in self.columns.keys():
 				value = self.column_value(data, col)
@@ -652,7 +653,7 @@ class DataTableMixin(ABCQt):
 	def column_value(self, data, column):
 		pass
 
-	def _on_data_list_changed(self, previous_data_list):
+	def _on_data_list_changed(self, previous_data_list: WeakList):
 		pass
 
 	def update(self, dt=None, data=None, force=False):
@@ -662,8 +663,9 @@ class DataTableMixin(ABCQt):
 			if self._data_list == data:
 				return
 			else:
-				self._data_list = data.copy()
-				self._on_data_list_changed(data)
+				previous_data_list = self._data_list
+				self._data_list = WeakList(data)
+				self._on_data_list_changed(previous_data_list)
 				# Clear the table
 				self.clear(call_contents_changed=False)
 				# Add columns
@@ -672,7 +674,7 @@ class DataTableMixin(ABCQt):
 		else:
 			self.clear_contents(call_contents_changed=False)
 		# Fill the rows
-		items = self.gen_table_values()
+		items = self.gen_table_values(data or self._data_list)
 		self.add_items(items)
 		super().update(dt)
 
@@ -856,7 +858,8 @@ class ExpandableDataWidget(DeallocateExpandedWidgetMixin, ExpandableWidget):
 
 	def update(self, data=None, *args, **kwargs):
 		if data is not None:
-			self._data_list = data
+			if data != self._data_list:
+				self._data_list = WeakList(data)
 		self.collapsed_widget.update(data)
 		if self.expanded_widget is not None:
 			self.expanded_widget.update(data=data)
