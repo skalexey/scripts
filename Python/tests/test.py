@@ -73,9 +73,9 @@ def timeout(seconds=10):
 
 # Define the test function in your script
 
-class AssertException(Exception):
-	def __init__(self, exception):
-		self.exception = exception
+class AssertException:
+	def __init__(self, exception=None):
+		self.exception = exception or Exception()
 
 	def __enter__(self):
 		return self
@@ -85,6 +85,20 @@ class AssertException(Exception):
 			raise AssertionError(f"Expected exception {self.exception} not raised")
 		if not utils.lang.compare_exceptions(self.exception, exc_val):
 			raise AssertionError(f"Expected '{self.exception!r}', got '{exc_val!r}'")
+		return True
+	
+class AssertExceptionType:
+	def __init__(self, exception_type=None):
+		self.exception_type = exception_type or Exception
+
+	def __enter__(self):
+		return self
+	
+	def __exit__(self, exc_type, exc_val, exc_tb):
+		if exc_type is None:
+			raise AssertionError(f"Expected exception '{self.exception_type.__name__}' not raised")
+		if not issubclass(exc_type, self.exception_type):
+			raise AssertionError(f"Expected '{self.exception_type!r}', got '{exc_type.__name__}'")
 		return True
 
 def run():
