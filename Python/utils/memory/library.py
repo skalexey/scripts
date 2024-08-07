@@ -249,6 +249,9 @@ class WeakProxy:
 
 	def deref(self):
 		return self._ref()
+	
+	def __eq__(self, other):
+		return self.deref() == other
 
 
 def weak_self_method(method):
