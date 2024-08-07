@@ -511,6 +511,7 @@ class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)): # TODO: Inherit fro
 		self.expand_button.clicked.connect(self._on_collapse_click)
 		if self.expanded_widget is not None:
 			self.expanded_widget.show()
+			self._on_contents_changed()
 		self.on_expanded.emit()
 		self.on_state_changed.emit(True)
 		log.debug(utils.method.msg_kw())
@@ -524,6 +525,7 @@ class ExpandableWidget(WidgetBase(AbstractWidget, QWidget)): # TODO: Inherit fro
 		self.expand_button.clicked.connect(self._on_expand_click)
 		if self.expanded_widget is not None:
 			self.expanded_widget.hide()
+			self._on_contents_changed()
 		self.on_collapsed.emit()
 		self.on_state_changed.emit(False)
 		log.debug(utils.method.msg_kw())
@@ -826,24 +828,11 @@ class ExpandableDataWidget(DeallocateExpandedWidgetMixin, ExpandableWidget):
 		self._excluded_columns = excluded_columns
 		self.update(data=data)
 
-	# TODO: move to ExpandableWidget (or a separate mixin if makes sense)
 	def on_data_widget_resized(self, obj, size):
-		log.debug(utils.method.msg_kw())
-		log.debug(utils.method.msg(f"data geometry: {obj.geometry()}"))
-		log.debug(utils.method.msg(f"current geometry: {self.geometry()}"))
-		geometry = self.geometry()
-		data_widget_geometry = obj.geometry()
-		data_widget_size = data_widget_geometry.size()
-		size_diff = size - data_widget_size
-		final_size = geometry.size() + size_diff
-		geometry.setSize(final_size)
-		# self.adjust_size(geometry)
-		self.adjust_size()
-		obj.adjust_size()
-		log.debug(utils.method.msg(f"new geometry: {self.geometry()}"))
+		self._on_contents_changed()
 	
 	def on_data_widget_parent_changed(self, obj):
-		self.adjust_size()
+		self._on_contents_changed()
 
 	def expand(self):
 		if not super().expand():
