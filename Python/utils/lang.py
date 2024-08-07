@@ -79,3 +79,27 @@ def safe_enter(func):
 			self.__exit__(type(e), e, e.__traceback__)
 			raise
 	return wrapper
+
+
+class StaticProperty:
+	def __init__(self, fget=None, fset=None):
+		self.fget = fget
+		self.fset = fset
+
+	def __get__(self, instance, owner):
+		if self.fget is None:
+			raise AttributeError("unreadable attribute")
+		return self.fget(owner)
+
+	def __set__(self, instance, value):
+		if self.fset is None:
+			raise AttributeError("can't set attribute")
+		self.fset(instance.__class__, value)
+
+	def getter(self, fget):
+		self.fget = fget
+		return self
+
+	def setter(self, fset):
+		self.fset = fset
+		return self
