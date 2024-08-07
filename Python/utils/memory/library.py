@@ -270,4 +270,15 @@ def weak_self_class(cls):
 def weak_proxy(obj):
 	return WeakProxy(obj)
 
-	
+def is_weakable(obj):
+	return hasattr(obj, '__weakref__') or isinstance(obj, type) and hasattr(type(obj), '__weakref__')
+
+def wrap_weakable(obj):
+	if is_weakable(obj):
+		return WeakProxy(obj)
+	return obj
+
+def deref_if_weak_proxy(obj):
+	if isinstance(obj, WeakProxy):
+		return obj.deref()
+	return obj
