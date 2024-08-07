@@ -18,7 +18,8 @@ class TrackableResourceInfo:
 	def repr(self):
 		obj = self.ref()
 		if obj is not None:
-			self._repr = f"{obj!r}" # Always store the latest repr
+			address = hex(id(obj))
+			self._repr = f"{obj!r} address={address}" # Always store the latest repr
 		return self._repr
 	
 	@property
@@ -31,9 +32,11 @@ class TrackableResourceInfo:
 	
 	def __repr__(self):
 		return f"{self.__class__.__name__}(id={self.id}, repr={self.repr}, lifetime={self.lifetime})"
-	
+
+
 class TrackableResource:
 	resources = AssociativeList()
+
 	def __repr__(self):
 		super_repr = super().__repr__()
 		_memid = id(self)

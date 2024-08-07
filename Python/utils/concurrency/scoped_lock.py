@@ -1,12 +1,10 @@
 import random
-import threading
 import time
 from typing import Optional
 
-import utils.method
 from utils.lang import safe_enter
 from utils.live import verify
-from utils.log import CombinedAddition, IndentAddition
+from utils.log import IndentAddition
 from utils.log.logger import Logger
 
 log = Logger()

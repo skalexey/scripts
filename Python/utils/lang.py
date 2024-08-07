@@ -14,7 +14,7 @@ def clear_resources(obj):
 		obj.clear()
 	else:
 		for attr in obj.__dict__.copy():
-			log.debug(utils.function.msg_kw(f"Clearing attribute '{attr}'"))
+			log.verbose(utils.function.msg_kw(f"Clearing attribute '{attr}'"))
 			if attr in obj.__dict__: # Any attribute could have been removed from a desctructor of any other one
 				obj.__dict__[attr] = None
 

@@ -275,7 +275,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 
 	# Use this method in a loop if your application doesn't have an event loop running
 	def update(self, dt):
-		log.debug(utils.method.msg_kw())
+		log.loop(utils.method.msg_kw())
 		# Create the loop from the updating thread if it doesn't exist
 		# self.loop
 		# Update the tasks
