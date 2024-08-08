@@ -744,6 +744,7 @@ class TableWidget(WidgetBase(ClampGeometryMixin, FitContentsTableMixin, Copyable
 		self.insertRow(row_position)
 		for column, value in enumerate(column_values):
 			if isinstance(value, QWidget):
+				verify(isinstance(value, AbstractWidget), ValueError("Please use AbstractWidget or its subclasses for the table widget items to be able to subscribe to on_resized signal"))
 				self.setCellWidget(row_position, column, value)
 				# Adapt the row height to the widget height
 				attr_name = f"on_cell_resized_{row_position}_{column}"
