@@ -1,7 +1,7 @@
 from test import *
 
 from utils.concurrency.thread_local_proxy import ThreadLocalProxy
-from utils.memory.weakly_allocated import WeaklyAllocated
+from utils.memory.lazy_allocated import LazyAllocated
 from utils.proxy import Proxy
 
 
@@ -26,10 +26,10 @@ def memory_test():
 		assert a.f_called
 		log(title("End of Proxy Test"))
 
-	def weakly_allocated_test():
-		log(title("WeaklyAllocated Test"))
-		wa = WeaklyAllocated(A, 1, 2)
-		log(utils.method.msg_kw("WeaklyAllocated object created"))
+	def lazy_allocated_test():
+		log(title("LazyAllocated Test"))
+		wa = LazyAllocated(A, 1, 2)
+		log(utils.method.msg_kw("LazyAllocated object created"))
 		wa.f()
 		assert wa._obj.f_called
 		assert wa._obj.a == 1
@@ -38,10 +38,10 @@ def memory_test():
 		assert wa._obj.a == 3
 		assert wa.a == 3
 
-		wa = WeaklyAllocated(A, a=2, b=3)
+		wa = LazyAllocated(A, a=2, b=3)
 		assert wa._obj.a == 2
 		assert wa._obj.b == 3
-		log(title("End of WeaklyAllocated Test"))
+		log(title("End of LazyAllocated Test"))
 
 	def thread_local_proxy_test():
 		log(title("ThreadLocalProxy Test"))
@@ -84,7 +84,7 @@ def memory_test():
 		log(title("End of ThreadLocalProxy Test"))
 
 	# proxy_test()
-	# weakly_allocated_test()
+	# lazy_allocated_test()
 	thread_local_proxy_test()
 
 def test():

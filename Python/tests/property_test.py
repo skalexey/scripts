@@ -89,7 +89,7 @@ def property_test():
 				log(utils.method.msg_kw(f"a={self.a}"))
 				return self.a
 
-		class WeaklyAllocated(Proxy):
+		class LazyAllocated(Proxy):
 			def __init__(self, allocator=None, *args, **kwargs):
 				super().__init__(None) # Triggers _obj.setter through object.__setattr__
 				object.__setattr__(self, "_allocator", allocator)
@@ -117,7 +117,7 @@ def property_test():
 			def _obj(self, value):
 				object.__setattr__(self, "_wobj", value)
 
-		class W(WeaklyAllocated):
+		class W(LazyAllocated):
 			def __init__(self, *args, **kwargs):
 				super().__init__(*args, **kwargs)
 

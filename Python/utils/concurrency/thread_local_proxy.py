@@ -1,9 +1,9 @@
 import threading
 
-from utils.memory.weakly_allocated import WeaklyAllocated
+from utils.memory.lazy_allocated import LazyAllocated
 
 
-class ThreadLocalProxy(WeaklyAllocated):
+class ThreadLocalProxy(LazyAllocated):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
