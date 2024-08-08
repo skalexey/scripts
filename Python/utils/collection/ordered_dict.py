@@ -1,5 +1,6 @@
 import collections
 
+import utils.method
 from utils.collection.ordered_set import OrderedSet
 
 
@@ -71,9 +72,17 @@ class OrderedDict(OrderedSet):
 		new._keys = self._keys.copy()
 		return new
 
-	def sort(self, pred):
+	def sort(self, by='key', reverse=False, key=None):
 		items = list(self.items())
-		items.sort(key=pred)
+		if key is None:
+			if by == 'key':
+				items.sort(key=lambda x: x[0], reverse=reverse)
+			elif by == 'value':
+				items.sort(key=lambda x: x[1], reverse=reverse)
+			else:
+				raise ValueError(utils.method.msg_kw("Invalid 'by' parameter, must be 'key', 'value', or a custom key function must be provided."))
+		else:
+			items.sort(key=key, reverse=reverse)
 		self.clear()
 		for key, value in items:
 			self[key] = value
