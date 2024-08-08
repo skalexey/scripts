@@ -137,7 +137,10 @@ class Subscription:
 		def on_notify(*args, **kwargs):
 			event.set()
 		cb_id = self.subscribe(on_notify)
-		await asyncio.wait_for(event.wait(), timeout)
+		try:
+			await asyncio.wait_for(event.wait(), timeout)
+		except asyncio.TimeoutError:
+			log.warning(utils.method.msg_kw("Timeout occured while waiting for a subscription to notify"))
 		self.unsubscribe(cb_id)
 		return event.is_set()
 
