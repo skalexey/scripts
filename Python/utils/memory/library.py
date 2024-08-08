@@ -22,6 +22,7 @@ class Callable(TrackableResource):
 		self._invalidated = False
 		self._on_invalidated = on_invalidated
 		self._invalidate_lock = wrap_debug_lock(threading.RLock()) # Test it more with Lock with turned off logs in ParameterizedLock and ScopedLock
+		# self._invalidate_lock = threading.RLock()
 		self.max_calls = max_calls
 		self._call_count = 0
 		self.invalidate_on_false = invalidate_on_false or False

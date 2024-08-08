@@ -23,7 +23,8 @@ class Subscription:
 		super().__init__(*args, **kwargs)
 		self._data = OrderedDict()
 		self._priorities = {}
-		self._lock = wrap_debug_lock(threading.RLock(), timeout=0.3)
+		self._lock = wrap_debug_lock(threading.RLock())#, timeout=0.3)
+		# self._lock = threading.RLock()
 
 	class CallableInfo(OwnedCallable):
 		def __init__(self, *args, unsubscribe_on_false=None, priority=None, **kwargs):

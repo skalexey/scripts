@@ -11,6 +11,7 @@ class Connection(ABC):
 		self.address = address
 		self.socket = None
 		self.lock = wrap_debug_lock(threading.RLock())
+		# self.lock = threading.RLock()
 
 	@abstractmethod
 	def connect(self):
