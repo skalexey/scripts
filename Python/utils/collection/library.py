@@ -30,9 +30,29 @@ def fill_dict(target, source, ignore={}):
 			target[key] = source[key]
 
 def update_existing(target, source):
-	for key in target.keys():
-		if key in source:
-			target[key] = source[key]
+	keys_attr = getattr(target, "keys", None)
+	if keys_attr is not None:
+		for key in keys_attr():
+			if key in source:
+				target[key] = source[key]
+	else: # It is considered as a list
+		items_to_update_count = min(len(target), len(source))
+		for index in range(items_to_update_count):
+			target[index] = source[index]
+
+def add_new(target, source):
+	items_attr = getattr(source, "items", None)
+	if items_attr is not None:
+		for key, value in items_attr():
+			if key not in target:
+				target[key] = value
+	else: # It is considered as a list
+		items_to_add_count = max(0, len(source) - len(target))
+		if items_to_add_count > 0:
+			from_index = len(target)
+			for i in range(items_to_add_count):
+				index = from_index + i
+				target.append(source[index])
 
 def add_to_set_field(target, key, value):
 	current = target.get(key, None)
