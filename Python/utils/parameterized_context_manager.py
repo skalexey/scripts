@@ -2,8 +2,7 @@ import threading
 import weakref
 from abc import ABC, abstractmethod
 
-import utils.method
-from utils.collection import merge_list_into
+from utils.collection import add_new
 from utils.lang import NoValue, safe_enter
 from utils.log.logger import Logger
 
@@ -69,21 +68,15 @@ class ParameterizedContextManagerBase(ABC):
 
 	def __call__(self, *args, **kwargs):
 		_args, _kwargs = self._merge_into_constant_args(args, kwargs)
-		blocking = _args[0] if _args else _kwargs.get("blocking", True)
-		timeout = _args[1] if len(_args) > 1 else _kwargs.get("timeout", -1)
 		return self._create_state(*_args, **_kwargs)
 
 	def _merge_into_constant_args(self, args, kwargs):
-		_args = list(self._constant_args) if self._constant_args else []
-		_kwargs = self._constant_kwargs.copy() if self._constant_kwargs else {}
-		merge_list_into(args, _args)
-		_kwargs.update(kwargs)
-		if len(_args) > 0:
-			if "blocking" in _kwargs:
-				del _kwargs["blocking"]
-			if "timeout" in _kwargs:
-				if len(_args) == 2 or _args[0] is False:
-					del _kwargs["timeout"]
+		_args = list(args)
+		_kwargs = kwargs.copy()
+		if self._constant_args:
+			add_new(_args, self._constant_args)
+		if self._constant_kwargs:
+			add_new(_kwargs, self._constant_kwargs)
 		return _args, _kwargs
 
 	def _create_state(self, *args, **kwargs):
