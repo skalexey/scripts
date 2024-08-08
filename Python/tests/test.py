@@ -14,6 +14,7 @@ import utils.log
 import utils.profile.profiler
 import utils.text
 from utils.log.logger import Logger, LogLevel
+from utils.timed_loop import timed_loop
 
 log = Logger()
 # TODO: it makes infinite recursion in Subscription.notify
@@ -42,31 +43,27 @@ def timeout(seconds=10):
 		def wrapper(*args, **kwargs):
 			# This function will run in a separate thread
 			is_running = True
-			start_time = time()
-			elapsed_time = 0
 			def target():
-				nonlocal is_running, start_time, elapsed_time
-				while is_running:
-					dt = time() - start_time
-					debug_timespan = utils.debug.debug_detector.debug_timespan(func)
-					dt -= debug_timespan
-					elapsed_time += dt
-					if elapsed_time >= seconds:
+				nonlocal is_running
+				for state in timed_loop(seconds):
+					if not is_running:
+						break
+					if state.timedout:
 						raise TimeoutException(f"Test timed out after {seconds} seconds")
 					sleep(0.1)
-
-			result = [None, None]
+			result, exception = None, None
 			thread = threading.Thread(target=target, name="TimeoutThread")
 			thread.start()
+			# Catch the exception to re-raise it after stopping the thread and not doing that for the TimeoutException raised by the thread.
 			try:
-				result[0] = func(*args, **kwargs)
+				result = func(*args, **kwargs)
 			except Exception as e:
-				result[1] = e
+				exception = e
 			is_running = False
 			thread.join()
-			if result[1]:
-				raise result[1]
-			return result[0]
+			if exception:
+				raise exception
+			return result
 		return wrapper
 	return decorator
 

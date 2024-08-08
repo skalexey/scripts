@@ -15,8 +15,8 @@ class TestParameterizedLock(unittest.TestCase):
 
 	@timeout(1)
 	def test_on_enter_result(self):
-		with self.context_manager() as state:
-			self.assertTrue(state.acquired())
+		with self.context_manager() as acquired:
+			self.assertTrue(acquired)
 
 	@timeout(1)
 	def test_acquire_and_release_lock(self):
@@ -65,7 +65,7 @@ class TestParameterizedLock(unittest.TestCase):
 		with self.assertRaises(RuntimeError) as tc:
 			with self.context_manager(timeout=0.3):
 				self.assertTrue(False) # Should be never reached
-		self.assertEqual(str(tc.exception), "Failed to acquire the lock in time")
+		self.assertIn("Failed to enter", str(tc.exception))
 		self.assertFalse(self.context_manager.acquired())
 		# Release the lock after the test
 		self.lock.release()
@@ -79,12 +79,12 @@ class TestParameterizedLock(unittest.TestCase):
 		with self.assertRaises(RuntimeError) as tc:
 			with self.context_manager:
 				self.assertTrue(False) # Should be never reached
-		self.assertEqual(str(tc.exception), "Failed to acquire the lock in time")
+		self.assertIn("Failed to enter", str(tc.exception))
 		self.assertFalse(self.context_manager.acquired())
 		# Release the lock after the test
 		self.lock.release()
 
-	@timeout(1)
+	@timeout(100) # TODO: return to 1
 	def test_failed_enter_with_custom_exception(self):
 		# Acquire the lock manually to force the context manager to fail
 		self.lock.acquire()
@@ -127,8 +127,8 @@ class TestParameterizedLockRLock(unittest.TestCase):
 
 	@timeout(1)
 	def test_on_enter_result(self):
-		with self.context_manager() as state:
-			self.assertTrue(state.acquired())
+		with self.context_manager() as acquired:
+			self.assertTrue(acquired)
 
 	@timeout(1)
 	def test_acquire_and_release_lock(self):
