@@ -11,8 +11,13 @@ def is_debug():
 
 def wrap_debug_lock(lock, blocking=True, timeout=None, *args, **kwargs):
 	if is_debug():
-		_lock = ParameterizedLock(lock, except_on_timeout=True)
-		_timeout = timeout if timeout is not None else 30
+		if isinstance(lock, ParameterizedLock):
+			_lock = lock
+			if _lock._except_on_timeout is None:
+				_lock._except_on_timeout = True
+		else:
+			_lock = ParameterizedLock(lock, except_on_timeout=True)
+		_timeout = timeout if timeout is not None else 3
 		_lock.set_constant_args(blocking, _timeout, *args, **kwargs)
 	else:
 		_lock = lock
