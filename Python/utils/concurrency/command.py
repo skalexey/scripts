@@ -48,3 +48,5 @@ class CommandQueue:
 					command = self._queue.popleft()
 				log.debug(utils.method.msg_kw(f"Processing command: {command}"))
 				command()
+			return True
+		return False
