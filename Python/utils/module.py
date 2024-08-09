@@ -5,7 +5,6 @@ import utils.inspect_utils as inspect_utils
 import utils.lang
 import utils.serialize
 import utils.string
-from utils.decorators import no_return
 from utils.log.logger import Logger
 from utils.profile.trackable_resource import TrackableResource
 
