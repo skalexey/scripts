@@ -50,7 +50,7 @@ def module_cache():
 								# log.debug(f"Found module: {module_path} in dir_path: '{dir_path}', root: '{root}', file: '{file}'")
 								assert module_path not in cache
 								cache[module_path] = full_fpath
-				log.debug(f"module_cache(): Found {len(cache)} modules in {profiler.measure()} seconds")
+				log.debug(f"module_cache(): Found {len(cache)} modules in {profiler.measure().timespan} seconds")
 				_module_cache = cache
 			# Run task in parallel
 			_cache_is_loading = True

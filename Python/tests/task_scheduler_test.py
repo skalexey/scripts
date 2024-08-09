@@ -171,7 +171,7 @@ def tasks_test():
 			local_profiler = utils.profile.profiler.TimeProfiler()
 			local_profiler.start()
 			result = a.scheduler.wait_all_tasks(timeout) # Wait for the tasks to complete from another thread: Ok
-			measured_time = local_profiler.measure()
+			measured_time = local_profiler.measure().timespan
 			log(f"Wait completed after {measured_time} seconds")
 			expected_wait_time = timeout if timeout else (_sleep_time - slept_time)
 			assert measured_time < expected_wait_time + 0.1
@@ -286,7 +286,7 @@ def tasks_test():
 			result = a.scheduler.wait_for(f, time_to_wait)
 			assert result.result == (None if time_to_wait < time_to_sleep else "Woke Up")
 			assert result.timedout == (True if time_to_wait < time_to_sleep else False)
-			measured_time = profiler.measure()
+			measured_time = profiler.measure().timespan
 			log(f"Wait completed after {measured_time} seconds")
 			assert measured_time < time_to_wait + 0.05
 			assert a.scheduler.registered_task_count() == (1 if time_to_wait < time_to_sleep else 0)
