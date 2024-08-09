@@ -1,4 +1,5 @@
 import os
+from abc import ABC
 
 from PySide6.QtCore import QObject, QPoint, QRect
 from PySide6.QtGui import QColor
@@ -12,13 +13,22 @@ from PySide6.QtWidgets import (
 )
 
 import utils  # Lazy import for less important modules
+import utils.class_utils as class_utils
 import utils.function
 import utils.method
 from utils.context import GlobalContext
-from utils.lang import NoValue
 from utils.log.logger import Logger
 
 log = Logger()
+
+# Use EnforcedABCMeta instead of ABCMeta since QtWidget metaclass suppresses the abstractmethod checking behavior
+class CombinedMetaQtABC(class_utils.EnforcedABCMeta, type(QWidget)):
+	pass
+
+
+class ABCQt(ABC, metaclass=CombinedMetaQtABC):
+	pass
+
 
 def select_data_file(dir=None):
 	file_dialog = QFileDialog()

@@ -1,5 +1,5 @@
 import types
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 
 from PySide6.QtCore import (
     QChildEvent,
@@ -31,7 +31,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-import utils.class_utils as class_utils
 import utils.lang
 import utils.method
 import utils.pyside
@@ -41,20 +40,14 @@ from utils.live import verify
 from utils.log.logger import Logger
 from utils.math.range import Range
 from utils.memory import SmartCallable
-from utils.pyside import WidgetBase
-from utils.pyside.auto_layout import AutoLayout
+from utils.pyside import ABCQt, CombinedMetaQtABC, WidgetBase
+from utils.pyside.auto_layout import (
+    AutoLayout,  # For importing it from utils.pyside.widgets
+)
 from utils.subscription import Subscription
 from utils.text import AbstractTextSpinner
 
 log = Logger()
-
-# Use EnforcedABCMeta instead of ABCMeta since QtWidget metaclass suppresses the abstractmethod checking behavior
-class CombinedMetaQtABC(class_utils.EnforcedABCMeta, type(QWidget)):
-	pass
-
-
-class ABCQt(ABC, metaclass=CombinedMetaQtABC):
-	pass
 
 
 class AbstractWidget(ABCQt):
