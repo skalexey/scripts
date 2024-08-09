@@ -59,8 +59,8 @@ class OrderedSet(Serializable):
 		new._keys = self._keys.copy()
 		return new
 
-	def sort(self, pred):
-		self._keys.sort(key=pred)
+	def sort(self, pred=None, reverse=False):
+		self._keys.sort(key=pred, reverse=reverse)
 		for index, key in enumerate(self._keys):
 			self._dict[key] = index
 
