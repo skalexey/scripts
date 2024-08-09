@@ -6,8 +6,12 @@ class AssociativeList():
 		self._data = OrderedDict()
 		self._id = 0
 
-	def __getitem__(self, index):
-		return self._data.at(index)
+	# Redirect all same interface calls to the underlying data object
+	def __getattr__(self, name):
+		return getattr(self._data, name)
+
+	def __getitem__(self, kay):
+		return self._data.at(key)
 	
 	def __setitem__(self, index, value):
 		key = self._data.key_at(index)
@@ -31,44 +35,11 @@ class AssociativeList():
 		new._id = self._id
 		return new
 
-	def clear(self):
-		self._data.clear()
-
-	def keys(self):
-		return self._data.keys()
-
-	def values(self):
-		return self._data.values()
-
-	def items(self):
-		return self._data.items()
-
-	def index(self, key):
-		return self._data.index(key)
-
-	def at(self, index):
-		return self._data.at(index)
-	
-	def key_at(self, index):
-		return self._data.key_at(index)
-
-	def value_at(self, index):
-		return self._data.value_at(index)
-	
-	def remove(self, key):
-		self._data.remove(key)
-
-	def remove_at(self, index):
-		self._data.remove_at(index)
-
 	def add(self, value):
 		key = self._id
 		self._data[key] = value
 		self._id += 1
 		return key
-	
-	def pop(self, *args, **kwargs):
-		return self._data.pop(*args, **kwargs)
 
 	def __bool__(self):
 		return bool(self._data)
