@@ -34,6 +34,9 @@ class Atomic:
 
 	def __getitem__(self, key):
 		return self.obj[key]
+	
+	def __bool__(self):
+		return bool(self.obj)
 
 	# Additional interface
 	def update(self, new_obj):
