@@ -11,8 +11,15 @@ from time import time
 # All utils imports in logger must be lazy to avoid circular imports since logger is imported in many modules
 import utils  # Lazy import for less important modules
 
-log_lock = threading.Lock()
+print_lock = threading.Lock()
 g_addition = None
+print_log_level = 0
+
+
+def set_print_log_level(level):
+	global print_log_level
+	print_log_level = level
+
 
 class LogLevel(IntEnum):
 	VERBOSE = 0
@@ -112,9 +119,12 @@ def compose_log_message(message, level=LogLevel.PRINT, log_title=None, log_addit
 
 # Variadic arguments
 def print_log(message, level=LogLevel.PRINT, log_title=None, log_addition=None, timestamp=None):
+	global print_log_level
+	if level < print_log_level:
+		return None
 	# Print the log level,time (hour, minute, second, and microsecond), and the message
 	log = Log(message, level, log_title, log_addition, timestamp)
-	with log_lock:
+	with print_lock:
 		print(log.full_message)
 	return log
 
@@ -153,8 +163,7 @@ def log_to_server(connection, message, level=LogLevel.PRINT, log_title=None, log
 	if connection:
 		# Pack all the data into a packet <packet size:4bytes><packet data>
 		timestamp = time()
-		log = Log(message, level, log_title, log_addition, timestamp)
-		print(log.full_message)
+		log = print_log(message, level, log_title, log_addition, timestamp) or Log(message, level, log_title, log_addition, timestamp)
 		try:
 			packet_data = pickle.dumps(log.packet)
 			data = struct.pack('>I', len(packet_data)) + packet_data
