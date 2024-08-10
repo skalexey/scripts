@@ -4,6 +4,7 @@ import struct
 import threading
 import weakref
 from abc import ABC, abstractmethod
+from contextlib import nullcontext
 from datetime import datetime
 from enum import IntEnum
 from time import time
@@ -11,10 +12,14 @@ from time import time
 # All utils imports in logger must be lazy to avoid circular imports since logger is imported in many modules
 import utils  # Lazy import for less important modules
 
+print_strict_order = True # If True, the print function will use print_lock to ensure that the logs are printed in the order they were submitted
 print_lock = threading.Lock()
 g_addition = None
 print_log_level = 0
 
+def set_print_strict_order(value):
+	global print_strict_order
+	print_strict_order = value
 
 def set_print_log_level(level):
 	global print_log_level
@@ -119,12 +124,12 @@ def compose_log_message(message, level=LogLevel.PRINT, log_title=None, log_addit
 
 # Variadic arguments
 def print_log(message, level=LogLevel.PRINT, log_title=None, log_addition=None, timestamp=None):
-	global print_log_level
+	global print_log_level, print_strict_order
 	if level < print_log_level:
 		return None
 	# Print the log level,time (hour, minute, second, and microsecond), and the message
 	log = Log(message, level, log_title, log_addition, timestamp)
-	with print_lock:
+	with print_lock if print_strict_order else nullcontext():
 		print(log.full_message)
 	return log
 
