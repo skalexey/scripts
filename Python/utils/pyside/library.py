@@ -1,10 +1,18 @@
+import math
 import os
 from abc import ABC
 
-from PySide6.QtCore import QObject, QPoint, QRect
+from PySide6.QtCore import QObject, QPoint, QPointF, QRect, QRectF, QSize, QSizeF
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFileDialog,
+    QGraphicsEllipseItem,
+    QGraphicsItem,
+    QGraphicsLineItem,
+    QGraphicsPolygonItem,
+    QGraphicsRectItem,
+    QGraphicsSimpleTextItem,
+    QGraphicsWidget,
     QInputDialog,
     QLayout,
     QLayoutItem,
@@ -272,16 +280,33 @@ def restack_widget(widget, index):
 			children.insert(index, widget)
 
 def QSize_gt(size1, size2):
-	return size1.width() > size2.width() and size1.height() > size2.height()
+	return size1.width() * size1.height() > size2.width() * size2.height()
 
 def QSize_ge(size1, size2):
-	return size1.width() >= size2.width() and size1.height() >= size2.height()
+	return size1.width() * size1.height() >= size2.width() * size2.height()
 
 def QSize_lt(size1, size2):
-	return size1.width() < size2.width() and size1.height() < size2.height()
+	return size1.width() * size1.height() < size2.width() * size2.height()
 
 def QSize_le(size1, size2):
-	return size1.width() <= size2.width() and size1.height() <= size2.height()
+	return size1.width() * size1.height() <= size2.width() * size2.height()
+
+def QSizeF_eq(size1, size2):
+	return math.isclose(size1.width(), size2.width()) and math.isclose(size1.height(), size2.height())
+
+def QSizeF_div(size1, size2):
+	return QSizeF(size1.width() / size2.width(), size1.height() / size2.height())
+
+def QSizeF_mul(size1, size2):
+	return QSizeF(size1.width() * size2.width(), size1.height() * size2.height())
+
+def QPointF_mul_size(point, size):
+	return QPointF(point.x() * size.width(), point.y() * size.height())
+
+def QRectF_mul_size(rect, size):
+	top_left = QPointF_mul_size(rect.topLeft(), size)
+	size = QSizeF_mul(rect.size(), size)
+	return QRectF(top_left, size)
 
 def foreach_internals(widget, func, depth=0, max_depth=None):
 	if max_depth is not None and depth >= max_depth:
