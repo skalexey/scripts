@@ -348,14 +348,23 @@ def foreach_not_hidden_child(widget, func, *args, **kwargs):
 		if isinstance(child, QLayout):
 			foreach_internals(child, job, max_depth=1)
 			return
-		if not hasattr(child, "geometry"):
-			return
-		if hasattr(child, "isHidden"):
-			if child.isHidden():
-				# log.debug(f"Child {child} is hidden. Its geometry will be ignored, but here it is: {child.geometry()}.")
+		is_hidden_attr = getattr(child, "isHidden", None)
+		if is_hidden_attr is not None:
+			if is_hidden_attr():
 				return
+		else:
+			is_visible_attr = getattr(child, "isVisible", None)
+			if is_visible_attr is not None:
+				if not is_visible_attr():
+					return
 		func(child)
 	foreach_internals(widget, job, *args, **kwargs)
+
+def geometry(widget):
+	if isinstance(widget, QGraphicsItem):
+		return QRectF(widget.pos(), widget.boundingRect().size())
+	else:
+		return widget.geometry()
 
 def children_geometry(widget):
 	if isinstance(widget, QWidget):
@@ -363,7 +372,7 @@ def children_geometry(widget):
 	result = None
 	def job(child):
 		nonlocal result
-		child_geometry = child.geometry()
+		child_geometry = geometry(child)
 		result = result.united(child_geometry) if result is not None else child_geometry
 	foreach_not_hidden_child(widget, job, max_depth=1)
 	return result or QRect()
