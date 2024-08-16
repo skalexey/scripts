@@ -321,10 +321,14 @@ def foreach_internals(widget, func, depth=0, max_depth=None):
 			func(child)
 			go_deeper(child)
 	elif isinstance(widget, QLayoutItem):
-		child = widget_internals(widget)
+		child = layout_item_internals(widget)
 		func(child)
 		go_deeper(child)
-		return
+	elif isinstance(widget, QGraphicsWidget):
+		children = widget.childItems()
+		for child in children:
+			func(child)
+			go_deeper(child)
 	else:
 		children_attr = getattr(widget, "children", None)
 		if children_attr is not None:
