@@ -407,3 +407,138 @@ def qcolor(color):
 	elif isinstance(color, QColor):
 		return color
 	return None
+
+def scale_scene_item_size(item, scale_factor: QSizeF):
+	if isinstance(item, QGraphicsItem):
+		if isinstance(item, QGraphicsLineItem):
+			p1 = QPointF_mul_size(item.line().p1(), scale_factor)
+			p2 = QPointF_mul_size(item.line().p2(), scale_factor)
+			item.setLine(p1.x(), p1.y(), p2.x(), p2.y())
+		elif isinstance(item, QGraphicsRectItem):
+			rect = item.rect()
+			new_rect = QRectF_mul_size(rect, scale_factor)
+			log.debug(f"  Transformed rect: {rect} -> {new_rect}")
+			item.setRect(new_rect)
+		elif isinstance(item, QGraphicsEllipseItem):
+			new_rect = QRectF_mul_size(item.rect(), scale_factor)
+			item.setRect(new_rect)
+		elif isinstance(item, QGraphicsPolygonItem):
+			item.setPolygon(item.polygon() * scale_factor)
+		elif isinstance(item, QGraphicsSimpleTextItem):
+			pass # Keep it here for not triggering NotImplementedError
+		elif isinstance(item, QGraphicsWidget):
+			size = item.size()
+			new_size = QSizeF_mul(size, scale_factor)
+			item.resize(new_size)
+			# Position is changed below
+			# _geometry = item.geometry()
+			# new_geometry = QRectF_mul_size(_geometry, scale_factor)
+			# item.setGeometry(new_geometry)
+			# Don't go deeper since all the children are present in the scene items list as well
+		else:
+			raise NotImplementedError(utils.function.msg(f"Adjusting scene item of type {type(item)} is not implemented"))
+		pos = item.pos()
+		new_pos = QPointF_mul_size(pos, scale_factor)
+		item.setPos(new_pos)
+	else:
+		raise NotImplementedError(utils.function.msg(f"Adjusting object of type {type(item)} is not implemented or not supported"))
+
+def adjust_scene_items_on_resize(scene, scale_factor: QSizeF):
+	# Adjust scene items on resize
+	log.debug(utils.function.msg(f"scale_factor={scale_factor}"))
+	for item in scene.items():
+		scale_scene_item_size(item, scale_factor)
+
+def subtract_rects(rect1, rect2):
+	resulting_rects = []
+	
+	if not rect1.intersects(rect2):
+		# No intersection, return the original rectangle
+		return [rect1]
+
+	intersection = rect1.intersected(rect2)
+
+	# Create rectangles around the intersection
+	if intersection.top() > rect1.top():
+		resulting_rects.append(QRectF(rect1.left(), rect1.top(), rect1.width(), intersection.top() - rect1.top()))
+
+	if intersection.left() > rect1.left():
+		resulting_rects.append(QRectF(rect1.left(), intersection.top(), intersection.left() - rect1.left(), intersection.height()))
+
+	if intersection.right() < rect1.right():
+		resulting_rects.append(QRectF(intersection.right() + 1, intersection.top(), rect1.right() - intersection.right(), intersection.height()))
+
+	if intersection.bottom() < rect1.bottom():
+		resulting_rects.append(QRectF(rect1.left(), intersection.bottom() + 1, rect1.width(), rect1.bottom() - intersection.bottom()))
+
+	return resulting_rects
+
+# This version includes the maximum possible rect in the subtraction result, but the resulting rects have intersections with each other.
+def subtract_rects_max(rect1, rect2):
+	resulting_rects = []
+	
+	if not rect1.intersects(rect2):
+		return [rect1]
+
+	intersection = rect1.intersected(rect2)
+
+	# Top rectangle
+	if intersection.top() > rect1.top():
+		resulting_rects.append(QRectF(rect1.left(), rect1.top(), rect1.width(), intersection.top() - rect1.top()))
+
+	# Bottom rectangle
+	if intersection.bottom() < rect1.bottom():
+		resulting_rects.append(QRectF(rect1.left(), intersection.bottom() + 1, rect1.width(), rect1.bottom() - intersection.bottom()))
+
+	# Left rectangle
+	if intersection.left() > rect1.left():
+		resulting_rects.append(QRectF(rect1.left(), rect1.top(), intersection.left() - rect1.left(), rect1.height()))
+
+	# Right rectangle
+	if intersection.right() < rect1.right():
+		resulting_rects.append(QRectF(intersection.right() + 1, rect1.top(), rect1.right() - intersection.right(), rect1.height()))
+
+	# Uncomment if encounter zero rects, that should not happen after the checks above.
+	# resulting_rects = [r for r in resulting_rects if r.width() > 0 and r.height() > 0]
+
+	return resulting_rects
+
+def reduce_rect(rect, reducer_rect):
+    if not rect.intersects(reducer_rect):
+        return rect
+
+    intersection = rect.intersected(reducer_rect)
+
+    # Calculate the areas of potential resulting rectangles
+    top_area = (rect.width() * (intersection.top() - rect.top())) if intersection.top() > rect.top() else 0
+    bottom_area = (rect.width() * (rect.bottom() - intersection.bottom())) if intersection.bottom() < rect.bottom() else 0
+    left_area = (rect.height() * (intersection.left() - rect.left())) if intersection.left() > rect.left() else 0
+    right_area = (rect.height() * (rect.right() - intersection.right())) if intersection.right() < rect.right() else 0
+
+    # Determine which resulting rectangle has the maximum area
+    max_area = max(top_area, bottom_area, left_area, right_area)
+
+    if max_area == top_area:
+        rect.setBottom(intersection.top() - 1)
+    elif max_area == bottom_area:
+        rect.setTop(intersection.bottom() + 1)
+    elif max_area == left_area:
+        rect.setRight(intersection.left() - 1)
+    else:
+        rect.setLeft(intersection.right() + 1)
+
+    return rect
+
+# Using subtract_rects_max alrorithm
+def reduce_rect_max(rect, reducer_rect):
+	subtraction_result = subtract_rects_max(rect, reducer_rect)
+	# Find the largest rect in the subtraction result
+	max_area = 0
+	max_rect = None
+	for r in subtraction_result:
+		area = r.width() * r.height()
+		if area > max_area:
+			max_area = area
+			max_rect = r
+	return max_rect
+
