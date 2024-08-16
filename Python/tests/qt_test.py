@@ -21,7 +21,7 @@ app_context = ApplicationContext()
 app = TestApplication(app_context, [])
 app_context.app = app
 window = QMainWindow()
-window.setWindowTitle("Circular Reference Test")
+window.setWindowTitle("Qt Test")
 layout = QVBoxLayout()
 central_widget = QWidget()
 central_widget.setLayout(layout)
@@ -30,7 +30,9 @@ window.setCentralWidget(central_widget)
 def qt_test():
 	# multiple_values_test()
 	# circular_ref_test()
-	geometry_test()
+	# geometry_test()
+	zero_qrectf_test()
+	# scene_widget_test()
 	window.show()
 	log("app.exec()")
 	app.exec()
@@ -266,6 +268,51 @@ def circular_ref_test():
 	assert man.dynamic_method is None, "DynamicMethod should have been collected since it has no reference to itself"
 	assert man.smart_callable is None, "SmartCallable should have been collected since it has no reference to itself"
 	log(title("End of Circular Reference Test"))
+
+def scene_widget_test():
+	from PySide6.QtWidgets import (
+	    QApplication,
+	    QGraphicsLineItem,
+	    QGraphicsRectItem,
+	    QGraphicsScene,
+	    QGraphicsView,
+	    QGraphicsWidget,
+	)
+
+	class MyGraphicsWidget(QGraphicsWidget):
+		def __init__(self):
+			super().__init__()
+			rect_item = QGraphicsRectItem(parent=self)
+			rect_item.setRect(0, 0, 100, 100)
+			rect_item.setPos(1, 2)
+			self.rect_item = rect_item
+			line_item = QGraphicsLineItem(parent=self)
+			line_item.setLine(0, 0, 100, 100)
+			line_item.setPos(10, 20)
+			self.line_item = line_item
+
+	scene = QGraphicsScene()
+	view = QGraphicsView(scene)
+	view.setGeometry(100, 100, 800, 600)
+	assert scene.items() == [], "scene.items() should be empty"
+	widget = MyGraphicsWidget()
+	scene.addItem(widget)
+	items = scene.items()
+	for item in items:
+		log(f"item: {item}")
+	assert items == [widget.line_item, widget.rect_item, widget], "scene.items() should contain widget and the rect_item as well"
+	widget_child_items = widget.childItems()
+	assert widget_child_items == [widget.rect_item, widget.line_item], "widget.childItems() should contain the line_item and rect_item"
+
+def zero_qrectf_test():
+	log(title("Zero QRectF Test"))
+	from PySide6.QtCore import QRectF
+	zero_rect = QRectF(0, 0, 0, 0)
+	assert zero_rect.isEmpty(), "zero_rect should be empty"
+	assert zero_rect.isNull(), "zero_rect should be null"
+	assert not zero_rect, "zero_rect should be falsy"
+	assert not bool(zero_rect), "zero_rect should be falsy"
+	log(title("End of Zero QRectF Test"))
 
 def test():
 	log(title("Qt Test"))

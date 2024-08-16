@@ -101,11 +101,24 @@ def lock_with_test():
 	with rlock as acquired:
 		print("RLock acquired:", acquired)  # Output: RLock acquired: True
 
+def for_range_test_2():
+	log("Looping through the range from 3 to 1")
+	for i in range(3, 1):
+		log("Should not enter the loop")
+
+def for_range_test_3():
+	log("Looping through the range from 2 to 4")
+	for i in range(2, 4):
+		log(f"i: {i}")
+
+def min_test():
+	log.expr("a = min(1, 2, 3, -2, 0)")
+	log.expr_and_val("a")
 
 def test():
 	log(title("Quick Test"))
 
-	lock_with_test()
+	for_range_test_3()
 	
 	log(title("End of Quick Test"))
 
