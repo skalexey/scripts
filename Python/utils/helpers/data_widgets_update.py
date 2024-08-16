@@ -1,3 +1,4 @@
+import weakref
 from abc import ABC, abstractmethod
 
 from utils.collection.ordered_dict import OrderedDict
