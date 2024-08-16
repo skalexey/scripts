@@ -46,11 +46,11 @@ class TrackableResource:
 		super().__init__(*args, **kwargs)
 		info = TrackableResourceInfo()
 		info.on_destroyed = on_destroyed
-		def on_destroyed(ref):
-			log.verbose(f"TrackableResource destroyed: {info.repr}")
+		def _on_destroyed(ref):
+			log.verbose(f"TrackableResource destroyed: '{info.repr}'")
 			if info.on_destroyed is not None:
 				info.on_destroyed(info)
 			TrackableResource.resources.remove(info.id)
-		info.ref = weakref.ref(self, on_destroyed)
+		info.ref = weakref.ref(self, _on_destroyed)
 		info.id = self.resources.add(info)
-		log.verbose(f"TrackableResource created: {info.repr}")
+		log.verbose(f"TrackableResource created: '{info.repr}'")
