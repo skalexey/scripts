@@ -3,7 +3,7 @@ import os
 from abc import ABC
 
 from PySide6.QtCore import QObject, QPoint, QPointF, QRect, QRectF, QSize, QSizeF
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QPolygonF
 from PySide6.QtWidgets import (
     QFileDialog,
     QGraphicsEllipseItem,
@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QGraphicsLineItem,
     QGraphicsPolygonItem,
     QGraphicsRectItem,
-    QGraphicsSimpleTextItem,
+    QGraphicsTextItem,
     QGraphicsWidget,
     QInputDialog,
     QLayout,
@@ -308,6 +308,9 @@ def QRectF_mul_size(rect, size):
 	size = QSizeF_mul(rect.size(), size)
 	return QRectF(top_left, size)
 
+def QPolygonF_mul_size(polygon, size):
+	return QPolygonF([QPointF_mul_size(point, size) for point in polygon])
+
 def foreach_internals(widget, func, depth=0, max_depth=None):
 	if max_depth is not None and depth >= max_depth:
 		return
@@ -417,14 +420,16 @@ def scale_scene_item_size(item, scale_factor: QSizeF):
 		elif isinstance(item, QGraphicsRectItem):
 			rect = item.rect()
 			new_rect = QRectF_mul_size(rect, scale_factor)
-			log.debug(f"  Transformed rect: {rect} -> {new_rect}")
+			# log.debug(f"  Transformed rect: {rect} -> {new_rect}")
 			item.setRect(new_rect)
 		elif isinstance(item, QGraphicsEllipseItem):
 			new_rect = QRectF_mul_size(item.rect(), scale_factor)
 			item.setRect(new_rect)
 		elif isinstance(item, QGraphicsPolygonItem):
-			item.setPolygon(item.polygon() * scale_factor)
-		elif isinstance(item, QGraphicsSimpleTextItem):
+			polygon = item.polygon()
+			new_polygon = QPolygonF_mul_size(polygon, scale_factor)
+			item.setPolygon(new_polygon)
+		elif isinstance(item, QGraphicsTextItem):
 			pass # Keep it here for not triggering NotImplementedError
 		elif isinstance(item, QGraphicsWidget):
 			size = item.size()
