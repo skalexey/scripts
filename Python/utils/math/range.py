@@ -7,6 +7,8 @@ class Range:
 		super().__init__()
 	
 	def size(self):
+		if self.data[0] is None or self.data[1] is None:
+			return 0
 		return abs(self.data[1] - self.data[0])
 
 	def expand(self, _min_, _max_=None):
