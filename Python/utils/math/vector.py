@@ -51,6 +51,9 @@ class Vector():
 	
 	def dot(self, vec):
 		return sum(a * b for a, b in iterate_components(self, vec))
+	
+	def cross(self, vec):
+		return self.data[0] * vec.data[1] - self.data[1] * vec.data[0]
 		
 	def normalize(self):
 		magnitude = self.magnitude()
