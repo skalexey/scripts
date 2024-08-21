@@ -223,8 +223,9 @@ class SmartCallable(OwnedCallable):
 # Reminders:
 # It doesn't work with super() calls since they assume self is of a type of the class where the method is defined.
 class WeakProxy:
-	def __init__(self, obj):
-		self._ref = weakref.ref(obj)
+	def __init__(self, obj, on_destroyed=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._ref = weakref.ref(obj, on_destroyed)
 
 	def __getattr__(self, name):
 		obj = self._ref()
@@ -274,9 +275,9 @@ def weak_proxy(obj):
 def is_weakable(obj):
 	return hasattr(obj, '__weakref__') or isinstance(obj, type) and hasattr(type(obj), '__weakref__')
 
-def wrap_weakable(obj):
+def wrap_weakable(obj, *args, **kwargs):
 	if is_weakable(obj):
-		return WeakProxy(obj)
+		return WeakProxy(obj, *args, **kwargs)
 	return obj
 
 def deref_if_weak_proxy(obj):
