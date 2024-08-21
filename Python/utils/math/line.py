@@ -9,11 +9,23 @@ class Line():
 		super().__init__()
 
 	def __repr__(self):
-		return f"Line({self.points})"
+		return f"{self.__class__.__name__}({self.points})"
 	
 	def __eq__(self, value: object) -> bool:
+		if not isinstance(value, Line):
+			return False
 		# Check if the vectors formed by the lines are equal
-		return (self.points[0] - self.points[1]).dot(value.points[0] - value.points[1]) == 0
+		vec1 = self.vec()
+		vec2 = value.vec()
+		cross_product = vec1.cross(vec2)
+		if cross_product != 0:
+			return False
+		# Check if the lines share at least one point
+		vec3 = value.points[0] - self.points[0]
+		cross_product_2 = vec1.cross(vec3)
+		if cross_product_2 != 0:
+			return False
+		return True
 	
 	def sqdistance(self, point):
 		# https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
