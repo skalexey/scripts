@@ -4,6 +4,7 @@ from abc import abstractmethod
 from PySide6.QtCore import (
     QChildEvent,
     QEvent,
+    QLineF,
     QObject,
     QRect,
     QSize,
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QDialog,
+    QGraphicsLineItem,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -36,6 +38,7 @@ import utils.method
 import utils.pyside
 from utils.collection.ordered_dict import OrderedDict
 from utils.collection.weak_list import WeakList
+from utils.lang import NoValue
 from utils.live import verify
 from utils.log.logger import Logger
 from utils.math.range import Range
@@ -857,3 +860,75 @@ class ExpandableDataWidget(DeallocateExpandedWidgetMixin, ExpandableWidget):
 				count = len(data)
 				self.set_value(count)
 			super().update(*args, **kwargs)
+
+
+class DataWidgetMixin:
+	def __init__(self, *args, **kwargs): # Carries-over all the arguments to update() method
+		update_args, other_args, other_kwargs = self._update_signature_args(*args, **kwargs)
+		super().__init__(*other_args, **other_kwargs)
+		self.update(*args, **kwargs)
+
+	# NoValue is used for required parameters, but allows to other classes update method to be called
+	def _update_signature_args(self, data=None, *args, **kwargs):
+		return (data), args, kwargs
+
+	def update(self, *args, **kwargs):
+		update_args, other_args, other_kwargs = self._update_signature_args(*args, **kwargs)
+		data = update_args
+		if data is NoValue: # Allow other classes update methods to be called, but parameterized only with kwargs
+			return super().update(*args, **kwargs)
+
+
+class SceneItemsMixin:
+	def update_line_item(self, scene, name, line: QLineF, pen=None):
+		item = self.item(scene, name, QGraphicsLineItem)
+		item.setLine(line)
+		if pen is not None:
+			item.setPen(pen)
+		return item
+	
+	def item(self, name, cls, *args, scene=None, **kwargs):
+		item = getattr(self, name, None)
+		if item is None:
+			item = cls(*args, **kwargs)
+			if scene is not None:
+				scene.addItem(item)
+			else:
+				item.setParentItem(self)
+			setattr(self, name, item)
+		return item
+
+	def remove_item(self, name):
+		item = getattr(self, name, None)
+		if item is not None:
+			scene = item.scene()
+			if scene is not None:
+				scene.removeItem(item)
+			item.setParentItem(None)
+			setattr(self, name, None)
+			return True
+		return False
+
+	def item_in_list(self, scene, list_name, index, cls, *args, **kwargs):
+		lst = getattr(self, list_name, None)
+		if lst is None:
+			lst = []
+			item = cls(*args, **kwargs)
+			scene.addItem(item)
+		item = lst[index] if index < len(lst) else None
+		if item is None:
+			item = cls(*args, **kwargs)
+			scene.addItem(item)
+			lst.append(item)
+		return item, index
+
+	def remove_items_in_list(self, list_name):
+		lst = getattr(self, list_name, None)
+		if lst is not None:
+			for item in lst:
+				scene = item.scene()
+				scene.removeItem(item)
+				item.setParentItem(None)
+			setattr(self, list_name, None)
+			return True
+		return False
