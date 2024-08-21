@@ -115,10 +115,44 @@ def min_test():
 	log.expr("a = min(1, 2, 3, -2, 0)")
 	log.expr_and_val("a")
 
+def zip_test():
+	log(title("Zip Test"))
+	class A:
+		def __init__(self):
+			self.iter_called = 0
+			self._list = [1, 2, 3]
+
+		def __iter__(self):
+			log("Iterating")
+			self.iter_called += 1
+			for num in self._list:
+				yield num
+
+	aa = A()
+	aa2 = A()
+	assert aa.iter_called == 0
+	iterable = (a for a in aa)
+	assert aa.iter_called == 1
+	zipped = zip(iterable, (aa2))
+	assert aa.iter_called == 1
+	assert aa2.iter_called == 1
+	for a in zipped:
+		log(f"a: {a}")
+	assert aa.iter_called == 7
+	log(title("End of Zip Test"))
+
+def weakref_test():
+	import weakref
+	class A:
+		pass
+	a = A()
+	r = weakref.ref(a)
+	log.expr_and_val("type(r)")
+
 def test():
 	log(title("Quick Test"))
 
-	for_range_test_3()
+	weakref_test()
 	
 	log(title("End of Quick Test"))
 
