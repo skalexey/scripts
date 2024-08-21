@@ -62,7 +62,7 @@ class Point2(Point, utils.serialize.Serializable):
 	)
 
 	def __repr__(self):
-		return f"Point2({self.data})"
+		return f"{self.__class__.__name__}({self.data})"
 
 	def __str__(self):
 		return f"({self.x}, {self.y})"
