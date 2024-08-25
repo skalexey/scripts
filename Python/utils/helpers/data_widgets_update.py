@@ -19,6 +19,11 @@ class DataWidgetsUpdateMixin(ABC):
 	def widgets(self):
 		return self._widgets
 
+	def pairs(self):
+		# Data can be destroyed and the widget can still be in the list, that is the chance to clear or destroy the widget for a user.
+		return ((widget, self._data_list[index]) for index, widget in enumerate(self._widgets))
+		# return ((widget_ref(), self._data_list[index]) for data_id, index in self._data_indexes.items() if (widget_ref := self._widgets[index]) is not None)
+
 	def _on_widgets_removed(self, count):
 		pass
 
@@ -93,13 +98,8 @@ class DataWidgetsUpdateMixin(ABC):
 		# Override example:
 		# return data.id
 
-	def pairs(self):
-		# Data can be destroyed and the widget can still be in the list, that is the chance to clear or destroy the widget for a user.
-		return ((widget, self._data_list[index]) for index, widget in enumerate(self._widgets))
-		# return ((widget_ref(), self._data_list[index]) for data_id, index in self._data_indexes.items() if (widget_ref := self._widgets[index]) is not None)
-
-	# If data_list is None, it will update all the widgets with the current data list. Can be used as a "force" update.
-	def update(self, data_list=None, *args, **kwargs):
+	# If data_list is None, it will update all the widgets with the current data list. Can be used as a "force" update, but with current data.
+	def update(self, data_list=None, *args, force=False, **kwargs):
 		# profiler = TimeProfiler(print_function=log.verbose)
 		# profiler.start()
 		assert len(self._widgets) == len(self._data_list)
@@ -130,7 +130,7 @@ class DataWidgetsUpdateMixin(ABC):
 				stored_size = len(self._data_list)
 			# Update existing widgets
 			# profiler.mark("Calling _update_widgets()")
-			if self._update_widgets(data_list, *args, **kwargs):
+			if self._update_widgets(data_list, *args, force=force, **kwargs):
 				list_updated = True
 			# profiler.mark("_update_widgets() called")
 			assert len(self._widgets) == len(self._data_list)
@@ -152,15 +152,16 @@ class DataWidgetsUpdateMixin(ABC):
 			self._add_widget(data, *args, **kwargs)
 		return to_add_count
 
-	def _update_widgets(self, data_list, *args, **kwargs):
+	def _update_widgets(self, data_list, *args, force=False, **kwargs):
 		# TODO: check for repeated data (whether it works well or breaks something)
 		# profiler = TimeProfiler(print_function=log.verbose)
 		# profiler.start()
 		# log.verbose(utils.function.msg(f"			Updating {len(data_list)} widgets..."))
 		assert len(self._widgets) == len(self._data_list)
 		updated_count = 0
-		if data_list == self._data_list:
-			return updated_count
+		if not force:
+			if data_list == self._data_list:
+				return updated_count
 		# profiler.mark("Compared data lists")
 		widgets_to_update = []
 		widget_count = len(self._widgets)
@@ -177,10 +178,11 @@ class DataWidgetsUpdateMixin(ABC):
 			for i, current_data in enumerate(self._data_list):
 				data = data_list[i]
 				current_data = self._data_list[i]
-				if data is current_data: # Don't compare all the data since it is quite expensive. If needed to compare the data in every update, consider manual update call with no data list passed, so it will update all the widgets with the current data and reflect the changes.
-					continue
-				if data == current_data:
-					continue
+				if not force:
+					if data is current_data: # Don't compare all the data since it is quite expensive. If needed to compare the data in every update, consider manual update call with no data list passed, so it will update all the widgets with the current data and reflect the changes.
+						continue
+					if data == current_data:
+						continue
 				widget = self._widgets[i]
 				widgets_to_update.append((widget, data, i))
 			widget_to_update_count = len(widgets_to_update)
@@ -208,7 +210,7 @@ class DataWidgetsUpdateMixin(ABC):
 				# assert popped_index == i
 				# popped_widget = self._widgets.pop(current_data_id)()
 				self._data_list[i] = data
-				assert current_data_id != data_id
+				# assert current_data_id != data_id # Quite allowed
 				self._data_indexes[data_id].add(i)
 				self._data_ids[i] = data_id
 				# self._widgets[i] = weakref.ref(widget) # Already updated. No need to overwrite the widget by itself # TODO: if widget == None?
