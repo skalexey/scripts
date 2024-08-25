@@ -21,6 +21,8 @@ class WeakList:
 		return finalizer
 
 	def __eq__(self, other):
+		if other is None:
+			return False
 		if len(self) != len(other):
 			return False
 		for i, item in enumerate(self):
