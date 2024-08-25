@@ -21,7 +21,15 @@ class WeakList:
 		return finalizer
 
 	def __eq__(self, other):
-		return self._data == other
+		if len(self) != len(other):
+			return False
+		for i, item in enumerate(self):
+			comparable = other[i]
+			if item is comparable:
+				continue
+			if item != comparable:
+				return False
+		return True
 
 	def __getattr__(self, name):
 		return getattr(self._data, name)
@@ -45,7 +53,7 @@ class WeakList:
 		self._data.insert(index, self._wrap_weakable(item, id(item), index))
 
 	def extend(self, items):
-		self._data.extend(self._wrap_weakable(i, item, id(item), i) for i, item in enumerate(items))
+		self._data.extend(self._wrap_weakable(item, id(item), i) for i, item in enumerate(items))
 
 	def pop(self, index=-1):
 		return deref_if_weak_proxy(self._data.pop(index))
