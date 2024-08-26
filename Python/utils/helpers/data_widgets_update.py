@@ -189,7 +189,6 @@ class DataWidgetsUpdateMixin(ABC):
 			# type_addition = f" of type '{widgets_to_update[0][0].__class__.__name__}'" if widget_to_update_count > 0 else ""
 			# log.debug(utils.method.msg(f"Updating {widget_to_update_count} widgets{type_addition}"))
 			for widget, data, i in widgets_to_update:
-				data_id = self._get_data_id(data)
 				# stored_indexes = self._data_id_indexes(data_id)
 				# assert stored_indexes is None or current_index > i
 				# assert current_index is None or current_index < widget_to_update_count
@@ -197,22 +196,6 @@ class DataWidgetsUpdateMixin(ABC):
 				# if widget:
 				self._update_widget(widget, data, i, *args, **kwargs)
 				updated_count += 1
-				# end of if widget
-				assert widget
-				current_data_id = self._data_ids[i]
-				current_data = self._data_list[i]
-				current_data_id_by_data = self._get_data_id(current_data)
-				assert current_data is None or current_data_id == current_data_id_by_data
-				# log.debug(f"	Updating widget: {widget}, data_id: {data_id}, index: {i}, current_data_id: {current_data_id}")
-				removed = self._remove_data_id_index(current_data_id, i)
-				assert removed
-				# popped_indexes = self._data_indexes.pop(current_data_id)
-				# assert popped_index == i
-				# popped_widget = self._widgets.pop(current_data_id)()
-				self._data_list[i] = data
-				# assert current_data_id != data_id # Quite allowed
-				self._data_indexes[data_id].add(i)
-				self._data_ids[i] = data_id
 				# self._widgets[i] = weakref.ref(widget) # Already updated. No need to overwrite the widget by itself # TODO: if widget == None?
 		# profiler.mark(f"Updated {updated_count} of {widget_count} widgets")
 		# log.debug(utils.method.msg(f"Updated {updated_count} of {widget_count} widgets with the goal of {widget_to_update_count}"))
@@ -227,3 +210,21 @@ class DataWidgetsUpdateMixin(ABC):
 
 	def _update_widget(self, widget, data, index, *args, **kwargs):
 		widget.update(data, *args, **kwargs)
+		# end of if widget
+		i = index
+		assert widget
+		current_data_id = self._data_ids[i]
+		current_data = self._data_list[i]
+		current_data_id_by_data = self._get_data_id(current_data)
+		assert current_data is None or current_data_id == current_data_id_by_data
+		# log.debug(f"	Updating widget: {widget}, data_id: {data_id}, index: {i}, current_data_id: {current_data_id}")
+		removed = self._remove_data_id_index(current_data_id, i)
+		assert removed
+		# popped_indexes = self._data_indexes.pop(current_data_id)
+		# assert popped_index == i
+		# popped_widget = self._widgets.pop(current_data_id)()
+		self._data_list[i] = data
+		# assert current_data_id != data_id # Quite allowed
+		data_id = self._get_data_id(data)
+		self._data_indexes[data_id].add(i)
+		self._data_ids[i] = data_id
