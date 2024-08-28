@@ -546,4 +546,3 @@ def reduce_rect_max(rect, reducer_rect):
 			max_area = area
 			max_rect = r
 	return max_rect
-
