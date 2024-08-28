@@ -92,11 +92,16 @@ class Session(TrackableResource, Intrstate):
 	def __repr__(self):
 		return f"Session('id={self.id}', 'storage path: {self.storage.path if self.storage is not None else None}')"
 
+	def __bool__(self):
+		return self.on_end is not None
+
 	def end(self):
 		log.info(utils.function.msg_kw())
 		if self.on_end is None:
 			raise ValueError(utils.function.msg_v(f"Session has already been ended"))
-		self.on_end.notify(self)
+		on_end = self.on_end
+		self.__dict__["on_end"] = None
+		on_end.notify(self)
 		utils.lang.clear_resources(self._state)
 		utils.lang.clear_resources(self)
 		log.info(utils.function.msg_kw(f"Session has been ended"))
