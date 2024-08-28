@@ -183,10 +183,15 @@ class OneTimeSubscriptionBase(Subscription):
 	def _reset_result(self):
 		self._result = None
 
-	def notify(self, *args, **kwargs):
+	def notify(self, result=None, *args, **kwargs):
 		verify(self._result is None, utils.method.msg("Result is already set"))
-		self._result = args, kwargs
-		super().notify(*args, **kwargs)
+		_result = result
+		if args:
+			_result = (result, ) + args
+		if kwargs:
+			_result = (_result, kwargs)
+		self._result = _result
+		super().notify(_result)
 
 	def subscribe(self, callable, subscriber=None, *args, **kwargs):
 		cb = super()._subscribe(callable, subscriber, *args, **kwargs)
