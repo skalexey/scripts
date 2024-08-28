@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
+import utils.method
 from utils.collection.weak_list import WeakList
 from utils.log.logger import Logger
 from utils.profile.profiler import TimeProfiler
@@ -82,10 +83,10 @@ class DataWidgetsUpdateMixin(ABC):
 		if widget is not None:
 			data_id = self._get_data_id(data)
 			stored_size = len(self._data_list)
-			assert data_id not in self._widgets
 			self._widgets.append(widget) # TODO: add finalizer and remove the data and widget entries?
 			self._data_list.append(data)
 			data_id = self._get_data_id(data)
+			# log.debug(f"	Adding widget: {widget}, data_id: {data_id}, index: {stored_size}")
 			assert data_id not in self._data_indexes
 			self._data_indexes[data_id].add(stored_size)
 			self._data_ids.append(data_id)
@@ -112,7 +113,6 @@ class DataWidgetsUpdateMixin(ABC):
 			# profiler.mark("Updating with the new data list")
 			data_size = len(data_list)
 			stored_size = len(self._data_list)
-			list_updated = False
 			# Remove no longer needed widgets
 			to_remove_count = stored_size - data_size
 			for i in range(to_remove_count):
@@ -130,15 +130,13 @@ class DataWidgetsUpdateMixin(ABC):
 				stored_size = len(self._data_list)
 			# Update existing widgets
 			# profiler.mark("Calling _update_widgets()")
-			if self._update_widgets(data_list, *args, force=force, **kwargs):
-				list_updated = True
+			self._update_widgets(data_list, *args, force=force, **kwargs)
 			# profiler.mark("_update_widgets() called")
 			assert len(self._widgets) == len(self._data_list)
 			# Add new widgets
 			# profiler.mark("calling _add_new_widgets()")
 			to_add_count = self._add_new_widgets(data_list, *args, **kwargs)
 			# profiler.mark(f"_add_new_widgets() called: Added {to_add_count} new widgets")
-			list_updated = list_updated or to_add_count > 0 or to_remove_count > 0
 			assert len(self._widgets) == len(self._data_list)
 			# log.verbose(f'			{utils.method.msg(f"updated {len(data_list)} widgets within {profiler.measure().timespan} seconds")}')
 			# profiler.print_marks("  			{description} within {timespan} seconds")
@@ -217,7 +215,6 @@ class DataWidgetsUpdateMixin(ABC):
 		current_data = self._data_list[i]
 		current_data_id_by_data = self._get_data_id(current_data)
 		assert current_data is None or current_data_id == current_data_id_by_data
-		# log.debug(f"	Updating widget: {widget}, data_id: {data_id}, index: {i}, current_data_id: {current_data_id}")
 		removed = self._remove_data_id_index(current_data_id, i)
 		assert removed
 		# popped_indexes = self._data_indexes.pop(current_data_id)
@@ -228,3 +225,4 @@ class DataWidgetsUpdateMixin(ABC):
 		data_id = self._get_data_id(data)
 		self._data_indexes[data_id].add(i)
 		self._data_ids[i] = data_id
+		# log.debug(f"	Updated widget: {widget}, data_id: {data_id}, index: {i}, current_data_id: {current_data_id}")
