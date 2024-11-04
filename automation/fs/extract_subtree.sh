@@ -31,8 +31,8 @@ TARGET_DIR="$2"
 FILE_PATTERN="$3"
 COMMAND="${4:-cp}"  # Default to "cp" if no command is specified
 
+# Print all the variables if verbose mode is enabled
 if [ "$VERBOSE" = true ]; then
-    # Print all the variables for debugging
     echo "SOURCE_DIR: $SOURCE_DIR"
     echo "TARGET_DIR: $TARGET_DIR"
     echo "FILE_PATTERN: $FILE_PATTERN"
@@ -48,17 +48,9 @@ if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_DIR" ] || [ -z "$FILE_PATTERN" ]; then
 	exit 1
 fi
 
-# Function to get file size and store it for reuse
-declare -A FILE_SIZES
+# Function to get file size
 get_file_size() {
 	local file="$1"
-	# Return stored size if already calculated
-	if [[ -n "${FILE_SIZES[$file]}" ]]; then
-		echo "${FILE_SIZES[$file]}"
-		return
-	fi
-	
-	# Calculate file size if not already stored
 	local size
 	if [[ "$OSTYPE" == "darwin"* ]]; then
 		size=$(stat -f%z "$file")
@@ -68,7 +60,6 @@ get_file_size() {
 		echo "Unsupported OS: $OSTYPE"
 		exit 1
 	fi
-	FILE_SIZES["$file"]=$size
 	echo "$size"
 }
 
@@ -95,6 +86,10 @@ calculate_md5() {
 	echo "$md5"
 }
 
+# Normalize SOURCE_DIR and TARGET_DIR to absolute paths without trailing slashes
+SOURCE_DIR=$(realpath "$SOURCE_DIR")
+TARGET_DIR=$(realpath "$TARGET_DIR")
+
 # Find all files matching the pattern
 file_list=()
 while IFS= read -r file; do
@@ -114,6 +109,7 @@ fi
 total_size=0
 current_count=0
 for file in "${file_list[@]}"; do
+	# Retrieve and add file size to total
 	file_size=$(get_file_size "$file")
 	total_size=$((total_size + file_size))
 	current_count=$((current_count + 1))
@@ -125,7 +121,6 @@ done
 
 # Print a newline after the progress display is complete
 echo -e "\nTotal size of matching files: $((total_size / 1024 / 1024)) MB"
-
 
 # Create the target directory if it doesn't exist
 mkdir -p "$TARGET_DIR"
@@ -155,6 +150,7 @@ for file in "${file_list[@]}"; do
 	dest="$dest_dir/$(basename "$file")"
 	
 	# Check if the destination file already exists and compare MD5 checksums if enabled
+	file_size=$(get_file_size "$file")  # Retrieve the size of the current file
 	if [ "$SKIP_MD5_CHECK" = false ] && [ -f "$dest" ]; then
 		src_md5=$(calculate_md5 "$file")
 		dest_md5=$(calculate_md5 "$dest")
@@ -164,7 +160,8 @@ for file in "${file_list[@]}"; do
 		fi
 		if [ "$src_md5" = "$dest_md5" ]; then
 			echo "Skipping $file -> $dest (files are identical)"
-			processed_size=$((processed_size + $(get_file_size "$file")))
+			# Update processed size with skipped file's size
+			processed_size=$((processed_size + file_size))
 			progress=$((processed_size * 100 / total_size))
 			echo -ne "Progress: $progress% ($((processed_size / 1024 / 1024)) MB of $((total_size / 1024 / 1024)) MB)\r"
 			continue
@@ -175,11 +172,9 @@ for file in "${file_list[@]}"; do
 	echo -e "Executing: ${COLOR}$COMMAND \"$file\" \"$dest\"${RESET}"
 	$COMMAND "$file" "$dest"
 	
-	# Increment processed count
+	# Increment processed count and update processed size
 	processed_count=$((processed_count + 1))
-	
-	# Update processed size and calculate progress
-	processed_size=$((processed_size + $(get_file_size "$file")))
+	processed_size=$((processed_size + file_size))  # Update processed size
 	progress=$((processed_size * 100 / total_size))
 	
 	# Display progress
@@ -189,3 +184,4 @@ done
 # Final summary
 echo -e "\nOperation complete."
 echo "Command applied to $processed_count of $total_count files"
+
