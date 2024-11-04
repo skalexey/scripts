@@ -41,7 +41,6 @@ if [ "$VERBOSE" = true ]; then
     echo "VERBOSE: $VERBOSE"
 fi
 
-
 # Check if source directory, target directory, and file pattern are provided
 if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_DIR" ] || [ -z "$FILE_PATTERN" ]; then
 	echo "Usage: $0 <source_directory> <target_directory> <file_pattern> [command] [-i|--skip-md5-check] [--verbose]"
@@ -49,46 +48,60 @@ if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_DIR" ] || [ -z "$FILE_PATTERN" ]; then
 	exit 1
 fi
 
-# Function to get file size, compatible with different platforms
+# Function to get file size and store it for reuse
+declare -A FILE_SIZES
 get_file_size() {
 	local file="$1"
+	# Return stored size if already calculated
+	if [[ -n "${FILE_SIZES[$file]}" ]]; then
+		echo "${FILE_SIZES[$file]}"
+		return
+	fi
+	
+	# Calculate file size if not already stored
+	local size
 	if [[ "$OSTYPE" == "darwin"* ]]; then
-		# macOS
-		stat -f%z "$file"
+		size=$(stat -f%z "$file")
 	elif [[ "$OSTYPE" == "linux-gnu"* || "$OSTYPE" == "cygwin"* || "$OSTYPE" == "msys"* || "$OSTYPE" == "win32" ]]; then
-		# Linux and Windows (MinGW, Cygwin)
-		stat -c%s "$file"
+		size=$(stat -c%s "$file")
 	else
 		echo "Unsupported OS: $OSTYPE"
 		exit 1
 	fi
+	FILE_SIZES["$file"]=$size
+	echo "$size"
 }
 
-# Function to calculate the MD5 checksum, trying md5 first, then md5sum
+# Function to calculate the MD5 checksum and store it for reuse
+declare -A FILE_MD5S
 calculate_md5() {
 	local file="$1"
+	# Return stored MD5 if already calculated
+	if [[ -n "${FILE_MD5S[$file]}" ]]; then
+		echo "${FILE_MD5S[$file]}"
+		return
+	fi
+	
+	local md5
 	if command -v md5 &> /dev/null; then
-		# macOS `md5` command outputs "MD5 (<filename>) = <checksum>"
-		md5 "$file" | awk -F ' = ' '{print $2}'
+		md5=$(md5 "$file" | awk -F ' = ' '{print $2}')
 	elif command -v md5sum &> /dev/null; then
-		# Linux `md5sum` outputs "<checksum> <filename>"
-		md5sum "$file" | awk '{print $1}'
+		md5=$(md5sum "$file" | awk '{print $1}')
 	else
 		echo "Error: Neither md5 nor md5sum command found!"
 		exit 1
 	fi
+	FILE_MD5S["$file"]=$md5
+	echo "$md5"
 }
 
-# Find all files matching the pattern and calculate the total size in bytes
-total_size=0
+# Find all files matching the pattern
 file_list=()
 while IFS= read -r file; do
 	file_list+=("$file")
-	file_size=$(get_file_size "$file")
-	total_size=$((total_size + file_size))
 done < <(find "$SOURCE_DIR" -type f -name "$FILE_PATTERN")
 
-# Calculate total count of files matched
+# Calculate total count of files
 total_count=${#file_list[@]}
 
 # Check if there are any files to process
@@ -97,7 +110,22 @@ if [ "$total_count" -eq 0 ]; then
 	exit 0
 fi
 
-echo "Total size of matching files: $((total_size / 1024 / 1024)) MB"
+# Calculate total size of all matching files with a progress indicator
+total_size=0
+current_count=0
+for file in "${file_list[@]}"; do
+	file_size=$(get_file_size "$file")
+	total_size=$((total_size + file_size))
+	current_count=$((current_count + 1))
+	
+	# Calculate and display progress percentage
+	progress=$((current_count * 100 / total_count))
+	echo -ne "Calculating total size... ${progress}%\r"
+done
+
+# Print a newline after the progress display is complete
+echo -e "\nTotal size of matching files: $((total_size / 1024 / 1024)) MB"
+
 
 # Create the target directory if it doesn't exist
 mkdir -p "$TARGET_DIR"
@@ -112,14 +140,19 @@ RESET="\033[0m"
 
 # Process each file
 for file in "${file_list[@]}"; do
-	# Get the directory path of the found file relative to the source directory
-	relative_dir=$(dirname "$file" | sed "s|$SOURCE_DIR||")
+	# Normalize each file path
+	absolute_file=$(realpath "$file")
 	
-	# Create the same directory structure in the target directory
-	mkdir -p "$TARGET_DIR$relative_dir"
+	# Get the relative path by stripping SOURCE_DIR from absolute_file
+	relative_path="${absolute_file#$SOURCE_DIR}"
+	relative_dir=$(dirname "$relative_path")
+	
+	# Ensure the path is correctly joined with a slash
+	dest_dir="$TARGET_DIR/$relative_dir"
+	mkdir -p "$dest_dir"
 	
 	# Determine the destination path
-	dest="$TARGET_DIR$relative_dir/$(basename "$file")"
+	dest="$dest_dir/$(basename "$file")"
 	
 	# Check if the destination file already exists and compare MD5 checksums if enabled
 	if [ "$SKIP_MD5_CHECK" = false ] && [ -f "$dest" ]; then
