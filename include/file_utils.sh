@@ -29,17 +29,28 @@ function file_append_line() {
 	echo "$2" >> "$1"
 }
 
+function to_python_path() {
+	if ! declare -F is_windows > /dev/null 2>&1; then
+		local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+		source $THIS_DIR/os.sh
+	fi
+	if is_windows; then
+		to_win_path "$1"
+	else
+		echo "$1"
+	fi
+}
+
 function file_replace() {
 	[ -z "$1" ] && return -10 # file name
 	[ -z "$2" ] && return -20 # regex to find
 	[ -z "$3" ] && return -30 # text to replace regex to
-	# Use sed
-	# sed -i.bac -E "s/$2/$3/g$4" $1
-	# [ -f "$1.bac" ] && rm $1.bac
 	# Use python due to platform independence
 	# use relative paths due to platform independence
-	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
+	local current_path="${PWD}"
+	local fpath=$(realpath --relative-to="$current_path" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+	local file_path_for_python=$(to_python_path "$fpath")
 	local ret=$(python $THIS_DIR/file_utils.py replace "$fpath" "$2" "$3")
 	local res=$?
 	echo "$ret"
@@ -144,7 +155,42 @@ function file_newer() {
 }
 
 function to_win_path() {
-	echo "$1" | sed -e 's/^\///' -e 's/\//\\/g' -e 's/^./\0:/'
+	if is_win_path "$1"; then
+		echo "$1"
+	else
+		if command -v wslpath > /dev/null 2>&1; then
+			echo $(wslpath -w "$1")
+		elif command -v cygpath > /dev/null 2>&1; then
+			echo $(cygpath -w "$1")
+		else
+			echo "$1"
+		fi
+	fi
+}
+
+function to_nix_path() {
+	if ! is_win_path "$1"; then
+		echo "$1"
+	else
+		# Check if WSL
+		if command -v wslpath > /dev/null 2>&1; then
+			echo $(wslpath -u "$1")
+		elif command -v cygpath > /dev/null 2>&1; then
+			echo $(cygpath -u "$1")
+		else
+			echo "$1"
+		fi
+	fi
+}
+
+is_win_path() {
+	local path="$1"
+	# Check if the path matches the Windows format (e.g., C:\ or D:\)
+	if [[ "$path" =~ ^[a-zA-Z]:\\ ]]; then
+		return 0  # True: It is a Windows path
+	else
+		return 1  # False: It is not a Windows path
+	fi
 }
 
 function system_path() {
