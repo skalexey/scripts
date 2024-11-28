@@ -29,22 +29,22 @@ set -- "${POSITIONAL_ARGS[@]}"
 SOURCE_DIR="$1"
 TARGET_DIR="$2"
 FILE_PATTERN="$3"
-COMMAND="${4:-cp}"  # Default to "cp" if no command is specified
+COMMAND_TEMPLATE="${4:-mkdir -p \"\$2\" && cp \"\$1\" \"\$2\"}"  # Default command creates directory and copies file
 
 # Print all the variables if verbose mode is enabled
 if [ "$VERBOSE" = true ]; then
     echo "SOURCE_DIR: $SOURCE_DIR"
     echo "TARGET_DIR: $TARGET_DIR"
     echo "FILE_PATTERN: $FILE_PATTERN"
-    echo "COMMAND: $COMMAND"
+    echo "COMMAND_TEMPLATE: $COMMAND_TEMPLATE"
     echo "SKIP_MD5_CHECK: $SKIP_MD5_CHECK"
     echo "VERBOSE: $VERBOSE"
 fi
 
 # Check if source directory, target directory, and file pattern are provided
 if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_DIR" ] || [ -z "$FILE_PATTERN" ]; then
-	echo "Usage: $0 <source_directory> <target_directory> <file_pattern> [command] [-i|--skip-md5-check] [--verbose]"
-	echo "Example: $0 /path/to/OneDrive /path/to/target_directory '*.docx' cp"
+	echo "Usage: $0 <source_directory> <target_directory> <file_pattern> [command_template] [-i|--skip-md5-check] [--verbose]"
+	echo "Example: $0 /path/to/OneDrive /path/to/target_directory '*.docx' 'mkdir -p \"$2\" && cp \"$1\" \"$2\"'"
 	exit 1
 fi
 
@@ -63,16 +63,9 @@ get_file_size() {
 	echo "$size"
 }
 
-# Function to calculate the MD5 checksum and store it for reuse
-declare -A FILE_MD5S
+# Function to calculate the MD5 checksum
 calculate_md5() {
 	local file="$1"
-	# Return stored MD5 if already calculated
-	if [[ -n "${FILE_MD5S[$file]}" ]]; then
-		echo "${FILE_MD5S[$file]}"
-		return
-	fi
-	
 	local md5
 	if command -v md5 &> /dev/null; then
 		md5=$(md5 "$file" | awk -F ' = ' '{print $2}')
@@ -82,7 +75,6 @@ calculate_md5() {
 		echo "Error: Neither md5 nor md5sum command found!"
 		exit 1
 	fi
-	FILE_MD5S["$file"]=$md5
 	echo "$md5"
 }
 
@@ -122,9 +114,6 @@ done
 # Print a newline after the progress display is complete
 echo -e "\nTotal size of matching files: $((total_size / 1024 / 1024)) MB"
 
-# Create the target directory if it doesn't exist
-mkdir -p "$TARGET_DIR"
-
 # Initialize progress tracking and file processing count
 processed_size=0
 processed_count=0  # Counter for files that are actually processed
@@ -134,6 +123,7 @@ COLOR="\033[1;36m"
 RESET="\033[0m"
 
 # Process each file
+# Process each file
 for file in "${file_list[@]}"; do
 	# Normalize each file path
 	absolute_file=$(realpath "$file")
@@ -142,25 +132,30 @@ for file in "${file_list[@]}"; do
 	relative_path="${absolute_file#$SOURCE_DIR}"
 	relative_dir=$(dirname "$relative_path")
 	
-	# Ensure the path is correctly joined with a slash
-	dest_dir="$TARGET_DIR/$relative_dir"
-	mkdir -p "$dest_dir"
+	# Determine the full destination path
+	dest="$TARGET_DIR/$relative_dir/$(basename "$file")"
 	
-	# Determine the destination path
-	dest="$dest_dir/$(basename "$file")"
-	
+	# Construct the command by replacing placeholders $1 and $2 with the file paths
+	exec_command="${COMMAND_TEMPLATE//\$1/$absolute_file}"
+	exec_command="${exec_command//\$2/$dest}"
+
+	# Retrieve the size of the current file
+	file_size=$(get_file_size "$file")  
+
 	# Check if the destination file already exists and compare MD5 checksums if enabled
-	file_size=$(get_file_size "$file")  # Retrieve the size of the current file
-	if [ "$SKIP_MD5_CHECK" = false ] && [ -f "$dest" ]; then
+	if [ -f "$dest" ]; then
 		src_md5=$(calculate_md5 "$file")
 		dest_md5=$(calculate_md5 "$dest")
+
+		# Always print MD5s if verbose mode is on
 		if [ "$VERBOSE" = true ]; then
 			echo "MD5 of source file ($file): $src_md5"
 			echo "MD5 of destination file ($dest): $dest_md5"
 		fi
-		if [ "$src_md5" = "$dest_md5" ]; then
+
+		# Skip the file if MD5 checksums match
+		if [ "$SKIP_MD5_CHECK" = false ] && [ "$src_md5" = "$dest_md5" ]; then
 			echo "Skipping $file -> $dest (files are identical)"
-			# Update processed size with skipped file's size
 			processed_size=$((processed_size + file_size))
 			progress=$((processed_size * 100 / total_size))
 			echo -ne "Progress: $progress% ($((processed_size / 1024 / 1024)) MB of $((total_size / 1024 / 1024)) MB)\r"
@@ -169,12 +164,12 @@ for file in "${file_list[@]}"; do
 	fi
 
 	# Run the specified command with source and destination as arguments, highlighting the command
-	echo -e "Executing: ${COLOR}$COMMAND \"$file\" \"$dest\"${RESET}"
-	$COMMAND "$file" "$dest"
+	echo -e "Executing: ${COLOR}$exec_command${RESET}"
+	eval "$exec_command"
 	
 	# Increment processed count and update processed size
 	processed_count=$((processed_count + 1))
-	processed_size=$((processed_size + file_size))  # Update processed size
+	processed_size=$((processed_size + file_size))
 	progress=$((processed_size * 100 / total_size))
 	
 	# Display progress
@@ -184,4 +179,3 @@ done
 # Final summary
 echo -e "\nOperation complete."
 echo "Command applied to $processed_count of $total_count files"
-
