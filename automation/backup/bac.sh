@@ -19,7 +19,7 @@ function create_backup() {
 
 	# Create the archive
 	source $scripts_dir/include/zip.sh
-	compress "$src" "$destination"
+	compress "$src" "$destination" ${@:3}
 
 	local code=$?
 	[ $code -ne 0 ] && log_error "Failed to create backup (code: $code)" && return 1
@@ -37,7 +37,9 @@ function job()
 
 	
 	[ -z "$1" ] && log_error "No source provided" && return 1 || local src="$1"
-	create_backup "$src" "$2"
+	local cmd="create_backup \"$src\" \"$2\" ${@:3}"
+	log_info "Executing: $cmd"
+	eval $cmd
 	local code=$?
 	[ $code -ne 0 ] && log_error "Failed to create backup (code: $code)" && return 1
 }
