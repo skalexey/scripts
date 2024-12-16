@@ -24,9 +24,11 @@ function compress() {
 	
 	log_info "Compressing '$src' to '$destination'"
 	if [ "$extension" == "7z" ]; then
-		7z a "$destination" "$src"
+		local cmd="7z a ${@:3} \"$destination\" \"$src\"" # -r -ssw 
+		echo "Executing: $cmd"
+		eval $cmd
 	elif command_exists zip; then
-		zip -r "$destination" "$src"
+		zip -r ${@:3} "$destination" "$src"
 	else
 		log_error "Error: You must install 7z or zip."
 		return 1
