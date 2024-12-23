@@ -29,7 +29,7 @@ set -- "${POSITIONAL_ARGS[@]}"
 SOURCE_DIR="$1"
 TARGET_DIR="$2"
 FILE_PATTERN="$3"
-COMMAND_TEMPLATE="${4:-mkdir -p \"\$2\" && cp \"\$1\" \"\$2\"}"  # Default command creates directory and copies file
+COMMAND_TEMPLATE="${4:-mkdir -p \"\$(dirname \"\$2\")\" && cp \"\$1\" \"\$2\"}"  # Default command creates the parent directory for files or full directory path for folders and copies the file
 
 # Print all the variables if verbose mode is enabled
 if [ "$VERBOSE" = true ]; then
@@ -44,7 +44,7 @@ fi
 # Check if source directory, target directory, and file pattern are provided
 if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_DIR" ] || [ -z "$FILE_PATTERN" ]; then
 	echo "Usage: $0 <source_directory> <target_directory> <file_pattern> [command_template] [-i|--skip-md5-check] [--verbose]"
-	echo "Example: $0 /path/to/OneDrive /path/to/target_directory '*.docx' 'mkdir -p \"$2\" && cp \"$1\" \"$2\"'"
+	echo "Example: $0 /path/to/OneDrive /path/to/target_directory '*.docx' 'mkdir -p \"\$(dirname \"\$2\")\" && cp \"$1\" \"$2\"'"
 	exit 1
 fi
 
