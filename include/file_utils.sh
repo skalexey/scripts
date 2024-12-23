@@ -9,7 +9,7 @@ function file_insert_before() {
 	# use relative paths due to platform independence
 	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	local ret=$(python $THIS_DIR/file_utils.py insert_before "$fpath" "$2" "$3")
+	local ret=$(python $THIS_DIR/../Python/utils/file.py insert_before "$fpath" "$2" "$3")
 	local res=$?
 	echo "$ret"
 	return $res
@@ -51,7 +51,7 @@ function file_replace() {
 	local fpath=$(realpath --relative-to="$current_path" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	local file_path_for_python=$(to_python_path "$fpath")
-	local ret=$(python $THIS_DIR/file_utils.py replace "$fpath" "$2" "$3")
+	local ret=$(python $THIS_DIR/../Python/utils/file.py replace "$fpath" "$2" "$3")
 	local res=$?
 	echo "$ret"
 	return $res

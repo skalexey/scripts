@@ -22,7 +22,7 @@ function box()
 	source "$scripts_dir/include/log.sh"
 	local log_prefix="[python_test]: "
 	source $scripts_dir/include/file_utils.sh
-	cp $scripts_dir/include/file_utils.py .
+	cp $scripts_dir/Python/utils/file.py .
 	
 	local cur_path=${PWD}
 	local win_cur_path=$(to_win_path "$cur_path")
@@ -33,7 +33,7 @@ function box()
 	log_info "Test file path: '$fpath', relative path: '$real_fpath', real_path2: '$real_path2'"
 	echo "Test file contents" >> $fpath
 	log_success "fpath: $fpath"
-	local ret=$(python $THIS_DIR/file_utils.py replace "$fpath" "Test" "Awesome")
+	local ret=$(python $scripts_dir/Python/utils/file.py replace "$fpath" "Test" "Awesome")
 	# file_replace "$fpath" "Test" "Awesome"
 	cat $fpath
 }

@@ -1,5 +1,7 @@
 import os
+import re
 import shutil
+import sys
 from datetime import datetime as _datetime
 
 import utils.function
@@ -89,34 +91,60 @@ def is_open(fpath):
 		return True
 	return False
 
-if __name__ == '__main__':
-	from tests.test import *
+def insert_before(fpath, where, what):
+	return replace(fpath, where, what + where, 1)
 
-	def is_open_test():
-		log(title("Start of Is File Opened For Writing Test"))
+def replace(fpath, where, what, count = -1):
+	with open(fpath, "r") as f:
+		contents = f.read()
+	pos = contents.find(where)
+	if (pos < 0):
+		print(-1)
+		return -1
+	
+	contents = contents.replace(where, what, count)
 
-		def opened_file_test():
-			log(title("Opened File Test"))
-			fpath = 'example.txt'
-			log(f"Writting to file '{os.path.abspath(fpath)}'")
-			with open(fpath, "a+") as f:
-				f.write("Writing to a file")
-				assert is_open(fpath), f"The file '{fpath}' should be opened for writing."
-			assert not is_open(fpath), f"The file '{fpath}' should be closed"
-			log.success("End of Opened File Test")
+	with open(fpath, "w") as f:
+		f.write(contents)
 
-		def not_existing_file_test():
-			log(title("Not Existing File Test"))
-			fpath = 'not_existing_file.txt'
-			assert not is_open(fpath), f"The file '{fpath}' should not exist nor opened"
-			log.success("End of Not Existing File Test")
+	print(pos)
+	return pos
 
-		opened_file_test()
-		not_existing_file_test()
+def search(fpath, what, count = 1):
+	if (type(count) != int):
+		count = 1
+	with open(fpath, "r") as f:
+		contents = f.read()
+	res = re.findall(what, contents)
+	for p in res:
+		count = count - 1
+		if (count <= 0):
+			return p
+	return -1
 
-		log.success(title("End of Is File Opened For Writing Test"))
+def is_wsl_path(path):
+	return path.startswith("/mnt/")
 
-	def test():
-		is_open_test()
+def is_windows_path(path):
+	return path[1] == ":" or "\\" in path
 
-	run()
+def is_unix_path(path):
+	return "/" in path
+
+
+def system_path(path):
+	import platform
+	import subprocess
+
+	if platform.system() == "Windows":
+		return path.replace("/", "\\")
+
+if __name__ == "__main__":
+# if len(sys.argv) > 2:  # TODO: check if __main__ works in place of this args check
+	arr = []
+	for i, a in enumerate(sys.argv):
+		if (i > 1):
+  			arr.append(a)
+	locals()[sys.argv[1]](*arr)
+elif len(sys.argv) == 2:
+	locals()[sys.argv[1]]()
