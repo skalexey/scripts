@@ -37,6 +37,7 @@ def generate_meaningful_or_tech_text(paragraphs=3):
 	texts = random.choice([motivational_texts, tech_texts])
 	return "\n\n".join(random.choice(texts) for _ in range(paragraphs))
 
+
 def create_meaningful_or_tech_docx(file_path, paragraphs=3):
 	"""
 	Create a .docx file with meaningful or tech-related text.
@@ -47,7 +48,8 @@ def create_meaningful_or_tech_docx(file_path, paragraphs=3):
 	doc.add_paragraph(generate_meaningful_or_tech_text(paragraphs))
 	doc.save(file_path)
 
-def generate_random_hierarchy_with_tech_and_meaningful_text(base_dir, num_folders, num_files, max_depth=3):
+
+def generate_random_hierarchy_with_tech_and_meaningful_text(base_dir, num_folders, max_num_files, max_depth=3):
 	"""
 	Generate random folder hierarchy and .docx files with tech and meaningful text.
 	"""
@@ -66,11 +68,13 @@ def generate_random_hierarchy_with_tech_and_meaningful_text(base_dir, num_folder
 		os.makedirs(folder_path, exist_ok=True)
 		
 		# Create random .docx files
+		num_files = random.randint(1, max_num_files)
 		for file_index in range(num_files):
 			file_name = f"{random.choice(['Inspirational Thoughts', 'Tech Guide', 'Learning Notes', 'Code Explained', 'Growth Ideas', 'AI Research', 'Programming Insights', 'Knowledge Base', 'Life Lessons', 'Techniques Overview', 'Practical Tips', 'Philosophy Quotes', 'Data Strategies', 'Innovation Brief', 'Future Plans', 'Creative Solutions', 'Advanced Concepts', 'Simple Hacks', 'Productivity Boosters', 'Visionary Ideas'])}.docx"
 			file_path = os.path.join(folder_path, file_name)
 			create_meaningful_or_tech_docx(file_path, paragraphs=random.randint(3, 5))
 			print(f"    - Created file: {file_path}")
+
 
 if __name__ == "__main__":
 	# Parse command-line arguments
@@ -87,10 +91,10 @@ if __name__ == "__main__":
 		help="Number of folders to generate (default: 10)."
 	)
 	parser.add_argument(
-		"--num_files", 
+		"--max_num_files", 
 		type=int, 
 		default=5, 
-		help="Number of .docx files per folder (default: 5)."
+		help="Maximum number of .docx files per folder (default: 5)."
 	)
 	parser.add_argument(
 		"--max_depth", 
@@ -109,7 +113,7 @@ if __name__ == "__main__":
 	generate_random_hierarchy_with_tech_and_meaningful_text(
 		base_dir=base_dir,
 		num_folders=args.num_folders,
-		num_files=args.num_files,
+		max_num_files=args.max_num_files,
 		max_depth=args.max_depth
 	)
 	print(f"Random folder hierarchy with tech and meaningful .docx files generated in '{args.base_dir}'.")
