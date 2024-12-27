@@ -118,7 +118,9 @@ function setup_environment()
 	# include some essential dependencies
 	include_essential "$automation_dir/automation_config.sh"
 	include_essential "$scripts_dir/include/log.sh"
+	include_essential "$scripts_dir/include/os.sh"
 	include_essential "$scripts_dir/include/file_utils.sh"
+	include_essential "$scripts_dir/include/file_utils.py"
 	include_essential "$automation_dir/include/job.sh"
 	include_essential "$automation_dir/run_local.sh"
 	
