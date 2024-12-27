@@ -1,6 +1,7 @@
 #!/bin/bash
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/log.sh"
+GIT_UTILS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $GIT_UTILS_DIR/log.sh
 
 function is_git_installed()
 {
@@ -296,11 +297,13 @@ function git_add_patch()
 
 function git_add_smart()
 {
-	if git_is_untracked $1; then
-		git add $1
-	else
-		git_add_patch $1
+	if [ ! -z "$1" ]; then
+		if git_is_untracked $1; then
+			git add $1
+			return $?
+		fi
 	fi
+	git_add_patch $1
 }
 
 function add_file_to_commit_interactively()
