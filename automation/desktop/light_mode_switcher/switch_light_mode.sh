@@ -25,7 +25,6 @@ function switch_light_mode()
 		log_error "Not supported mode '$mode'"
 		return 2
 	fi
-	source $scripts_dir/include/file_utils.sh
 	local home=$(powershell.exe $(to_win_path "$scripts_dir/automation/windows/envar.ps1") "USERPROFILE" | tr -d '\r\n')
 	home=$(to_nix_path "$home")
 	local full_path="$home/AppData/Roaming/Code/User/settings.json"
