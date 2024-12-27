@@ -1,0 +1,82 @@
+{
+    "2024-9-2": {
+        "name": "Labor Day",
+        "status": "All agencies closed"
+    },
+    "2024-10-3": {
+        "name": "Rosh Hashanah",
+        "status": "Optional holiday"
+    },
+    "2024-10-4": {
+        "name": "Rosh Hashanah",
+        "status": "Optional holiday"
+    },
+    "2024-10-12": {
+        "name": "Yom Kippur",
+        "status": "All agencies closed"
+    },
+    "2024-11-11": {
+        "name": "Veterans Day",
+        "status": "All agencies closed"
+    },
+    "2024-11-28": {
+        "name": "Thanksgiving Day",
+        "status": "All agencies closed"
+    },
+    "2024-11-29": {
+        "name": "Day after Thanksgiving",
+        "status": "All agencies closed"
+    },
+    "2024-12-24": {
+        "name": "Christmas Eve Day",
+        "status": "All agencies closed"
+    },
+    "2024-12-25": {
+        "name": "Christmas Day",
+        "status": "All agencies closed"
+    },
+    "2024-12-26": {
+        "name": "Day after Christmas",
+        "status": "All agencies closed"
+    },
+    "2025-1-1": {
+        "name": "New Year’s Day",
+        "status": "All agencies closed"
+    },
+    "2025-1-20": {
+        "name": "Martin Luther King Jr. Day",
+        "status": "All agencies closed"
+    },
+    "2025-2-17": {
+        "name": "Presidents’ Day",
+        "status": "All agencies closed"
+    },
+    "2025-3-31": {
+        "name": "Cesar Chavez Day",
+        "status": "Optional holiday"
+    },
+    "2025-4-18": {
+        "name": "Good Friday",
+        "status": "Optional holiday"
+    },
+    "2025-4-21": {
+        "name": "San Jacinto Day",
+        "status": "Skeleton crew required"
+    },
+    "2025-5-26": {
+        "name": "Memorial Day",
+        "status": "All agencies closed"
+    },
+    "2025-6-19": {
+        "name": "Emancipation Day",
+        "status": "Skeleton crew required"
+    },
+    "2025-7-4": {
+        "name": "Independence Day",
+        "status": "All agencies closed"
+    },
+    "2025-8-27": {
+        "name": "LBJ Day",
+        "status": "Skeleton crew required"
+    }
+}
