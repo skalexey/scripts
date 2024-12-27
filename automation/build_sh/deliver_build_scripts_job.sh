@@ -4,7 +4,7 @@
 
 function deliver_config()
 {
-	[ ! -d "$1" ] && log_error "Not existent directory provided to deliver_config" && return 1 || local dir="$1"
+	[ ! -d "$1" ] && log_error "Not existent directory provided to deliver_config" && return 1 || eval local dir="$1"
 	local ex=$2
 
 	if [ ! -f "$dir/$ex.sh" ]; then

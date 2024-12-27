@@ -6,7 +6,7 @@ function pull()
 	source $THIS_DIR/../automation_config.sh
 	source $THIS_DIR/../../include/log.sh
 	local log_prefix="[pull]: "
-	[ -z "$1" ] && log_error "No directory provided" && return 1 || local dir="$1"
+	[ -z "$1" ] && log_error "No directory provided" && return 1 || eval local dir="$1"
 	[ ! -d "$dir" ] && log_error "Not existent directory provided: '$dir'" && return 2
 
 	source $THIS_DIR/../../include/file_utils.sh

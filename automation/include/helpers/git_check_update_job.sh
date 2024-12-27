@@ -9,7 +9,7 @@ function git_check_update_job()
 	source log.sh
 	local log_prefix="[git_check_update_job]: "
 
-	[ -z "$1" ] && log_error "No directory specified" && return 1 || local dir="$1"
+	[ -z "$1" ] && log_error "No directory specified" && return 1 || eval local dir="$1"
 	[ -z "$2" ] && local job1_path="$def_job1" || local job1_path="$2"
 	[ ! -z "$3" ] && local job2_path="$3" || local job2_path="$def_job1"
 

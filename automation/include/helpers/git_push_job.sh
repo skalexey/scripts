@@ -11,7 +11,7 @@ function git_push_job()
 	source log.sh
 	local log_prefix="[git_push_job]: "
 
-	[ -z "$1" ] && log_error "No directory provided" && return 1 || local dir="$1"
+	[ -z "$1" ] && log_error "No directory provided" && return 1 || eval local dir="$1"
 
 	source git_utils.sh
 

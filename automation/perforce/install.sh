@@ -9,7 +9,7 @@ function install()
 	source ../automation_config.sh
 	source ../../include/log.sh
 	local log_prefix="[install]: "
-	[ ! -d "$1" ] && log_error "No downloaded directory provided" && return 1 || local dir="$1"
+	[ ! -d "$1" ] && log_error "No downloaded directory provided" && return 1 || eval local dir="$1"
 
 	local bin_dir=/usr/local/bin
 

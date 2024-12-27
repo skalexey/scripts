@@ -140,7 +140,7 @@ function git_check()
 
 	# arguments
 	if [ ! -z $1 ]; then # directory path. If not provided then this directory is used
-		cd "$1"
+		eval cd "$1"
 	fi
 
 	# Deprecated:
