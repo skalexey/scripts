@@ -12,7 +12,7 @@ function file_insert_before() {
 	# use relative paths due to platform independence
 	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	local file_py_path=$(system_path "$THIS_DIR/../Python/utils/file.py")
+	local file_py_path=$(system_path "$THIS_DIR/file_utils.py")
 	local ret=$(python $file_py_path insert_before "$fpath" "$2" "$3")
 	local res=$?
 	echo "$ret"
@@ -43,7 +43,7 @@ function file_replace() {
 	local fpath=$(realpath --relative-to="$current_path" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	local file_path_for_python=$(system_path "$fpath")
-	local file_py_path=$(system_path "$THIS_DIR/../Python/utils/file.py")
+	local file_py_path=$(system_path "$THIS_DIR/file_utils.py")
 	local ret=$(python $file_py_path replace "$file_path_for_python" "$2" "$3")
 	local res=$?
 	echo "$ret"
@@ -74,7 +74,7 @@ function file_search() {
 function file_regex() {
 	fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	local file_py_path=$(system_path "$THIS_DIR/../Python/utils/file.py")
+	local file_py_path=$(system_path "$THIS_DIR/file_utils.py")
 	local ret=$(python $file_py_path search "$fpath" "$2" "$3")
 	local res=$?
 	echo $ret

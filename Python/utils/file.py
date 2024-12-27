@@ -1,5 +1,4 @@
 import os
-import re
 import shutil
 import sys
 from datetime import datetime as _datetime
@@ -78,7 +77,6 @@ def verify_copy(source_path, destination_path):
 		return 3
 	return 0
 
-
 def is_open(fpath):
 	if not os.path.exists(fpath):
 		return False
@@ -91,47 +89,3 @@ def is_open(fpath):
 		return True
 	return False
 
-def insert_before(fpath, where, what):
-	return replace(fpath, where, what + where, 1)
-
-def replace(fpath, where, what, count = -1):
-	from utils.path.universal_path import UniversalPath
-
-	# syspath  = system_path(fpath)
-	syspath = UniversalPath(fpath)
-	with open(syspath, "r") as f:
-		contents = f.read()
-	pos = contents.find(where)
-	if (pos < 0):
-		print(-1)
-		return -1
-	
-	contents = contents.replace(where, what, count)
-
-	with open(syspath, "w") as f:
-		f.write(contents)
-
-	print(pos)
-	return pos
-
-def search(fpath, what, count = 1):
-	if (type(count) != int):
-		count = 1
-	with open(system_path(fpath), "r") as f:
-		contents = f.read()
-	res = re.findall(what, contents)
-	for p in res:
-		count = count - 1
-		if (count <= 0):
-			return p
-	return -1
-
-if __name__ == "__main__":
-	if len(sys.argv) > 2:  # TODO: check if __main__ works in place of this args check
-		arr = []
-		for i, a in enumerate(sys.argv):
-			if (i > 1):
-				arr.append(a)
-		locals()[sys.argv[1]](*arr)
-	elif len(sys.argv) == 2:
-		locals()[sys.argv[1]]()
