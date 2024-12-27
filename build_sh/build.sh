@@ -22,7 +22,7 @@ build()
 	local build=""
 	local rootDirectory="."
 	local onlyConfig=false
-	local reconfigure=false
+	local keep_cache=false
 	local extraArg=" "
 	local extraArgWin=$extraArg
 	local extraArgMac=$extraArg
@@ -78,13 +78,9 @@ build()
 			elif [[ "$arg" == "configure" ]] || [[ "$arg" == "-c" ]]; then
 				log "'$arg' option passed. Will not build the project. Only make the config" " --"
 				local onlyConfig=true
-			elif [[ "$arg" == "reconfigure" ]] || [[ "$arg" == "-rc" ]]; then
-				log "'$arg' option passed. Will not build the project. Only make the config and remove CMakeCache.txt" " --"
-				local onlyConfig=true
-				local reconfigure=true
-			elif [[ "$arg" == "reconfigure" ]] || [[ "$arg" == "-rcb" ]]; then
-				log "'$arg' option passed. Will reconfigure and build the project." " --"
-				local reconfigure=true
+			elif [[ "$arg" == "keep_cache" ]] || [[ "$arg" == "-kc" ]]; then
+				log "'$arg' option passed. Existing CMakeCache.txt will be reused" " --"
+				local keep_cache=true
 			fi
 		fi	
 		local argIndex=$((argIndex + 1))
@@ -135,10 +131,12 @@ build()
 	[ ! -d "$build" ] && mkdir $build || log "	already exists" " --"
 	cd "$build"
 
-	if $reconfigure; then
-		local cmd="rm CMakeCache.txt"
-		log "Remove CMakeCache.txt cmd: '$cmd'"
-		$cmd
+	if ! $keep_cache; then
+		if [ -f "CMakeCache.txt" ]; then
+			local cmd="rm CMakeCache.txt"
+			log "Remove CMakeCache.txt cmd: '$cmd'"
+			$cmd
+		fi
 	fi
 	log "Configure with CMake command: '$configure_cmd'" "\033[0;36m" "\033[0m"
 	$configure_cmd
