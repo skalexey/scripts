@@ -11,6 +11,7 @@ function test_dir_job()
 	local nutrition_calculator_dir=$project_dir
 	
 	local includes=(	"$scripts_dir/include/log.sh" \
+						"$scripts_dir/include/os.sh" \
 						"$scripts_dir/include/file_utils.sh" \
 						"$scripts_dir/include/file_utils.py" \
 						"$scripts_dir/include/git_utils.sh" \

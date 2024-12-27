@@ -7,6 +7,7 @@ all_build_includes_dir_job()
 	source automation_config.sh
 	
 	local includes=(	"$scripts_dir/include/log.sh" \
+						"$scripts_dir/include/os.sh" \
 						"$scripts_dir/include/file_utils.sh" \
 						"$scripts_dir/include/file_utils.py" \
 						"$scripts_dir/automation/include" \
