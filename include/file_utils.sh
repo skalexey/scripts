@@ -1,5 +1,8 @@
 #!/bin/bash
 
+FILE_UTILS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $FILE_UTILS_DIR/os.sh
+
 function file_insert_before() {
 	[ -z "$1" ] && return -10 # file name
 	[ -z "$2" ] && return -20 # string before which to insert
@@ -9,7 +12,8 @@ function file_insert_before() {
 	# use relative paths due to platform independence
 	local fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	local ret=$(python $THIS_DIR/../Python/utils/file.py insert_before "$fpath" "$2" "$3")
+	local file_py_path=$(system_path "$THIS_DIR/../Python/utils/file.py")
+	local ret=$(python $file_py_path insert_before "$fpath" "$2" "$3")
 	local res=$?
 	echo "$ret"
 	return $res
@@ -29,18 +33,6 @@ function file_append_line() {
 	echo "$2" >> "$1"
 }
 
-function to_python_path() {
-	if ! declare -F is_windows > /dev/null 2>&1; then
-		local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-		source $THIS_DIR/os.sh
-	fi
-	if is_windows; then
-		to_win_path "$1"
-	else
-		echo "$1"
-	fi
-}
-
 function file_replace() {
 	[ -z "$1" ] && return -10 # file name
 	[ -z "$2" ] && return -20 # regex to find
@@ -50,8 +42,9 @@ function file_replace() {
 	local current_path="${PWD}"
 	local fpath=$(realpath --relative-to="$current_path" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	local file_path_for_python=$(to_python_path "$fpath")
-	local ret=$(python $THIS_DIR/../Python/utils/file.py replace "$fpath" "$2" "$3")
+	local file_path_for_python=$(system_path "$fpath")
+	local file_py_path=$(system_path "$THIS_DIR/../Python/utils/file.py")
+	local ret=$(python $file_py_path replace "$file_path_for_python" "$2" "$3")
 	local res=$?
 	echo "$ret"
 	return $res
@@ -81,7 +74,8 @@ function file_search() {
 function file_regex() {
 	fpath=$(realpath --relative-to="$(to_win_path "${PWD}")" "$1")
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	local ret=$(python $THIS_DIR/file_utils.py search "$fpath" "$2" "$3")
+	local file_py_path=$(system_path "$THIS_DIR/../Python/utils/file.py")
+	local ret=$(python $file_py_path search "$fpath" "$2" "$3")
 	local res=$?
 	echo $ret
 	return $res
@@ -168,28 +162,58 @@ function to_win_path() {
 	fi
 }
 
-function to_nix_path() {
-	if ! is_win_path "$1"; then
-		echo "$1"
+function bash_path() {
+	if is_wsl; then
+		echo $(wslpath -u "$1")
+	elif is_cygwin; then
+		echo $(cygpath -u "$1")
 	else
-		# Check if WSL
-		if command -v wslpath > /dev/null 2>&1; then
-			echo $(wslpath -u "$1")
-		elif command -v cygpath > /dev/null 2>&1; then
-			echo $(cygpath -u "$1")
-		else
-			echo "$1"
-		fi
+		# Letter should be converted to lower case
+		echo $(echo "$1" | sed -e 's/\\/\//g' -e 's/^\([a-zA-Z]\):/\/\L\1/')
 	fi
 }
 
-is_win_path() {
+function to_nix_path() {
+	if is_win_path "$1"; then
+		if is_wsl_path "$1"; then
+			echo $(wslpath -u "$1")
+		elif is_cygpath "$1"; then
+			echo $(cygpath -u "$1")
+		else
+			echo $(bash_path "$1")
+		fi
+	else
+		echo "$1"
+	fi
+}
+
+function is_win_path() {
 	local path="$1"
 	# Check if the path matches the Windows format (e.g., C:\ or D:\)
 	if [[ "$path" =~ ^[a-zA-Z]:\\ ]]; then
-		return 0  # True: It is a Windows path
+		true
 	else
-		return 1  # False: It is not a Windows path
+		false
+	fi
+}
+
+function is_wsl_path() {
+	local path="$1"
+	# Check if the path matches the WSL format (e.g., /mnt/c/ or /c/)
+	if [[ "$path" =~ ^/mnt/[a-zA-Z]/ ]]; then
+		true
+	else
+		false
+	fi
+}
+
+function is_cygpath() {
+	local path="$1"
+	# Check if the path matches the Cygpath format (e.g., /cygdrive/c/ or /cygdrive/d/)
+	if [[ "$path" =~ ^/cygdrive/[a-zA-Z]/ || "$path" =~ ^/[a-zA-Z]/ ]]; then
+		true
+	else
+		false
 	fi
 }
 
@@ -197,7 +221,7 @@ function system_path() {
 	if is_windows; then
 		to_win_path "$1"
 	else
-		echo "$1"
+		to_nix_path "$1"
 	fi
 }
 

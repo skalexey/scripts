@@ -95,7 +95,11 @@ def insert_before(fpath, where, what):
 	return replace(fpath, where, what + where, 1)
 
 def replace(fpath, where, what, count = -1):
-	with open(fpath, "r") as f:
+	from utils.path.universal_path import UniversalPath
+
+	# syspath  = system_path(fpath)
+	syspath = UniversalPath(fpath)
+	with open(syspath, "r") as f:
 		contents = f.read()
 	pos = contents.find(where)
 	if (pos < 0):
@@ -104,7 +108,7 @@ def replace(fpath, where, what, count = -1):
 	
 	contents = contents.replace(where, what, count)
 
-	with open(fpath, "w") as f:
+	with open(syspath, "w") as f:
 		f.write(contents)
 
 	print(pos)
@@ -113,7 +117,7 @@ def replace(fpath, where, what, count = -1):
 def search(fpath, what, count = 1):
 	if (type(count) != int):
 		count = 1
-	with open(fpath, "r") as f:
+	with open(system_path(fpath), "r") as f:
 		contents = f.read()
 	res = re.findall(what, contents)
 	for p in res:
@@ -122,29 +126,12 @@ def search(fpath, what, count = 1):
 			return p
 	return -1
 
-def is_wsl_path(path):
-	return path.startswith("/mnt/")
-
-def is_windows_path(path):
-	return path[1] == ":" or "\\" in path
-
-def is_unix_path(path):
-	return "/" in path
-
-
-def system_path(path):
-	import platform
-	import subprocess
-
-	if platform.system() == "Windows":
-		return path.replace("/", "\\")
-
 if __name__ == "__main__":
-# if len(sys.argv) > 2:  # TODO: check if __main__ works in place of this args check
-	arr = []
-	for i, a in enumerate(sys.argv):
-		if (i > 1):
-  			arr.append(a)
-	locals()[sys.argv[1]](*arr)
-elif len(sys.argv) == 2:
-	locals()[sys.argv[1]]()
+	if len(sys.argv) > 2:  # TODO: check if __main__ works in place of this args check
+		arr = []
+		for i, a in enumerate(sys.argv):
+			if (i > 1):
+				arr.append(a)
+		locals()[sys.argv[1]](*arr)
+	elif len(sys.argv) == 2:
+		locals()[sys.argv[1]]()
