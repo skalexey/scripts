@@ -1,7 +1,7 @@
 from utils.lang import safe_enter
 
 
-class Atomic:
+class Synchronized:
 	def __init__(self, obj, lock):
 		object.__setattr__(self, 'obj', obj)
 		object.__setattr__(self, 'lock', lock)

@@ -85,7 +85,7 @@ class Callable(TrackableResource):
 	def is_valid(self):
 		return not (self._invalidated or self.callable is None)
 
-	# Checks if the callable was invalidated. Atomic with _invalidate() call.
+	# Checks if the callable was invalidated. Synchronized with _invalidate() call.
 	def is_invalidated(self):
 		# with self._invalidate_lock:
 		with self._invalidate_lock as acquired:

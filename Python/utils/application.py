@@ -8,7 +8,7 @@ from datetime import datetime
 
 import utils.debug.debug_detector
 from utils.collection.associative_list import AssociativeList
-from utils.concurrency.atomic import Atomic
+from utils.concurrency.synchronized import Synchronized
 from utils.debug import wrap_debug_lock
 from utils.lang import safe_super
 from utils.log.logger import Logger
@@ -27,8 +27,8 @@ class Application(ABC):
 		self._last_time = None
 		self._time_lock = wrap_debug_lock(threading.RLock())
 		self.on_time_invalidated = Subscription()
-		self._on_update_jobs = Atomic(AssociativeList(), threading.RLock())
-		self._main_thread_job_queue = Atomic(deque(), threading.RLock())
+		self._on_update_jobs = Synchronized(AssociativeList(), threading.RLock())
+		self._main_thread_job_queue = Synchronized(deque(), threading.RLock())
 		# Define a custom signal handler function to gracefully exit the application
 		def signal_handler(sig, frame):
 			log(f"Received signal {sig}. Exiting the application.")
@@ -87,7 +87,7 @@ class Application(ABC):
 		if not self._main_thread_job_queue:
 			return False
 		while self._main_thread_job_queue:
-			job = self._main_thread_job_queue.popleft() # Prformed under the lock through Atomic
+			job = self._main_thread_job_queue.popleft() # Prformed under the lock through Synchronized
 			job()
 		return True
 
