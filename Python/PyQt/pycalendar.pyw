@@ -174,7 +174,11 @@ if __name__ == "__main__":
 			tuple(map(int, k.split("-"))): v for k, v in json.load(f).items()
 		}
 
-	window = HolidayCalendar(2024, holiday_data)
-	window.resize(1200, 900)
+	from datetime import datetime
+
+	current_year = datetime.now().year
+	window = HolidayCalendar(current_year, holiday_data)
+	screen_geometry = QApplication.primaryScreen().availableGeometry()
+	window.resize(int(screen_geometry.width() * 0.8), int(screen_geometry.height() * 0.8))
 	window.show()
 	app.exec()
