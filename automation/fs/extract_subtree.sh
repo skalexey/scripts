@@ -31,6 +31,19 @@ TARGET_DIR="$2"
 FILE_PATTERN="$3"
 COMMAND_TEMPLATE="${4:-mkdir -p \"\$(dirname \"\$2\")\" && cp \"\$1\" \"\$2\"}"  # Default command creates the parent directory for files or full directory path for folders and copies the file
 
+function collapse_home() {
+	# Get the expanded value of ~
+	local home_dir
+	home_dir=$(eval echo "~")
+	
+	# Split the input string (for better matching and replacement)
+	local input="$1"
+	local replaced
+	replaced=$(echo "$input" | sed "s|$home_dir|~|g")
+	
+	echo "$replaced"
+}
+
 # Print all the variables if verbose mode is enabled
 if [ "$VERBOSE" = true ]; then
     echo "SOURCE_DIR: $SOURCE_DIR"
@@ -78,10 +91,9 @@ calculate_md5() {
 	echo "$md5"
 }
 
-# Normalize SOURCE_DIR and TARGET_DIR to absolute paths without trailing slashes
-SOURCE_DIR=$(realpath "$SOURCE_DIR")
-TARGET_DIR=$(realpath "$TARGET_DIR")
-
+# Normalize SOURCE_DIR to absolute path
+SOURCE_DIR=$(eval echo "$SOURCE_DIR")
+SOURCE_DIR="$(realpath "$SOURCE_DIR")"
 # Find all files matching the pattern
 file_list=()
 while IFS= read -r file; do
@@ -155,16 +167,16 @@ for file in "${file_list[@]}"; do
 
 		# Skip the file if MD5 checksums match
 		if [ "$SKIP_MD5_CHECK" = false ] && [ "$src_md5" = "$dest_md5" ]; then
-			echo "Skipping $file -> $dest (files are identical)"
+			echo "Skipping $(collapse_home "$file -> $dest") (files are identical)"
 			processed_size=$((processed_size + file_size))
 			progress=$((processed_size * 100 / total_size))
-			echo -ne "Progress: $progress% ($((processed_size / 1024 / 1024)) MB of $((total_size / 1024 / 1024)) MB)\r"
+			echo -ne "Progress: $progress% ($(awk "BEGIN {printf \"%.2f\", $processed_size / 1024 / 1024}") MB of $(awk "BEGIN {printf \"%.2f\", $total_size / 1024 / 1024}") MB)\r"
 			continue
 		fi
 	fi
 
 	# Run the specified command with source and destination as arguments, highlighting the command
-	echo -e "Executing: ${COLOR}$exec_command${RESET}"
+	echo -e "Executing: ${COLOR}$(collapse_home "$COMMAND_TEMPLATE with \$1='$absolute_file', \$2='$dest'")${RESET}"
 	eval "$exec_command"
 	
 	# Increment processed count and update processed size
@@ -173,7 +185,7 @@ for file in "${file_list[@]}"; do
 	progress=$((processed_size * 100 / total_size))
 	
 	# Display progress
-	echo -ne "Progress: $progress% ($((processed_size / 1024 / 1024)) MB of $((total_size / 1024 / 1024)) MB)\r"
+	echo -ne "Progress: $progress% ($(awk "BEGIN {printf \"%.2f\", $processed_size / 1024 / 1024}") MB of $(awk "BEGIN {printf \"%.2f\", $total_size / 1024 / 1024}") MB)\r"
 done
 
 # Final summary
