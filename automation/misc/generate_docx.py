@@ -4,7 +4,7 @@ import random
 from pathlib import Path
 
 from docx import Document
-from utils.file import system_path
+from file_utils import system_path
 
 
 def generate_meaningful_or_tech_text(paragraphs=3):
@@ -59,10 +59,10 @@ def generate_random_hierarchy_with_tech_and_meaningful_text(base_dir, num_folder
 		folder_depth = random.randint(1, max_depth)
 		for _ in range(folder_depth):
 			folder_name = random.choice([
-				"Motivation", "Technology", "Philosophy", "Programming", "Life Hacks",
-				"Inspiration Hub", "AI Innovations", "Code Basics", "Self Growth", "Data Science",
-				"Creative Thinking", "Mindful Living", "Tech Trends", "Knowledge Vault", "Future Insights",
-				"Personal Development", "Algorithms Explained", "Practical Solutions", "Big Ideas", "Quantum Computing"
+				"Bank", "Other", "General Education", "English", "Personal",
+				"Dev", "Job Searching", "Games", "Orders", "tmp",
+				"Books", "Portfolio", "Translations", "Treadmill", "Certificates",
+				"Personal Development", "Algorithms", "Practical Solutions", "Big Ideas", "Quantum Computing"
 			])
 			folder_path = os.path.join(folder_path, folder_name)
 		os.makedirs(folder_path, exist_ok=True)
