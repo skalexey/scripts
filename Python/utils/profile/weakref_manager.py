@@ -3,7 +3,7 @@ import weakref
 from utils.intrstate import Intrstate
 
 
-class RefManager(Intrstate):
+class WeakrefManager(Intrstate):
 	def _process_set_value(self, key, value):
 		return weakref.ref(value)
 

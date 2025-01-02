@@ -2,14 +2,15 @@ import asyncio
 import gc
 from test import *
 
-import utils.asyncio_utils as asyncio_utils
-import utils.method
 from trade.strategy import Strategy
 from trade.trade_context import TradeContext
+
+import utils.asyncio_utils as asyncio_utils
+import utils.method
 from utils.log.logger import Logger
 from utils.memory import SmartCallable
-from utils.profile.refmanager import RefManager
 from utils.profile.trackable_resource import TrackableResource
+from utils.profile.weakref_manager import WeakrefManager
 from utils.task_scheduler import TaskScheduler
 
 log = Logger()
@@ -79,7 +80,7 @@ def circular_ref_test():
 		e = E()
 		a = A()
 
-		man = RefManager()
+		man = WeakrefManager()
 
 		def inner_scope():
 			log(title("Inner Scope"))
@@ -126,7 +127,7 @@ def circular_ref_test():
 	def asyncio_test():
 		log(title("Asyncio Test"))
 
-		man = RefManager()
+		man = WeakrefManager()
 
 		def inner_scope():
 			log(title("Inner Scope"))
@@ -181,7 +182,7 @@ def circular_ref_test():
 	def task_scheduler_test():
 		log(title("TaskScheduler Test"))
 
-		man = RefManager()
+		man = WeakrefManager()
 
 		def inner_scope():
 			log(title("Inner Scope"))
@@ -213,7 +214,7 @@ def circular_ref_test():
 
 	def strategy_test():
 		log(title("Strategy Test"))
-		man = RefManager()
+		man = WeakrefManager()
 
 		def inner_scope():
 			log(title("Inner Scope"))

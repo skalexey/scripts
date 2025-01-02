@@ -239,10 +239,6 @@ class WeakProxy:
 			raise ReferenceError(utils.method.msg_kw("Weak reference is no longer valid"))
 		return obj(*args, **kwargs)
 
-	def __instancecheck__(self, instance):
-		obj = self._ref()
-		return isinstance(obj, instance)
-	
 	def __bool__(self):
 		return self.deref() is not None
 

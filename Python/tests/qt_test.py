@@ -5,10 +5,11 @@ from test import *
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QLabel, QMainWindow, QPushButton, QVBoxLayout, QWidget
+
 from utils.application_context import ApplicationContext
 from utils.memory import SmartCallable, weak_self_class, weak_self_method
-from utils.profile.refmanager import RefManager
 from utils.profile.trackable_resource import TrackableResource
+from utils.profile.weakref_manager import WeakrefManager
 from utils.pyside import WidgetBase
 from utils.pyside.application import Application
 
@@ -219,7 +220,7 @@ def circular_ref_test():
 		def scm(self):
 			log(utils.method.msg(f"capturing self: {self}"))
 
-	man = RefManager()
+	man = WeakrefManager()
 	def closed_scope(window, central_widget):
 		log(title("Closed scope"))
 		man.child_owner = ChildOwner(central_widget)
