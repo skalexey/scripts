@@ -13,6 +13,3 @@ class Proxy:
 
 	def __call__(self, *args, **kwargs):
 		return self._obj(*args, **kwargs)
-
-	def __instancecheck__(self, instance):
-		return isinstance(self._obj, instance)
