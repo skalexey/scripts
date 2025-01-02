@@ -1,3 +1,8 @@
+"""
+Can be used as a buffer for the provided data or as a virtual view of a specific segment.
+Creates an object that holds a memoryview to the given data starting at an optional offset.
+Allows reading the data in chunks ranging from 1 to <size - offset> bytes, with checks to determine if the end of the data has been reached.
+"""
 from functools import total_ordering
 
 import utils.method
@@ -5,14 +10,14 @@ import utils.method
 
 @total_ordering
 class Buffer:
-	def __init__(self, data=None, offset=None):
-		self.set_data(data, offset)
+	def __init__(self, data=None, offset=None, size=None):
+		self.set_data(data, offset, size)
 
-	def set_data(self, data, offset=None):
+	def set_data(self, data, offset=None, size=None):
 		self._data = data
 		if data is not None:
 			view = memoryview(self._data)
-			self._view = view[offset:] if offset is not None else view
+			self._view = view[offset:size]
 		else:
 			self._view = None
 
