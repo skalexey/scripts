@@ -1,14 +1,16 @@
 import sys
 
+from utils.text import title as gen_title
+
 
 def input(message):
-	# Make a console input
-	# Read the input and return it
-	print(message)
+	print(f"{message}", end="")
 	return sys.stdin.readline().strip()
 
 def message(title, message):
-	print(f"{title}: {message}")
+	space_to_fill = len(message)
+	print(gen_title(title, length=space_to_fill))
+	print(message)
 	# Wait for any key press
 	input("Press any key to continue...")
 
@@ -57,6 +59,8 @@ def test_input():
 		assert answer == False
 
 	ask_yes_no("Enter 'n'", on_yes_no_answer_no)
+
+	message("Thank you!", "Thanks for testing the user input functions!")
 
 
 if __name__ == "__main__":
