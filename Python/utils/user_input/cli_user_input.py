@@ -1,7 +1,11 @@
-input_function = input
-def set_input_function(func):
-	global input_function
-	input_function = func
+import sys
+
+
+def input(message):
+	# Make a console input
+	# Read the input and return it
+	print(message)
+	return sys.stdin.readline().strip()
 
 def message(title, message):
 	print(f"{title}: {message}")
@@ -33,3 +37,28 @@ def ask_yes_no(message, on_answer):
 			continue
 		break
 	
+
+# Tests
+def test_input():
+	assert input("Enter 'hello': ") == "hello"
+	
+	def on_answer_world(answer):
+		assert answer == "world"
+		return True
+
+	ask_input("Enter 'world'", on_answer_world)
+
+	def on_yes_no_answer_yes(answer):
+		assert answer == True
+
+	ask_yes_no("Enter 'y'", on_yes_no_answer_yes)
+
+	def on_yes_no_answer_no(answer):
+		assert answer == False
+
+	ask_yes_no("Enter 'n'", on_yes_no_answer_no)
+
+
+if __name__ == "__main__":
+	test_input()
+	print("utils/user_input/pyside_user_input.py is OK")

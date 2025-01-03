@@ -1,7 +1,6 @@
 import threading
 
 import utils.pyside
-import utils.user_input.abstract_user_input as user_input
 from utils.context import *
 
 
@@ -17,11 +16,6 @@ def input(message):
 	GlobalContext.app.do_in_main_thread(job_for_main_thread)
 	event.wait()
 	return answer
-
-input_function = input
-def set_input_function(func):
-	global input_function
-	input_function = func
 
 def message(title, message):
 	print(f"{title}: {message}")
