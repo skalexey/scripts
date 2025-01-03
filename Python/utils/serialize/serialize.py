@@ -49,9 +49,9 @@ def to_dict(obj, serializer, default=NotSerializable, throw=True, overwrite=Fals
 		return f"Fields '{not_serializable_elements}' are not serializable"
 	return to_collection(result, serializer, default, throw, overwrite, iter, exception_msg)
 
-def to_list(obj, serializer, default=NotSerializable, throw=True, overwrite=False):
-	result = obj if overwrite else [None] * len(obj)
-	iter = enumerate(obj)
+def to_list(lst, serializer, default=NotSerializable, throw=True, overwrite=False):
+	result = lst if overwrite else [None] * len(lst)
+	iter = enumerate(lst)
 	def exception_msg(not_serializable_elements):
 		return f"Elements '{not_serializable_elements.values()}' are not serializable"
 	return to_collection(result, serializer, default, throw, overwrite, iter, exception_msg)		
