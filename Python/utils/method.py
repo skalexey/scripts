@@ -94,12 +94,12 @@ def chain_args(base_class=None, out=None, validate=True, custom_frame=None):
 			func_name = frame_func.__name__
 			if func_name == caller_func_name:
 				# Collect params for this class call of frame_func
-				cls_init_params = params(frame_func)
+				caller_func_params = params(frame_func)
 				if validate:
-					_params.update(cls_init_params)
+					_params.update(caller_func_params)
 				# Collect the args
 				frame_locals = frame.f_locals
-				for key, value in cls_init_params.items():
+				for key, value in caller_func_params.items():
 					if key in frame_locals:
 						result[key] = frame_locals[key]
 						assert result[key] is not inspect.Parameter.empty, f"Parameter '{key}' is empty"
