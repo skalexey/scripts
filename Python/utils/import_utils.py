@@ -21,6 +21,11 @@ _cache_is_loading = None
 
 
 def module_cache():
+	"""
+	Finds all the modules in the Python module search path and stores their paths.
+	Used by is_module_path() to distinguish module paths from class paths.
+	Works asynchronously as this task is quite demanding for big projects.
+	"""
 	if _module_cache is None:
 		with _cache_lock:
 			global _cache_is_loading
@@ -29,6 +34,7 @@ def module_cache():
 			log.debug("Building module cache")
 			def work():
 				global _module_cache
+				global _cache_is_loading
 				profiler.start()
 				cache = {}
 				search_dirs = collect_search_paths()
@@ -52,6 +58,7 @@ def module_cache():
 								cache[module_path] = full_fpath
 				log.debug(f"module_cache(): Found {len(cache)} modules in {profiler.measure().timespan} seconds")
 				_module_cache = cache
+				_cache_is_loading = False
 			# Run task in parallel
 			_cache_is_loading = True
 			threading.Thread(target=work).start()
@@ -59,6 +66,10 @@ def module_cache():
 	return _module_cache
 
 def is_module_path(path):
+	"""
+	Checks if the given path corresponds to an existing Python module.
+	Helps distinguish module paths from class paths.
+	"""
 	cache = module_cache()
 	if cache is None: # Cache not ready yet
 		log.debug(utils.function.msg(f"Cache not ready yet. Working using find_spec()"))
@@ -70,6 +81,9 @@ def is_module_path(path):
 	return path in cache
 
 def collect_search_paths():
+	"""
+	Returns a set of all the paths where Python searches for modules.
+	"""
 	# Start with the system paths
 	# Put real paths in a set to avoid duplicates
 	paths = set(os.path.realpath(path) for path in sys.path)
@@ -94,6 +108,9 @@ def collect_search_paths():
 	return paths
 
 def find_or_import_class(class_path): # e.g. 'module.submodule.ClassName'
+	"""
+	Searches for a class by its fully qualified path (e.g., 'module.submodule.ClassName') among imported modules, imports if not found, and then returns it.
+	"""
 	# Try to find the class in globals()
 	cls = class_utils.find_class(class_path)
 	if cls:
