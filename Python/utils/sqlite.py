@@ -1,4 +1,9 @@
-import json
+"""
+Utilities for working with SQLite databases, providing functionality for schema modifications, full database backups, and common operations like data insertion, updates, and queries.
+Offers thread-safe higher-level interfaces that encapsulate resource allocation and management.
+It also includes monolite interface with self-sufficient functions for one-line operations.
+"""
+
 import os
 import shutil
 import sqlite3
@@ -377,14 +382,17 @@ class Connection:
 
 	def update(self, table_name, data, where=None, params=None):
 		return update(table_name, data, where, params, connection=self.connection, cursor=self.cursor())
+	
+	def create_or_alter_table(self, table_name, data, addition=None, primary_keys=None, composite_indexes=None):
+		create_or_alter_table_from_dict(self.db_fpath, table_name, data, addition, primary_keys, composite_indexes, connection=self.connection, cursor=self.cursor())
 
 
 class DictInterface(Connection):
+	"""
+	An alternative interface to the SQLite database that returns data in the form of dictionaries.
+	"""
 	def __init__(self, db_fpath, *args, **kwargs):
 		super().__init__(db_fpath, *args, **kwargs)
-
-	def create_or_alter_table(self, table_name, data, addition=None, primary_keys=None, composite_indexes=None):
-		create_or_alter_table_from_dict(self.db_fpath, table_name, data, addition, primary_keys, composite_indexes, connection=self.connection, cursor=self.cursor())
 
 	def query(self, table_name, where=None, params=None, columns=None, statement="SELECT", **kwargs):
 		return query_data(table_name, where, params, columns, statement, connection=self.connection, cursor=self.cursor(), **kwargs)[0]
