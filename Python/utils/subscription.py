@@ -1,6 +1,6 @@
 import asyncio
 import threading
-from time import sleep, time
+from time import sleep
 
 import utils  # Lazy import for less important modules
 import utils.collection
@@ -9,7 +9,6 @@ import utils.method
 from utils.collection.ordered_dict import OrderedDict
 from utils.collection.ordered_set import OrderedSet
 from utils.concurrency.scoped_lock import ScopedLock
-from utils.context import GlobalContext
 from utils.debug import wrap_debug_lock
 from utils.live import verify
 from utils.log.logger import Logger
@@ -19,6 +18,11 @@ from utils.timed_loop import timed_loop
 log = Logger()
 
 class Subscription:
+	"""
+	Basic subscription implementation that allows a set of functions or any callables to be invoked through sub.notify() call.
+	It has such methods as subscribe, unsubscribe, notify, wait, asyncio_wait.
+	"""
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._data = OrderedDict()
@@ -171,16 +175,18 @@ class Subscription:
 	def __call__(self, *args, **kwargs):
 		self.notify(*args, **kwargs)
 
-# Notification happens only once and any subscriptions following the notification trigger the notification on the subscriber.
+
 class OneTimeSubscriptionBase(Subscription):
+	"""
+	Extends Subscription to ensure notifications occur only once, and stores the result of the notification as a value passed to notify(result) call.
+	Any subscribe() calls made after the notification immediately notify the new subscriber with the stored result.
+	"""
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._result = None
 
-	def _set_result(self, *args, **kwargs):
-		self.notify(*args, **kwargs)
-
-	def _reset_result(self):
+	def reset(self):
 		self._result = None
 
 	def notify(self, result=None, *args, **kwargs):
@@ -199,6 +205,10 @@ class OneTimeSubscriptionBase(Subscription):
 			cb(self._result)
 
 class OneTimeSubscription(OneTimeSubscriptionBase):
+	"""
+	A specialization of OneTimeSubscriptionBase that allows to set and read a specific result.
+	"""
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
@@ -208,25 +218,24 @@ class OneTimeSubscription(OneTimeSubscriptionBase):
 				raise TimeoutError(utils.method.msg_kw("Timeout occured while waiting for event"))
 		return self._result
 	
+	# Future-like interface
 	def set_result(self, *args, **kwargs):
-		self._set_result(*args, **kwargs)
-
-	def reset_result(self):
-		self._reset_result()
+		self.notify(*args, **kwargs)
 
 
 class Event(OneTimeSubscriptionBase):
+	"""
+	A specialization of OneTimeSubscriptionBase  where the result acts as a flag indicating whether the notification has occurred.
+	"""
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
 	def set(self):
-		self._set_result()
+		self.notify()
 
 	def is_set(self):
 		return self._result is not None
 
-	def reset(self):
-		self._result = None
-
-	def notify(self): # Override for making no args allowed
+	def notify(self):  # Override for making no args allowed
 		super().notify()

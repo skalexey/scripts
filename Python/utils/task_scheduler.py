@@ -418,7 +418,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 					raise RuntimeError(msg)
 				else:
 					self.operator.thread_id = threading.current_thread().name
-					self.operator.on_released.reset_result()
+					self.operator.on_released.reset()
 
 			def _is_operating(self):
 				is_operating = self.operator.is_operating()
