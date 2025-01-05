@@ -21,7 +21,8 @@ def class_name(cls_or_path):
 	if isinstance(cls_or_path, str):
 		return cls_or_path.split('.')[-1]
 	else:
-		cls = cls_or_path
+		return cls_or_path.__name__
+
 
 def find_class(class_path_or_name, globals=None): # e.g. 'module.submodule.ClassName'
 	classname = class_name(class_path_or_name)
@@ -41,6 +42,9 @@ def find_class(class_path_or_name, globals=None): # e.g. 'module.submodule.Class
 	return cls
 
 class EnforcedABCMeta(ABCMeta):
+	"""
+	Helper class for situations when one of the inherited classes suppresses ABCMeta (e.g. QWidget).
+	"""
 	def __call__(cls, *args, **kwargs):
 		# Check if abstract methods are implemented
 		def check_abstractmethod(name, value):
