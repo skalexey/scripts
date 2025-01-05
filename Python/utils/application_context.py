@@ -1,9 +1,11 @@
-from datetime import datetime
-
 from utils.context import GlobalContext
 
 
 class ApplicationContext(GlobalContext):
+	"""
+	Part of the module system, it serves as a hub for shared resources—such as settings_manager, plugin_manager, data_manager, session_manager, main_window, and the application instance—making them accessible to any module.
+	"""
+
 	is_live = False
 
 	def __init__(self):
