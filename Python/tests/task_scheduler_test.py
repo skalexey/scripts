@@ -30,7 +30,7 @@ class A(TaskScheduler):
 		return "Success 3"
 
 	def parallel_test(self):
-		log(title("Parallel test", "=", 60))
+		log(title("Parallel test"))
 		result_future = self.run_parallel_task(self.async_method1)
 		result_future = self.run_parallel_task(self.async_method2)
 		result_future = self.run_parallel_task(self.async_method3)
@@ -82,13 +82,15 @@ class A(TaskScheduler):
 
 	def test(self):
 		log(title("Start the tests"))
+		# self.parallel_test()
 		self.queue_test()
-		self.function_test()
+		# self.function_test()
 		log(title("Tests completed"))
 
 def test1():
 	log(title("Test 1"))
 	a = A()
+	a.test()
 	log(title("End of Test 1"))
 
 def report_resources_status():
@@ -341,6 +343,7 @@ def tasks_test():
 
 def test():
 	log(title("Task Scheduler test"))
+	# test1()
 	validation_test()
 	for i in range(99):
 		log(utils.function.msg(f"Iteration {i}"))
