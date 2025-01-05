@@ -35,6 +35,10 @@ class TrackableResourceInfo:
 
 
 class TrackableResource:
+	"""
+	Enables visibility into the creation and destruction of derived class objects by automatically printing verbose log messages, and allowing to assign a custom function to be executed upon object destruction.
+	"""
+
 	resources = AssociativeList()
 
 	def __repr__(self):

@@ -1,4 +1,8 @@
 class Proxy:
+	"""
+	Propagates all operations to the wrapped object.
+	Used as a base class for different kinds of object wrappers and references.
+	"""
 	def __init__(self, obj):
 		super().__setattr__("_obj", obj)
 

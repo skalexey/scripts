@@ -64,6 +64,10 @@ class ItemInfo:
 
 
 class AutoLayout(QLayout):
+	"""
+	Fills the gap in the Qt layout system by aligning items both horizontally and vertically if the content exceeds  the available width.
+	"""
+
 	def __init__(self, parent=None, margin=0, spacing=-1):
 		super().__init__(parent)
 		self._items = []

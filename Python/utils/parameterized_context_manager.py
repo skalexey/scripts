@@ -1,3 +1,7 @@
+"""
+Defines base and wrapper classes that allow to specify all the parameters in the context manager call, like "with lock(timeout, blocking):", or preset these arguments as default and continue using just "with lock:" as usual, that is very suitable for debugging by setting timeouts for all the locks to find which one causes a deadlock without changing their usage code.
+"""
+
 import threading
 import weakref
 from abc import ABC, abstractmethod

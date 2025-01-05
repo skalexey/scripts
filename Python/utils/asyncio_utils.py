@@ -1,10 +1,11 @@
 import asyncio
 import concurrent.futures
 
-"""
-Get the currently running loop, or create a new one and return it.
-"""
+
 def get_event_loop():
+	"""
+	Get the currently running loop, or create a new one and return it.
+	"""
 	try:
 		loop = asyncio.get_event_loop()
 	except RuntimeError:
@@ -12,21 +13,21 @@ def get_event_loop():
 		asyncio.set_event_loop(loop)
 	return loop
 
-"""
-Universal function to get the result of a task or a future, completing it from a non-async code through task_or_future.get_loop().run_until_complete(task_or_future).
-"""
 def result(task_or_future):
+	"""
+	Universal function to get the result of a task or a future, completing it from a non-async code through task_or_future.get_loop().run_until_complete(task_or_future).
+	"""
 	if task_or_future.cancelled():
 		return asyncio.CancelledError()
 	if task_or_future.done():
 		return task_or_future.exception() or task_or_future.result()
 	return task_or_future.get_loop().run_until_complete(task_or_future)
 
-"""
-Always returns asuncio.Task object correspondent to the given coro.
-If the argument is the task, just returns it.
-"""
 def task(coro_or_task, loop=None):
+	"""
+	Always returns asuncio.Task object correspondent to the given coro.
+	If the argument is the task, just returns it.
+	"""
 	if isinstance(coro_or_task, asyncio.Task):
 		return coro_or_task
 	_loop = loop or get_event_loop()
@@ -36,10 +37,10 @@ def task(coro_or_task, loop=None):
 			return task
 	return None
 
-"""
-Guaranteedly creates a task in the given loop for the given coro from any thread.
-"""
 def create_task_threadsafe(loop, coro, loop_lock, on_done=None):
+	"""
+	Guaranteedly creates a task in the given loop for the given coro from any thread.
+	"""
 	future = concurrent.futures.Future()
 	if on_done is not None:
 		future.add_done_callback(on_done)

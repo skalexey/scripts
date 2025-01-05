@@ -2,6 +2,10 @@ import time
 
 
 class TimeProfiler:
+	"""
+	Manages time measurements for specific sections of code, allowing each section to be named. Includes a flexible set of methods to output the recorded data in an arbitrary format.
+	"""
+
 	def __init__(self, print_function=None):
 		self.start_time = None
 		self.last_time = None

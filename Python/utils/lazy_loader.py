@@ -10,6 +10,19 @@ from utils.log.logger import Logger
 log = Logger()
 
 class LazyLoader:
+	"""
+	Allows to access symbols from a user's module without explicitly importing them, as they were already imported.
+	If the accessed symbol is a not-yet-imported module, the loader imports it, achieving "lazy import" or "import on demand" behavior.
+	It is useful for removing circular dependencies and speeding up the application startup time.
+
+	Usage: in __init__.py of a package, create a LazyLoader instance and define the following code:
+
+	from utils.lazy_loader import LazyLoader
+	loader = LazyLoader()
+	def __getattr__(name):
+		return loader.get(name)
+	"""
+
 	def __init__(self, *args, **kwargs):
 		self._modules = None
 		# Cache for storing loaded objects (functions, classes, and variables)
@@ -81,6 +94,9 @@ class LazyLoader:
 		return f"from module '{self.user_module_name}': {message}"
 
 	def get(self, name):
+		"""
+		Retrieves a symbol by name, dynamically importing its module if necessary.
+		"""
 		if name == '__wrapped__':
 			return None
 

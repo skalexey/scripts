@@ -8,13 +8,16 @@ from utils.log.logger import Logger
 log = Logger()
 
 class ModuleManager:
+	"""
+	Maintains a list of all modules, managing their registration, ensuring the uniqueness of their names, providing access to them by name, and allowing to call a function on all the modules at once.
+	"""
+
 	def __init__(self, modules_dir):
 		self.modules = OrderedDict()
 
 	def register_module(self, name, module):
 		existing_module = self.modules.get(name)
 		if existing_module is not None:
-			return False
 			raise Exception(f"Trying to register a module '{name}' that is already registered")
 		def delete_if_dead(ref, self_weak=utils.memory.weak_proxy(self), name=name):
 			log.warning(f"Unregistering module '{name}' upon deletion of the reference")

@@ -1,3 +1,10 @@
+"""
+Aims to provide an abstract layer for object serialization and deserialization of any class.
+Allows to keep the class untied from a particular conversion logic, delegating the choice of the format to the user  through the use of serializer and deserializer functions passed to its serialize() and deserialize() methods.
+Requires classes to inherit from the Serializable base class, which enforces the necessary requirements.
+It provides the ability to store the class in both human-readable and storage-efficient formats.
+There are few serializers based on this mechanism sufficient to convert data into JSON or a database row.
+"""
 import collections
 import inspect
 import json
@@ -139,6 +146,9 @@ def attrs_from_dict(data, deserializer=from_json_struct, carry_over_additional_k
 	return class_attrs_from_dict(data, deserializer=from_json_struct, carry_over_additional_kwargs=False, overwrite=False, caller_frame=caller_frame, **additional_kwargs)[1:4]
 
 def class_attrs_from_dict(data, deserializer=None, carry_over_additional_kwargs=False, overwrite=False, caller_frame=None, **additional_kwargs):
+	"""
+	Deserializes a dictionary with "classpath" and all the data needed to construct an object into a class and arguments, leaving instantiation for the user-level code.
+	"""
 	_deserializer = deserializer or from_json_struct
 	classpath = data.get("classpath")
 	if classpath is None:

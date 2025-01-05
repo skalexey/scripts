@@ -4,6 +4,9 @@ from utils.subscription import Subscription
 
 
 class SignalRegistry:
+	"""
+	Allows to register more than one handler per a signal.
+	"""
 	def __init__(self):
 		# Dictionary to hold handlers for each signal
 		self.handlers = {}

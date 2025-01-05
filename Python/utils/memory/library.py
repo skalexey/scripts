@@ -220,12 +220,15 @@ class SmartCallable(OwnedCallable):
 	def repr_params(self):
 		return f"id={self.id}, {super().repr_params()}"
 
-"""
-Acts as a given object, but does not take ownership. Signals when the object is destroyed through a callback if provided.
-"""
-# Reminders:
-# It doesn't work with super() calls since they assume self is of a type of the class where the method is defined.
+
 class WeakProxy:
+	"""
+	Acts as a given object, but does not take ownership.
+	Signals when the object is destroyed through a callback if provided.
+
+	Reminders:
+		It doesn't work with super() calls since they assume self is of a type of the class where the method is defined.
+	"""
 	def __init__(self, obj, on_destroyed=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self._ref = weakref.ref(obj, on_destroyed)

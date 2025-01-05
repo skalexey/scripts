@@ -1,9 +1,10 @@
 from utils.lang import NoValue
 
-"""
-Allows to access the object's attributes as a dictionary.
-"""
+
 class AttributesView:
+	"""
+	Allows to access the object's attributes as a dictionary.
+	"""
 	def __init__(self, obj):
 		self._obj = obj
 

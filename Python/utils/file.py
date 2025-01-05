@@ -9,6 +9,9 @@ from utils.log.logger import Logger
 log = Logger()
 
 def backup_path(path, datetime=None, date_format=None):
+	"""
+    Generates a unique backup name with date and time and returns it as a path in the same directory as the original file.
+	"""
 	dt = datetime or _datetime.now()
 	_date_format = date_format or "%Y-%m-%d_%H-%M-%S"
 	def gen_backup_path(cnt):
@@ -18,6 +21,9 @@ def backup_path(path, datetime=None, date_format=None):
 	return backup_path
 
 def gen_free_path(path=None, gen_func=None):
+	"""
+	Generates a unique file name by appending a counter or using a custom generation function and returns it as a path in the same directory as the original file.
+	"""
 	if gen_func is None:
 		if path is None:
 			raise ValueError("Either 'path' or 'gen_func' must be provided")
@@ -36,6 +42,9 @@ def gen_free_path(path=None, gen_func=None):
 	return free_path
 
 def restore(backed_path, original_path):
+	"""
+	Restores a backup file to its original location with additional checks for integrity and safety of this operation.
+	"""
 	if not os.path.exists(backed_path):
 		return -1
 	# Log the creation of the original file path if it doesn't exist
@@ -53,6 +62,10 @@ def restore(backed_path, original_path):
 	return 0
 
 def backup(path, datetime=None, date_format=None):
+	"""
+	Creates a backup of a file by copying it to a new location with a timestamped unique name.
+	Performs additional checks for the integrity and safety of this operation.
+	"""
 	target_path = backup_path(path, datetime, date_format)
 	log.warning(utils.function.msg(f"Backing up to '{target_path}'"))
 	try:
@@ -67,6 +80,9 @@ def backup(path, datetime=None, date_format=None):
 	return target_path
 
 def verify_copy(source_path, destination_path):
+	"""
+	Verifies the integrity of a copied file by comparing its size and modification time.
+	"""
 	if not os.path.exists(destination_path):
 		return 1
 	source_stat = os.stat(source_path)
@@ -78,6 +94,9 @@ def verify_copy(source_path, destination_path):
 	return 0
 
 def is_open(fpath):
+	"""
+	Checks if a file at the given path is open by attempting to rename it.
+	"""
 	if not os.path.exists(fpath):
 		return False
 	try:

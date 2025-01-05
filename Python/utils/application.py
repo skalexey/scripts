@@ -1,3 +1,6 @@
+"""
+Defines the Application class, which combines multiple mechanics and system features— such as termination signal handling, an update(dt) loop, and utility methods like do_in_main_thread(f) and add_on_update(f).
+"""
 import concurrent.futures
 import signal
 import sys

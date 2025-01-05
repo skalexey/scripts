@@ -26,9 +26,11 @@ def is_collection(value):
 def is_serializable(value):
 	return is_primitive(value) or is_collection(value)
 
-# Load with pre-check to avoid capturing raised exceptions
-# TODO: optimize-out pattern check for release environment
 def load(string):
+	"""
+	Pre-checks whether the given string is valid JSON before attempting to load it in debug mode. Returns None instead of raising an exception, making it suitable for non-exception designs.
+	"""
+	# TODO: optimize-out pattern check for release environment
 	if __debug__:
 		pattern = r'^\s*(\{[\s\S]*\}|\[[\s\S]*\])\s*$'
 		if not re.match(pattern, string):

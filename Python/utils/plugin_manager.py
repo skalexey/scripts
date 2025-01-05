@@ -9,6 +9,10 @@ from utils.plugin import Plugin
 
 log = Logger()
 class PluginManager:
+	"""
+	Loads and holds all the plugins, ensuring following naming conventions, and architecture
+	"""
+
 	def __init__(self, plugins_dir, app_context, *args, **kwargs):
 		self.plugins_dir = plugins_dir
 		self.plugins = OrderedDict()

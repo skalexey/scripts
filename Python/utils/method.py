@@ -6,12 +6,18 @@ from utils.collection.ordered_dict import OrderedDict
 
 
 def args(out=None, validate=True, custom_frame=None, extract_kwargs=None):
+	"""
+	Calls utils.function.args(), removing the first element (e.g. self or cls) from the result.
+	"""
 	result = utils.function.args(out, validate, custom_frame=(custom_frame or inspect_utils.caller_frame()), extract_kwargs=extract_kwargs)
 	assert len(result) > 0, f"Method has no self or cls parameter"
 	result.remove_at(0)
 	return result
 
 def is_first_arg_valid(arg):
+	"""
+	Checks if the first argument of a method is a valid class or instance.
+	"""
 	# Check if it's a class method (arg is a class)
 	if inspect.isclass(arg):
 		return True
@@ -21,6 +27,9 @@ def is_first_arg_valid(arg):
 	return False
 
 def params(method_or_func, out=None, filter=None):
+	"""
+	Calls utils.function.params(func, ...) removing the first element (e.g. self or cls) from the result.
+	"""
 	func = inspect_utils.function(method_or_func)
 	_params = utils.function.params(func, out, filter=filter)
 	if len(_params) <= 0:
@@ -31,6 +40,9 @@ def params(method_or_func, out=None, filter=None):
 	return _params
 
 def filter_params(all_attrs, method):
+	"""
+	Separates parameters of the method from the given dictionary.
+	"""
 	_params = params(method)
 	attrs = all_attrs.__class__()
 	kwargs = all_attrs.__class__()
@@ -42,6 +54,9 @@ def filter_params(all_attrs, method):
 # Goes through the MRO and collects all the parameters of the method implementations in its class hierarchy
 # mro_end - the class to stop the search at
 def chain_params(method_or_func, cls=None, mro_end=None, out=None, filter=None):
+	"""
+	Collects parameters from all implementations of a method in a class hierarchy.
+	"""
 	if inspect.isfunction(method_or_func):
 		if cls is None:
 			raise ValueError(utils.function.msg("Class must be provided for a function"))
@@ -63,8 +78,10 @@ def chain_params(method_or_func, cls=None, mro_end=None, out=None, filter=None):
 			result.update(cls_params)
 	return result
 
-# Goes through the stack frames and collects the arguments passed to all the implementations of the same method in the caller class hierarchy up to the base_class
 def chain_args(base_class=None, out=None, validate=True, custom_frame=None):
+	"""
+	Goes through the stack and collects the arguments passed to all the implementations of the caller method in the caller class hierarchy up to the base_class.
+	"""
 	result = out or OrderedDict()
 	if validate:
 		_params = {}
@@ -120,6 +137,9 @@ def chain_args(base_class=None, out=None, validate=True, custom_frame=None):
 	return result
 
 def msg(message=None, args_format=None, frame=None):
+	"""
+	Same as utils.function.msg(), but without the first argument (self or cls).
+	"""
 	return utils.function.msg(message, args_format=args_format, frame=frame or inspect_utils.caller_frame(), ignore_first=True)
 
 def msg_kw(message=None, frame=None):

@@ -26,6 +26,9 @@ class ThreadControl:
 			self._obj._tmp_thread_ids[current_thread().name] -= 1
 
 def allow_any_thread(method_func):
+	"""
+	Decorator for ThreadGuard-derived classes to allow a method to be called from any thread.
+	"""
 	@wraps(method_func)
 	def wrapper(self, *args, **kwargs):
 		with ThreadControl(self): # Allow consequitive depth accesses once an allowed method is reached
@@ -34,6 +37,9 @@ def allow_any_thread(method_func):
 	return wrapper
 
 def allow_any_thread_with_lock(lock_name):
+	"""
+	Decorator for ThreadGuard, the same as allow_any_thread, but performs the method under a specified lock.
+	"""
 	def decorator(method_func):
 		@wraps(method_func)
 		def wrapper(self, *args, **kwargs):
@@ -79,10 +85,14 @@ def apply_thread_check(cls):
 			setattr(cls, attr_name, thread_check(attr_value, cls))
 	return cls
 
-# ThreadGuard class allows to restrict methods, properties, and writing access to only specific threads.
-# Access for reading to existing attributes is always allowed. It is quite cumbersome to override __getattribute__ and is not needed in 99% of cases.
+
 @apply_thread_check
 class ThreadGuard:
+	"""
+	Allows to restrict methods, properties, and writing access to only specific threads.
+	"""
+	# Access for reading to existing attributes is always allowed. It is quite cumbersome to override __getattribute__ and is not needed in 99% of cases.
+
 	def __init_subclass__(cls, **kwargs):
 		super().__init_subclass__(**kwargs)
 		apply_thread_check(cls)

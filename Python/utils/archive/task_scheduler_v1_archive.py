@@ -121,7 +121,7 @@ class TaskScheduler(TrackableResource):
 			else:
 				log.debug(utils.method.msg_kw(f"Running {len(tasks)} tasks until complete"))
 
-			def on_try_use(try_result): # TODO: incapsulate if possible
+			def on_try_use(try_result): # TODO: encapsulate if possible
 				log.verbose(utils.function.msg_kw("Lock released"))
 				operator.enter_lock.release()
 				assert operator.enter_lock._is_owned() is False

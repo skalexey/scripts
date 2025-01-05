@@ -4,6 +4,10 @@ from utils.subscription import Subscription
 
 
 class Job(TrackableResource):
+	"""
+	A task that progresses iteratively within an update loop until completion.
+	"""
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.on_done = Subscription()
@@ -30,6 +34,10 @@ class Job(TrackableResource):
 		self.on_cancel.notify(self)
 
 class TimedJob(Job):
+	"""
+	Time-based task with implemented update(dt) method.
+	"""
+
 	def __init__(self, duration = None, duration_range=None, *args, **kwargs):
 		self.time_elapsed = 0
 		if duration is not None:

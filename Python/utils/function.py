@@ -4,6 +4,10 @@ import utils.inspect_utils as inspect_utils
 
 
 def params(func, out=None, filter=None):
+	"""
+	Returns a dictionary with input parameters of a function with their default values, excluding variadic aliases (*args and **kwargs) if possible.
+	Optionally filters out some of them based on the given predicate.
+	"""
 	var_positional_name = None
 	keep_var_positional = False
 	def sig_filter(param, filter=filter):
@@ -27,6 +31,9 @@ def params(func, out=None, filter=None):
 	return result
 
 def args(out=None, validate=True, custom_frame=None, extract_args=None, extract_kwargs=None):
+	"""
+	Collects arguments passed to the caller's function, optionally validating and extracting additional arguments or keyword arguments.
+	"""
 	_frame = custom_frame or inspect_utils.caller_frame()
 	_extract_kwargs = extract_kwargs or False
 	_extract_args = extract_args or False
@@ -69,6 +76,9 @@ def args(out=None, validate=True, custom_frame=None, extract_args=None, extract_
 	return result
 
 def msg(message=None, args_format=None, frame=None, ignore_first=None):
+	"""
+	Constructs a message string prefixed with the current function's name and arguments in one of the formats: "names", "values", "kw", where "kw" displays all the arguments, including positional, in the name=value format.
+	"""
 	_args_format = args_format or False
 	_ignore_first = ignore_first or False
 	sig_str = inspect_utils.current_function_signature(custom_frame=frame or inspect_utils.caller_frame(), args_format=_args_format, ignore_first=_ignore_first)
@@ -82,6 +92,9 @@ def msg_v(message=None, frame=None):
 	return msg(message, args_format="values", frame=frame or inspect_utils.caller_frame())
 
 def glue(*funcs):
+	"""
+	Combines multiple functions into a single one.
+	"""
 	_funcs = [func for func in funcs if func is not None]
 	if len(_funcs) == 0:
 		raise ValueError("At least one function should be passed")

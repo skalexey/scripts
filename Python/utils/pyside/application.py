@@ -1,14 +1,18 @@
 from PySide6.QtCore import QEvent, QTimer
 from PySide6.QtWidgets import QApplication
 
-import utils.subscriptions
 from utils.application import Application as ABCApplication
 from utils.log.logger import Logger
 from utils.pyside import CombinedMetaQtABC
 
 log = Logger()
 
+
 class Application(ABCApplication, QApplication, metaclass=CombinedMetaQtABC):
+	"""
+	Qt implementation for utils.Application class. Defines update loop handling logic through QTimer, and integrates Qt's quit() method.
+	"""
+
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.timer = QTimer()

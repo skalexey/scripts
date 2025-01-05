@@ -9,6 +9,10 @@ def is_value_empty(value):
 	return value == inspect.Parameter.empty
 
 def signature_input(func, out=None, filter=None):
+	"""
+	Returns a dictionary with parameters of a function with their default values, or VAR_KEYWORD/VAR_POSITIONAL for variadic aliases (*args and **kwargs).
+	Optionally filters out some of them based on the given predicate.
+	"""
 	if func is None:
 		raise ValueError(utils.function.msg("The given argument is not a method or a function"))
 	signature = inspect.signature(func)
@@ -24,6 +28,9 @@ def signature_input(func, out=None, filter=None):
 	return result
 
 def current_function_signature(custom_frame=None, args_format=None, ignore_first=None):
+	"""
+	Constructs a string with the signature of the current function.
+	"""
 	frame = custom_frame or caller_frame()
 	call_info = frame_call_info(frame)
 	func = call_info.function
@@ -32,6 +39,9 @@ def current_function_signature(custom_frame=None, args_format=None, ignore_first
 	return signature_str(func, call_info.cls, frame, args_format=args_format, ignore_first=ignore_first)
 
 def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=None):
+	"""
+	Returns a string representation of a given function's signature.
+	"""
 	_func = inspect.unwrap(func)
 	_frame = frame or caller_frame()
 	_args_format = "names" if args_format is None else args_format
@@ -71,14 +81,27 @@ def signature_str(func, cls=None, frame=None, args_format=None, ignore_first=Non
 	return f"{class_name_addition}{_func.__name__}{args_sig}"
 
 def frame_function(frame):
+	"""
+	Returns a function of the given frame.
+	"""
 	call_info = frame_call_info(frame)
 	return call_info.function
 
 def module_name(frame=None):
+	"""
+	Gets the module name where the frame is called.
+	"""
 	frame = frame or caller_frame()
 	return frame.f_globals.get('__name__', None)
 
+
 class CallInfo:
+	"""
+	Extended information about the callstack frame with attached module_name, frame, co_name, and:
+		* caller object, class, and method in the case of class method call and module name,
+		* function in the case of a function call.
+	"""
+
 	def __init__(self, frame):
 		self.frame = frame
 		self.co_name = None
@@ -164,8 +187,10 @@ class CallInfo:
 			return f"CallInfo({self.co_name})"
 		return f"CallInfo({self.caller_classname()} {self.caller_type()}->{self.cls.__name__}.{self.function.__name__}())"
 
-# Properties can have getter and setter function bound to the same name
 def functions(obj):
+	"""
+	Returns a list of functions that represents the given object. It retrieves getter and setter functions for properties, the function for methods, and the function itself for functions.
+	"""
 	result = []
 	if isinstance(obj, property):
 		for name in ['fget', 'fset']:
@@ -179,8 +204,11 @@ def functions(obj):
 			result.append(func)
 	return result
 
-# For methods and functions returns the function bound to the object, for properties returns the getter. To get both getter and setter use functions(obj)
 def function(obj):
+	"""
+	Retrieves the function associated with the given object. It returns function of a method, getter function of a property, and function itself for a function.
+	To get both getter and setter use functions(obj)
+	"""
 	if inspect.isfunction(obj):
 		func = obj
 	elif inspect.ismethod(obj):
@@ -196,6 +224,9 @@ def function(obj):
 	return func
 
 def cls(obj):
+	"""
+	Retrieves the class of an object.
+	"""
 	if inspect.isclass(obj):
 		return obj
 	if inspect.isfunction(obj):

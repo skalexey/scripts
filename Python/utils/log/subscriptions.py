@@ -1,3 +1,7 @@
+"""
+Global subscriptions for log events.
+"""
+
 from utils.log.logger import LogLevel
 from utils.log.server import LogServer
 from utils.subscription import Subscription

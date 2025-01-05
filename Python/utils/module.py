@@ -11,6 +11,11 @@ from utils.profile.trackable_resource import TrackableResource
 log = Logger()
 
 class Module(TrackableResource, ABC):
+	"""
+	A base class for all modules. Automatically dedicates a string name for the module converting its class name to snake case.
+	Implements the settings logic and interface.
+	"""
+
 	def __init__(self, module_name=None, *args, **kwargs):
 		def on_destroyed(info):
 			log.debug(f"Module destroyed: {info.repr}")
