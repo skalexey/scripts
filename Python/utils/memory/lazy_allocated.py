@@ -1,9 +1,11 @@
-from utils.proxy import Proxy
-
 """
 Acts as a proxy for an object of a specified class, but created only upon first use.
 It stores a reference to the class or an allocating function, along with the arguments to be passed during instantiation.
 """
+
+from utils.proxy import Proxy
+
+
 class LazyAllocated(Proxy):
 	def __init__(self, allocator=None, *args, **kwargs):
 		super().__init__(None) # Triggers _obj.setter through object.__setattr__

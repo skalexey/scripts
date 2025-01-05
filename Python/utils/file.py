@@ -1,6 +1,5 @@
 import os
 import shutil
-import sys
 from datetime import datetime as _datetime
 
 import utils.function

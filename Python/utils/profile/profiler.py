@@ -48,7 +48,7 @@ class TimeProfiler:
 			self.print(_format.format(description=mark.description, timespan=mark.timespan))
 
 	def print_measurements(self, format=None):
-		_format = format or "Measurementment '{description}': {timespan} sec."
+		_format = format or "Measurement '{description}': {timespan} sec."
 		for measurement in self._measurements:
 			self.print(_format.format(description=measurement.description, timespan=measurement.timespan))
 

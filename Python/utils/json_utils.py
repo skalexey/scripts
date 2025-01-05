@@ -2,7 +2,6 @@ import collections
 import json
 import os
 import re
-import shutil
 
 import utils  # Lazy import for less important modules
 import utils.file
