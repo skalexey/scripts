@@ -10,6 +10,9 @@ def extract_self(bound_method):
 	return getattr(bound_method, '__self__', None)
 
 def clear_resources(obj):
+	"""
+	Sets all the attributes of an object to None, or call obj.clear() if obj is a dictionary. Useful for triggering garbage collection in the case of circular references.
+	"""
 	if isinstance(obj, dict):
 		obj.clear()
 	else:
@@ -17,21 +20,6 @@ def clear_resources(obj):
 			log.verbose(utils.function.msg_kw(f"Clearing attribute '{attr}'"))
 			if attr in obj.__dict__: # Any attribute could have been removed from a desctructor of any other one
 				obj.__dict__[attr] = None
-
-class DefaultNew:
-	def __init__(self, callable, *args, **kwargs):
-		self._callable = callable
-		self._args = args
-		self._kwargs = kwargs
-
-	def __get__(self, instance, owner):
-		if instance is None:
-			return self
-		else:
-			return self._callable(*self._args, **self._kwargs)
-
-def defnew(callable, *args, **kwargs):
-	return DefaultNew(callable, *args, **kwargs)
 
 class NoValueMeta(type):
 	def __bool__(cls):
@@ -42,11 +30,18 @@ class NoValueMeta(type):
 		raise TypeError(f"Cannot create instances of {cls.__name__}")
 
 class NoValue(metaclass=NoValueMeta):
+	"""
+	This class itself represents a value that has not been set. Useful for default arguments where None is a valid value.
+	"""
 	pass
 
 
-# It does not support super() without arguments for performance reasons since retrieving the class of the function requires iterating the whole MRO.
 class SafeSuper:
+	"""
+	Used in safe_super() as the return value.
+	It does not support super() without arguments for performance reasons since retrieving the class of the function requires iterating the whole MRO.
+	"""
+
 	class DummyFunct:
 		def __init__(self, *args, **kwargs):
 			pass
@@ -58,6 +53,10 @@ class SafeSuper:
 		return getattr(self._super, name, self.DummyFunct)
 	
 def safe_super(cls, inst):
+	"""
+	An extended version of super(), designed to prevent exceptions when called at the final point in the MRO.
+	Reduces coupling by abstracting away uncertainties in the class hierarchy.
+	"""
 	return SafeSuper(cls, inst)
 
 def getattr_noexcept(obj, name, default=NoValue):
@@ -67,11 +66,16 @@ def compare_exceptions(e1, e2):
 	return type(e1) == type(e2) and e1.args == e2.args
 	
 
-# Safe __enter__ decorator that catches exceptions and calls __exit__ upon encountering one, then re-raises the exception
-# Example usage:
-# @safe_enter
-# def __enter__(self):
 def safe_enter(func):
+	"""
+	Decorator for __enter__ that ensures __exit__ is always called even in the case of an exception in __enter__.
+	Re-raises the exception after calling __exit__.
+
+	Usage example:
+	@safe_enter
+	def __enter__(self):
+	"""
+
 	def wrapper(self):
 		try:
 			return func(self)
@@ -79,27 +83,3 @@ def safe_enter(func):
 			self.__exit__(type(e), e, e.__traceback__)
 			raise
 	return wrapper
-
-
-class StaticProperty:
-	def __init__(self, fget=None, fset=None):
-		self.fget = fget
-		self.fset = fset
-
-	def __get__(self, instance, owner):
-		if self.fget is None:
-			raise AttributeError("unreadable attribute")
-		return self.fget(owner)
-
-	def __set__(self, instance, value):
-		if self.fset is None:
-			raise AttributeError("can't set attribute")
-		self.fset(instance.__class__, value)
-
-	def getter(self, fget):
-		self.fget = fget
-		return self
-
-	def setter(self, fset):
-		self.fset = fset
-		return self
