@@ -26,6 +26,9 @@ log = Logger()
 
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskScheduler(TrackableResource, ThreadGuard):
+	"""
+	Aims to provide a simple interface to maintain a queue of functions to run in non-blocking manner, allowing the running thread to continue handling other tasks, delegating the queue maintainance to the underlying mechanisms of TaskScheduler based on asyncio. Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread safety of all operations.
+	"""
 	instances: list[weakref.ref] = []
 	on_update = Subscription()
 
@@ -57,25 +60,25 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 
 	@allow_any_thread
 	def schedule_task(self, async_function, max_queue_size=0, *args, **kwargs):
+		"""
+		Runs a function, or puts it in the queue but no more than <max_queue_size> times unique for this function.
+		"""
 		log.debug(utils.method.msg_kw())
 		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
 		with self._lock:
 			registered_task_count = self.registered_task_count(cb)
 			return self._schedule_task(cb, registered_task_count, max_queue_size)
 	
-	# Schedule a function to run providing the max_queue_size that is less than the total amount of this function among the tasks in the queue
-	@allow_any_thread
-	def schedule_function(self, async_function, max_queue_size=0, *args, **kwargs):
-		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
-		with self._lock:
-			registered_function_count = self.registered_task_count(cb)
-			return self._schedule_task(cb, registered_function_count, max_queue_size)
-
 	def run_parallel_task(self, async_function):
+		# TODO: This functionality has been reduced due to a need to maintain several queues for different functions, providing the same can be achieved using separate TaskScheduler instances for each unique function.
+		# Need to consider making TaskScheduler as a manager of FunctionScheduler.
 		raise "Not implemented yet."
 
 	@allow_any_thread
 	def run_until_complete(self, awaitable):
+		"""
+		Executes an awaitable (such as an asyncio.Task, coroutine, or future) until completion, handling precautions for the currently running event loop and threading context.
+		"""
 		log.debug(utils.method.msg_kw())
 		try:
 			log.debug(utils.method.msg_kw(f"Trying to check if the tasks are under processing by the owner thread"))
@@ -189,9 +192,11 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		log.debug(utils.function.msg(f"Waiting for {name_type}s completed with result: {result}"))
 		return result
 
-
 	@allow_any_thread
 	def wait_all_tasks(self, timeout=None):
+		"""
+		Waits for all scheduled tasks to complete, with an optional timeout.
+		"""
 		log.debug(utils.method.msg_kw())
 		if self._loop_operator.is_operating_in_current_thread():
 			raise RuntimeError(utils.method.msg_kw("Called wait_all_tasks() from a running task."))
@@ -201,15 +206,19 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 			return self.WaitForResult()
 		tasks = []
 		futures = []
+		for task_info in self._queue:
+			futures.append(task_info.future)
 		for task_info in list(task_infos.values()):
 			tasks.append(task_info.task)
 			futures.append(task_info.future)
-		return self.run_until_complete_for(tasks, timeout)
+		return self.run_until_complete_for(futures, timeout)
 	
-
 	@allow_any_thread
 	# Returns the result of the future in the case of a successful completion
 	def wait(self, future):
+		"""
+		Waits for a specific future to complete and returns its result.
+		"""
 		verify(self._loop is not None and future.get_loop() == self._loop, utils.method.msg_kw("Foreign future provided"))
 		try:
 			return self.run_until_complete(future)
@@ -221,6 +230,9 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		return results[0]
 
 	def run_until_complete_for(self, tasks_or_futures, timeout):
+		"""
+		Runs multiple awaitables with run_until_complete() for a limited time, returning their results.
+		"""
 		log.debug(utils.method.msg_kw())
 		name_type = "task" if isinstance(tasks_or_futures[0], asyncio.Task) else "future"
 		def collect_results(timedout):
@@ -240,6 +252,9 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 	@allow_any_thread
 	# Returns False in the case of a timeout. Otherwise, always True
 	def complete_all_tasks(self, timeout=None):
+		"""
+		Calls wait_all_tasks() and cancels them if the timeout is exceeded.
+		"""
 		result = self.wait_all_tasks(timeout)
 		if not result:
 			log.debug(utils.method.msg_kw("Timeout occurred while completing all tasks. Cancelling all tasks"))
@@ -260,6 +275,9 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 	@allow_any_thread
 	# Returns WaitForResult object that contains the result of the future in the case of a successful completion and a timedout flag
 	def wait_for(self, future, timeout):
+		"""
+		Waits for a specific future to complete within the given timeout. Returns a WaitForResult object containing the results of the future (if successful) or indicating a timeout.
+		"""
 		result = self.run_until_complete_for([future], timeout)
 		if result.result is not None:
 			result.result = result.result[0] if result.result else None
@@ -282,8 +300,9 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		if len(self._tasks) > 0:
 			task_info = next(iter(self._tasks.values()))
 			future, task = task_info.future, task_info.task
+			time_to_wait = min(self.update_interval, dt) if self.update_interval is not None else dt
 			async def update_task():
-				await asyncio.sleep(self.update_interval)
+				await asyncio.sleep(time_to_wait)
 			cur = time.time()
 			cancelled = _check_future_task_cancelled(future, task)
 			# verify(not task.cancelled(), "Task is cancelled but it still exists in the tasks list") # The task must be removed from the tasks list in the _on_task_done method
@@ -506,7 +525,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 
 
 	class TaskInfo:
-		def __init__(self, function, task = None, future=None):
+		def __init__(self, function, task=None, future=None):
 			self.function = function
 			self.task = task
 			self.future = future or asyncio_utils.get_event_loop().create_future()
