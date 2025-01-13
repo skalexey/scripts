@@ -1,4 +1,5 @@
 import collections
+from abc import ABC, abstractmethod
 
 import utils.method
 from utils.collection.ordered_set import OrderedSet
@@ -212,3 +213,66 @@ class OrderedDict(OrderedSet):
 				self[key] = other[key]
 		return self
 	
+
+class OrderedDictWriteInterface(ABC):
+	"""Interface for write operations on an OrderedDict-like object."""
+
+	@abstractmethod
+	def __setitem__(self, key, value):
+		pass
+
+	@abstractmethod
+	def setdefault(self, key, default=None):
+		pass
+
+	@abstractmethod
+	def update(self, other):
+		pass
+
+	@abstractmethod
+	def pop(self, *args):
+		pass
+
+	@abstractmethod
+	def popitem(self):
+		pass
+
+	@abstractmethod
+	def insert(self, index, key, value):
+		pass
+
+	@abstractmethod
+	def set_at(self, index, key, value):
+		pass
+
+	@abstractmethod
+	def add(self, key, value):
+		pass
+
+	@abstractmethod
+	def clear(self):
+		pass
+
+	@abstractmethod
+	def sort(self, *args, **kwargs):
+		pass
+
+	@abstractmethod
+	def __delitem__(self, key):
+		pass
+
+
+class OrderedDictNoLockInterface(ABC):
+	"""Interface for operations that don't require locking."""
+
+	@abstractmethod
+	def copy(self):
+		pass
+
+	@abstractmethod
+	def __str__(self):
+		pass
+
+	@abstractmethod
+	def __repr__(self):
+		pass
