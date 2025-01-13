@@ -57,3 +57,19 @@ class EnforcedABCMeta(ABCMeta):
 					check_abstractmethod(abstract_method, getattr(cls, abstract_method))
 		super_obj = super() # For debugging super_obj.__thisclass__.__mro__[1]
 		return super_obj.__call__(*args, **kwargs)
+	
+def method_list(cls):
+	"""
+	Get a list of method names declared directly in a class (excluding inherited methods).
+
+	Args:
+		cls: The class to inspect.
+
+	Returns:
+		A list of method names defined in the class.
+	"""
+	return [
+		name
+		for name, value in inspect.getmembers(cls, predicate=inspect.isfunction)
+		if value.__qualname__.startswith(cls.__name__ + ".")
+	]
