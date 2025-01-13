@@ -27,8 +27,10 @@ log = Logger()
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskScheduler(TrackableResource, ThreadGuard):
 	"""
-	Aims to provide a simple interface to maintain a queue of functions to run in non-blocking manner, allowing the running thread to continue handling other tasks, delegating the queue maintainance to the underlying mechanisms of TaskScheduler based on asyncio. Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread safety of all operations.
+	Aims to provide a simple interface to maintain a queue of functions to run in non-blocking manner, allowing the running thread to continue handling other tasks, delegating the queue maintainance to the underlying mechanisms of TaskScheduler based on asyncio.
+	Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread safety of all operations.
 	"""
+
 	instances: list[weakref.ref] = []
 	on_update = Subscription()
 
