@@ -70,8 +70,8 @@ Extends the capabilities of the built-in Python collections module. It includes:
     Makes `self` weak, ensuring safe closure capturing using WeakProxy.
   - `weak_self_class`  
     Similar functionality for classes.
-- **Callable Variants**  
-  - `Callable`, `SmartCallable`, `OwnedCallable`  
+- **Callable**
+    `Callable`, `SmartCallable`, `OwnedCallable`
     Combines and stores callable objects with their owners using weak references to prevent circular dependencies. Allows subscribing to events triggered by destruction of the owner, callable, or instance.
 
 ### net
