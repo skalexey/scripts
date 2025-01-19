@@ -104,12 +104,13 @@ class ParameterizedLock(ParameterizedContextManagerBase, AbstractLock):
 	def _create_state(self, *args, **kwargs):
 		return ParameterizedLockState(self, *args, **kwargs)
 
-	def _enter(self, blocking=True, timeout=-1, *args, **kwargs):
+	def _enter(self, *args, **kwargs):
 		# print(utils.method.msg_kw(f"Acquiring lock '{self._obj}'"))
 		# log.verbose(utils.method.msg_kw(f"Acquiring lock '{self._obj}'"))
-		acquired = self._obj.acquire(blocking, timeout, *args, **kwargs)
+		acquired = self._obj.acquire(*args, **kwargs)
 		if not acquired:
-			if timeout >= 0:
+			timeout = args[1] if len(args) > 1 else kwargs.get("timeout", NoValue)
+			if timeout and timeout >= 0:
 				if self._except_on_timeout:
 					if self._except_on_timeout is True:
 						raise RuntimeError(f"Failed to enter '{self._obj}' within {timeout} seconds")
