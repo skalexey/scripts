@@ -13,8 +13,19 @@ import utils.lang
 import utils.log
 import utils.profile.profiler
 import utils.text
+from utils.application_context import ApplicationContext
 from utils.log.logger import Logger, LogLevel
+from utils.pyside.application import Application
 from utils.timed_loop import timed_loop
+
+
+class TestApplication(Application):
+	def on_update(self, dt):
+		pass
+
+app_context = ApplicationContext()
+app = TestApplication(app_context, [])
+app_context.app = app
 
 log = Logger()
 # TODO: it makes infinite recursion in Subscription.notify
@@ -30,7 +41,7 @@ class LogAddition:
 	def __str__(self):
 		return f"[{threading.current_thread().name}] "
 
-utils.log.set_global_addition(LogAddition())
+utils.log.add_global_addition(LogAddition(), front=True)
 
 def title(text):
 	return utils.text.title(text, "=", 60)

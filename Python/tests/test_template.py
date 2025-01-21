@@ -1,11 +1,11 @@
 from test import *
 
 def {NAME}_test():
-	pass
+	log(title("{TITLE} Test"))
+	# Code
+	log(title("End of {TITLE} Test"))
 
 def test():
-	log(title("{TITLE} Test"))
 	{NAME}_test()
-	log(title("End of {TITLE} Test"))
 
 run()
