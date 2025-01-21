@@ -4,7 +4,14 @@ import os
 import utils  # Lazy import for less important modules
 import utils.inspect_utils as inspect_utils
 import utils.log
-from utils.log import Log, LogLevel, TitleAddition, _gen_log_funcs
+from utils.log import (
+    CombinedAddition,
+    Log,
+    LogLevel,
+    TitleAddition,
+    _gen_log_funcs,
+    add_log_addition,
+)
 from utils.log import log as _g_log
 from utils.log import log_to_server
 
@@ -35,6 +42,9 @@ class Logger:
 			if not isinstance(self.log_addition, TitleAddition):
 				raise ValueError("Cannot set log title when log addition is not empty")
 		self.log_addition = TitleAddition(title)
+
+	def add_log_addition(self, addition, front=False):
+		self.log_addition = add_log_addition(addition, self.log_addition, front)
 
 	def set_log_level(self, level):
 		self.log(f"Setting log level to {level}")

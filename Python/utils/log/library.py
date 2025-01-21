@@ -14,7 +14,7 @@ import utils  # Lazy import for less important modules
 
 print_strict_order = True # If True, the print function will use print_lock to ensure that the logs are printed in the order they were submitted
 print_lock = threading.Lock()
-g_addition = None
+g_log_addition = None
 print_log_level = 0
 
 def set_print_strict_order(value):
@@ -79,7 +79,7 @@ class LogPacket:
 		self.message = message
 		self.level = level
 		self.title = title
-		self.addition = str(g_addition or "") + str(addition or "")
+		self.addition = str(g_log_addition or "") + str(addition or "")
 
 class Log:
 	def __init__(self, message=None, level=None, title=None, addition=None, timestamp=None, packet=None, *args, **kwargs):
@@ -298,10 +298,7 @@ class IndentAddition(LogAddition):
 
 class CombinedAddition(LogAddition):
 	def __init__(self, *additions):
-		self.additions = []
-		for addition in additions:
-			if addition:
-				self.additions.append(addition)
+		self.additions = list(additions)
 
 	def __str__(self):
 		return "".join([str(a) for a in self.additions])
@@ -328,6 +325,19 @@ def log_fname(postfix=''):
 def store(data, prefix=''):
 	store_to_file(prefix + log_fname(), data)
 
-def set_global_addition(addition):
-	global g_addition
-	g_addition = addition
+def add_log_addition(addition, addition_to, front=False):
+	if addition_to is None:
+		addition_to = addition
+	elif isinstance(addition_to, CombinedAddition):
+		insert_position = 0 if front else len(addition_to.additions)
+		addition_to.append(addition, insert_position)
+	else:
+		if front:
+			addition_to = CombinedAddition(addition, addition_to)
+		else:
+			addition_to = CombinedAddition(addition_to, addition)
+	return addition_to
+
+def add_global_addition(addition, front=False):
+	global g_log_addition
+	g_log_addition = add_log_addition(addition, g_log_addition, front)
