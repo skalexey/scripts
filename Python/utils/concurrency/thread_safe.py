@@ -40,14 +40,12 @@ def make_thread_safe(obj, lock=None):
 
 	return obj
 
-def make_thread_safe_rw(obj, read_lock, write_lock, write_interface=None, no_lock_interface=None):
+def make_thread_safe_rw(obj, write_interface=None, no_lock_interface=None):
 	"""
 	Modify an object in-place to make its attributes and methods thread-safe with separate read and write locks.
 
 	Args:
 		obj: The object to be modified.
-		read_lock: A lock instance for read operations.
-		write_lock: A lock instance for write operations.
 		write_interface: A class defining methods that require a write lock.
 		no_lock_interface: A class defining methods that don't require any lock.
 
@@ -55,7 +53,7 @@ def make_thread_safe_rw(obj, read_lock, write_lock, write_interface=None, no_loc
 		The modified object (for convenience).
 	"""
 	# Create a ReadWriteLock with the provided locks
-	rw_lock = ReadWriteLock(read_lock, write_lock)
+	rw_lock = ReadWriteLock()
 
 	# Get write methods and no-lock methods using method_list
 	write_methods = method_list(write_interface) if write_interface else []
