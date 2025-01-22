@@ -48,7 +48,7 @@ class Callable(TrackableResource):
 			if self_weak.is_alive():
 				if not self_weak.is_invalidated():
 					self_weak._invalidate()
-			log.verbose(utils.function.msg_kw(f"Reference {ref} has been garbage collected")) # Log after invalidating to avoid infinite recursion in log subscriptions
+			log.verbose(utils.function.msg_kw(f"Reference {ref} has been garbage-collected")) # Log after invalidating to avoid infinite recursion in log subscriptions
 		return utils.function.glue(_on_refobj_destroyed, on_refobj_destroyed)
 
 	def __repr__(self):
