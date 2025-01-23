@@ -29,6 +29,7 @@ class ParameterizedContextManagerState():
 	@safe_enter
 	def __enter__(self):
 		self.on_enter_result = self.cm._enter_from_state(self)
+		assert self.on_enter_result is not None  # Was added to catch a lock wrapper error that returned nothing in acquire(), but it may be ok for some tricky lock types.
 		return self
 
 	def __exit__(self, exc_type, exc_value, traceback):
