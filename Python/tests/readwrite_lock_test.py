@@ -59,7 +59,7 @@ def readwrite_lock_multithread_test(thread_count=10, readonly=False):
 		thread.join()
 
 # The same thread writes while reading. Other threads read.
-def readwrite_lock_multithread_write_while_reading_test(thread_count=10):
+def readwrite_lock_multithread_write_while_reading_test(thread_count=10, readwrite_factor_from=0.3, readwrite_factor_to=0.6):
 	log(title("Readwrite Lock Multithread Write While Reading Test"))
 	lock = ReadWriteLock()
 	threads = []
@@ -78,11 +78,11 @@ def readwrite_lock_multithread_write_while_reading_test(thread_count=10):
 			with lock.write as acquired_write:
 				log(f"Write lock acquired: {acquired_write}")
 				threading.Event().wait(0.1)  # Simulate write operation
-			log(f"Write lock released")
+			log(f"Write lock released") 
 		log(f"Read lock released")
 
 	for i in range(thread_count):
-		if i < thread_count * 0.3 or i > thread_count * 0.6:
+		if i < thread_count * readwrite_factor_from or i > thread_count * readwrite_factor_to:
 			target = read
 		else:
 			target = readwrite
@@ -134,7 +134,8 @@ def readwrite_lock_test():
 	for i in range(111):
 		log(title(f"Iteration {i}"))
 		# test1(5)
-		readwrite_lock_multithread_write_while_reading_test(2)
+		# readwrite_lock_multithread_write_while_reading_test(3, 0.33, 1)
+		readwrite_lock_multithread_write_while_reading_test(10)
 		log(title(f"End of Iteration {i}"))
 	log(title("End of Readwrite Lock Test"))
 
