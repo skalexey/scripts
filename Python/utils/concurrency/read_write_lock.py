@@ -1,119 +1,111 @@
 import threading
 
+import utils.method
 from utils.concurrency.parameterized_lock import ParameterizedLock
-from utils.context import GlobalContext
 from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 
 log = Logger()
 
-import threading
-
 
 class ReadWriteLock:
 	def __init__(self):
-		"""Initialize the ReadWriteLock."""
-		self._condition = threading.Condition(threading.RLock())
-		self._readers = 0
-		self._writer = None  # Tracks the current writer thread
-		self._write_requests = 0
+		"""
+		Initialize the ReadWriteLock with provided write lock.
+		If no locks are provided, defaults to reentrant locks (threading.RLock).
+
+		Args:
+			write_lock: A lock instance for write operations.
+		"""
+		self._reader_cv = threading.Condition()
+		self._write_lock = wrap_debug_lock(ParameterizedLock(threading.RLock()))
+		self._readers = 0  # Tracks the number of readers
+
 		self.read = wrap_debug_lock(ParameterizedLock(self.ReadLockWrapper(self)))
 		self.write = wrap_debug_lock(ParameterizedLock(self.WriteLockWrapper(self)))
 
 	class ReadLockWrapper:
 		def __init__(self, rwlock):
 			self._rwlock = rwlock
+			self._tloc = threading.local()
+			
+		@property
+		def _acquired_count(self):
+			return getattr(self._tloc, "acquired_count", 0)
+		
+		@_acquired_count.setter
+		def _acquired_count(self, value):
+			self._tloc.acquired_count = value
 
-		def acquire(self, blocking=True, timeout=-1):
-			with self._rwlock._condition:
-				log.debug(f"Read lock acquire: blocking={blocking}, timeout={timeout}")
-				if not blocking and self._rwlock._write_requests > 0:
+		def acquire(self, *args, **kwargs):
+			with self._rwlock._write_lock(*args, **kwargs) as write_acquired:
+				if not write_acquired:
 					return False
-
-				if timeout == -1:
-					while self._rwlock._write_requests > 0 or self._rwlock._writer:
-						self._rwlock._condition.wait()
-				else:
-					start_time = GlobalContext.current_time()
-					while self._rwlock._write_requests > 0 or self._rwlock._writer:
-						elapsed = GlobalContext.current_time() - start_time
-						remaining = timeout - elapsed
-						if remaining < 0:
-							return False
-						self._rwlock._condition.wait(remaining)
+				# log.debug(utils.method.msg_kw(f"Readers now: {self._rwlock._readers}"))
 				self._rwlock._readers += 1
-				log.debug("Read lock acquired")
+				self._acquired_count += 1
 				return True
 
-		def release(self):
-			with self._rwlock._condition:
-				log.debug("Read lock release. Readers: %d" % self._rwlock._readers)
-				if self._rwlock._readers == 0:
-					raise RuntimeError("Read lock released too many times")
+		def release(self, *args, **kwargs):
+			assert self._rwlock._readers >= 0, f"ReadWriteLock readers counter is unsynchronized: {self._rwlock._readers}"
+			if self._rwlock._readers == 0:
+				raise RuntimeError("Read lock is not acquired while being released")
+			with self._rwlock._write_lock:
 				self._rwlock._readers -= 1
-				if self._rwlock._readers == 0:
-					self._rwlock._condition.notify_all()
-					log.debug("Read lock released")
+				self._acquired_count -= 1
+				with self._rwlock._reader_cv:
+					self._rwlock._reader_cv.notify_all()
+				# log.debug(utils.method.msg_kw(f"Readers now: {self._rwlock._readers}"))
+
+		def acquired(self):
+			return self._rwlock._readers > 0
 
 		def __enter__(self):
 			return self.acquire()
 
-		def __exit__(self, exc_type, exc_val, exc_tb):
+		def __exit__(self, exc_type, exc_value, traceback):
 			self.release()
 
 	class WriteLockWrapper:
 		def __init__(self, rwlock):
 			self._rwlock = rwlock
 
-		def acquire(self, blocking=True, timeout=-1):
-			with self._rwlock._condition:
-				current_thread = threading.current_thread()
-				if self._rwlock._writer == current_thread:
-					return True  # Recursive acquisition allowed for writers
+		def acquire(self, *args, **kwargs):
+			# log.debug("Writer acquires the read lock")
+			self_read_acquired = self._rwlock.read._acquired_count
+			for i in range(self_read_acquired):
+				self._rwlock.read.release()
+			with self._rwlock._reader_cv:
+				self._rwlock._reader_cv.wait_for(lambda: self._rwlock._readers == 0)
+			# log.debug(f"Writer acquires the write lock. Readers: {self._rwlock._readers}")
+			result = self._rwlock._write_lock.acquire(*args, **kwargs)
+			for i in range(self_read_acquired):
+				self._rwlock.read.acquire()
+			return result
 
-				self._rwlock._write_requests += 1
-
-				if not blocking and (self._rwlock._readers > 0 or self._rwlock._writer):
-					self._rwlock._write_requests -= 1
-					return False
-
-				if timeout == -1:
-					while self._rwlock._readers > 0 or self._rwlock._writer:
-						self._rwlock._condition.wait()
-				else:
-					start_time = GlobalContext.current_time()
-					while self._rwlock._readers > 0 or self._rwlock._writer:
-						elapsed = GlobalContext.current_time() - start_time
-						remaining = timeout - elapsed
-						if remaining <= 0:
-							self._rwlock._write_requests -= 1
-							return False
-						self._rwlock._condition.wait(remaining)
-						log.debug("Write lock acquired")
-
-				self._rwlock._write_requests -= 1
-				self._rwlock._writer = current_thread
-				return True
-
-		def release(self):
-			with self._rwlock._condition:
-				log.debug("Write lock release")
-				if self._rwlock._writer != threading.current_thread():
-					raise RuntimeError("Write lock can only be released by the acquiring thread")
-
-				self._rwlock._writer = None
-				self._rwlock._condition.notify_all()
-				log.debug("Write lock released")
+		def release(self, *args, **kwargs):
+			# log.debug("Writer releases the write lock")
+			self._rwlock._write_lock.release(*args, **kwargs)
+			# log.debug("Writer releases the read lock")
 
 		def __enter__(self):
 			return self.acquire()
 
-		def __exit__(self, exc_type, exc_val, exc_tb):
+		def acquired(self):
+			write_lock = self._rwlock._write_lock
+			all_attrs = dir(write_lock)
+			if "locked" in all_attrs:
+				return self._rwlock._write_lock.locked()
+			if "acquired" in all_attrs:
+				return self._rwlock._write_lock.acquired()
+			assert False, "Write lock does not have 'locked' or 'acquired' attribute"
+
+		def __exit__(self, exc_type, exc_value, traceback):
 			self.release()
 
 
-# Example usage
 if __name__ == "__main__":
+	# Example usage
 	rwlock = ReadWriteLock()
 
 	def reader_task(lock, thread_id):
@@ -124,6 +116,7 @@ if __name__ == "__main__":
 		with lock.write:
 			print(f"Thread {thread_id} is writing")
 
+	# Example of readers and writers
 	threads = []
 	for i in range(5):
 		t = threading.Thread(target=reader_task, args=(rwlock, i))
