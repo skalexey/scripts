@@ -2,7 +2,7 @@ import threading
 
 import utils.method
 from utils.concurrency.parameterized_lock import ParameterizedLock
-from utils.concurrency.rsemaphore import RSemaphore
+from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 
 log = Logger()
@@ -17,14 +17,12 @@ class ReadWriteLock:
 		Args:
 			write_lock: A lock instance for write operations.
 		"""
-		self._read_lock = threading.RLock()
 		self._reader_cv = threading.Condition()
-		self._readers_lock = threading.RLock()
-		self._write_lock = RSemaphore()
+		self._write_lock = wrap_debug_lock(ParameterizedLock(threading.RLock()))
 		self._readers = 0  # Tracks the number of readers
 
-		self.read = ParameterizedLock(self.ReadLockWrapper(self))
-		self.write = ParameterizedLock(self.WriteLockWrapper(self))
+		self.read = wrap_debug_lock(ParameterizedLock(self.ReadLockWrapper(self)))
+		self.write = wrap_debug_lock(ParameterizedLock(self.WriteLockWrapper(self)))
 
 	class ReadLockWrapper:
 		def __init__(self, rwlock):
@@ -40,38 +38,27 @@ class ReadWriteLock:
 			self._tloc.acquired_count = value
 
 		def acquire(self, *args, **kwargs):
-			with self._rwlock._read_lock:
-				with self._rwlock._readers_lock:
-					# log.debug(utils.method.msg_kw(f"Readers now: {self._rwlock._readers}"))
-					if self._rwlock._readers == 0:
-						log.debug(f"Reader acquires the write lock. Readers: {self._rwlock._readers}")
-						if not self._rwlock._write_lock.acquire(*args, **kwargs):
-							return False
-						self._rwlock._readers += 1
-						self._acquired_count += 1
-						self._rwlock._write_lock.release()
-					else:
-						self._rwlock._readers += 1
-						self._acquired_count += 1
-					return True
+			with self._rwlock._write_lock(*args, **kwargs) as write_acquired:
+				if not write_acquired:
+					return False
+				# log.debug(utils.method.msg_kw(f"Readers now: {self._rwlock._readers}"))
+				self._rwlock._readers += 1
+				self._acquired_count += 1
+				return True
 
 		def release(self, *args, **kwargs):
 			assert self._rwlock._readers >= 0, f"ReadWriteLock readers counter is unsynchronized: {self._rwlock._readers}"
 			if self._rwlock._readers == 0:
 				raise RuntimeError("Read lock is not acquired while being released")
-			with self._rwlock._readers_lock:
+			with self._rwlock._write_lock:
 				self._rwlock._readers -= 1
 				self._acquired_count -= 1
 				with self._rwlock._reader_cv:
 					self._rwlock._reader_cv.notify_all()
 				# log.debug(utils.method.msg_kw(f"Readers now: {self._rwlock._readers}"))
-				if self._rwlock._readers == 0:
-					log.debug(f"Reader releases the write lock. Readers: {self._rwlock._readers}")
-					self._rwlock._write_lock.release(*args, **kwargs)
 
 		def acquired(self):
-			with self._rwlock._readers_lock:
-				return self._rwlock._readers > 0
+			return self._rwlock._readers > 0
 
 		def __enter__(self):
 			return self.acquire()
@@ -84,23 +71,22 @@ class ReadWriteLock:
 			self._rwlock = rwlock
 
 		def acquire(self, *args, **kwargs):
-			log.debug("Writer acquires the read lock")
-			if not self._rwlock._read_lock.acquire(*args, **kwargs):
-				return False
+			# log.debug("Writer acquires the read lock")
+			self_read_acquired = self._rwlock.read._acquired_count
+			for i in range(self_read_acquired):
+				self._rwlock.read.release()
 			with self._rwlock._reader_cv:
-				self._rwlock._reader_cv.wait_for(lambda: self._rwlock._readers == self._rwlock.read._acquired_count)
-			log.debug(f"Writer acquires the write lock. Readers: {self._rwlock._readers}")
-			# if self._rwlock._readers > 0:
-			# 	return True
-			return self._rwlock._write_lock.acquire(*args, **kwargs)
+				self._rwlock._reader_cv.wait_for(lambda: self._rwlock._readers == 0)
+			# log.debug(f"Writer acquires the write lock. Readers: {self._rwlock._readers}")
+			result = self._rwlock._write_lock.acquire(*args, **kwargs)
+			for i in range(self_read_acquired):
+				self._rwlock.read.acquire()
+			return result
 
 		def release(self, *args, **kwargs):
-			log.debug("Writer releases the write lock")
-			# if self._rwlock._readers > 0:
-			# 	return 
+			# log.debug("Writer releases the write lock")
 			self._rwlock._write_lock.release(*args, **kwargs)
-			log.debug("Writer releases the read lock")
-			self._rwlock._readers_lock.release(*args, **kwargs)
+			# log.debug("Writer releases the read lock")
 
 		def __enter__(self):
 			return self.acquire()
