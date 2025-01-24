@@ -1,3 +1,5 @@
+from time import time
+
 from utils.context import GlobalContext
 
 
@@ -30,4 +32,6 @@ class ApplicationContext(GlobalContext):
 
 	@classmethod
 	def current_time(cls):
+		if getattr(cls, "app", None) is None:  #TODO: Consider other options
+			return time()
 		return cls.current_datetime().timestamp()

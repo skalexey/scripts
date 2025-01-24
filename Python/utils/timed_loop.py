@@ -1,39 +1,48 @@
 from contextlib import contextmanager
-from time import time
+from time import sleep, time
 
+from utils.context import GlobalContext
 from utils.debug.debug_detector import debug_timespan
 
 
 class Controller:
-	def __init__(self, timeout):
+	def __init__(self, timeout, interval):
 		self.timeout = timeout
-		self.last_time = time()
+		self.last_time = GlobalContext.current_time()
 		self.elapsed_time = 0
 		self.attempt = 0
 		self.timedout = False
+		self.interval = interval
+		self.dt = 0
 
 	def iterate(self):
 		self.attempt += 1
 		return self.update()
 
 	def update(self):
-		current_time = time()
+		current_time = GlobalContext.current_time()
 		dt = current_time - self.last_time
+		self.dt = dt
 		self.elapsed_time += dt
 		if self.attempt > 1:
 			_debug_timespan = debug_timespan(self)
 			self.elapsed_time -= min(self.elapsed_time, _debug_timespan)
 		assert self.elapsed_time >= 0, f"Elapsed time is negative: {self.elapsed_time}"
-		if self.elapsed_time >= self.timeout:
-			self.timedout = True
+		if self.timeout is not None:
+			if self.elapsed_time >= self.timeout:
+				self.timedout = True
 		self.last_time = current_time
+		if self.interval is not None:
+			time_to_sleep = self.interval - dt
+			if time_to_sleep > 0:
+				sleep(self.interval - dt)
 		return not self.timedout
 	
 	def __repr__(self):
 		return f"{self.__class__.__name__}(attempt={self.attempt}, elapsed_time={self.elapsed_time}, timedout={self.timedout})"
 
-def timed_loop(timeout):
-	controller = Controller(timeout)
+def timed_loop(timeout=None, interval=None):
+	controller = Controller(timeout, interval)
 	while controller.iterate():
 		yield controller  # Yield control back to the user’s block
 	yield controller
