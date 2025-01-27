@@ -57,6 +57,14 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 				self._loop = asyncio_utils.get_event_loop()
 		return self._loop
 
+	def init_with_new_loop(self):
+		with self._lock:
+			assert self._loop is None
+			loop = asyncio.new_event_loop()
+			asyncio.set_event_loop(loop)
+			self._loop = loop
+			return loop
+
 	def tasks(self):
 		return self._tasks
 
