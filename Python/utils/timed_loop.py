@@ -8,7 +8,7 @@ from utils.debug.debug_detector import debug_timespan
 class Controller:
 	def __init__(self, timeout, interval):
 		self.timeout = timeout
-		self.last_time = GlobalContext.current_time()
+		self.last_time = None
 		self.elapsed_time = 0
 		self.attempt = 0
 		self.timedout = False
@@ -21,7 +21,7 @@ class Controller:
 
 	def update(self):
 		current_time = GlobalContext.current_time()
-		dt = current_time - self.last_time
+		dt = current_time - self.last_time if self.last_time is not None else 0
 		self.dt = dt
 		self.elapsed_time += dt
 		if self.attempt > 1:
@@ -35,7 +35,8 @@ class Controller:
 		if self.interval is not None:
 			time_to_sleep = self.interval - dt
 			if time_to_sleep > 0:
-				sleep(self.interval - dt)
+				remaining = self.interval - dt
+				sleep(min(max(0, remaining), self.interval))
 		return not self.timedout
 	
 	def __repr__(self):
