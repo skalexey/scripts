@@ -642,7 +642,7 @@ class DataTableMixin(ABCQt):
 		for data in data_list:
 			values = []
 			for col in self.columns.keys():
-				value = self.column_value(data, col)
+				value = self.column_value(data, col) if data is not None else None
 				values.append(value)
 			rows.append(values)
 		return rows
