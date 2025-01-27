@@ -21,10 +21,10 @@ class ReadWriteLock:
 		self._write_lock = wrap_debug_lock(ParameterizedLock(threading.RLock()))
 		self._readers = 0  # Tracks the number of readers
 
-		self.read = wrap_debug_lock(ParameterizedLock(self.ReadLockWrapper(self)))
-		self.write = wrap_debug_lock(ParameterizedLock(self.WriteLockWrapper(self)))
+		self.read = wrap_debug_lock(ParameterizedLock(self.ReadLock(self)))
+		self.write = wrap_debug_lock(ParameterizedLock(self.WriteLock(self)))
 
-	class ReadLockWrapper:
+	class ReadLock:
 		def __init__(self, rwlock):
 			self._rwlock = rwlock
 			self._tloc = threading.local()
@@ -66,7 +66,7 @@ class ReadWriteLock:
 		def __exit__(self, exc_type, exc_value, traceback):
 			self.release()
 
-	class WriteLockWrapper:
+	class WriteLock:
 		def __init__(self, rwlock):
 			self._rwlock = rwlock
 
