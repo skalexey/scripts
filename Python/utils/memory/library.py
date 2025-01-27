@@ -7,6 +7,7 @@ import utils.inspect_utils as inspect_utils
 import utils.lang
 import utils.method
 from utils.collection.ordered_dict import OrderedDict
+from utils.concurrency.read_write_lock import ReadWriteLock
 from utils.debug import wrap_debug_lock
 from utils.log.logger import Logger
 from utils.profile.trackable_resource import TrackableResource
@@ -21,7 +22,7 @@ class Callable(TrackableResource):
 		self._kwargs = kwargs
 		self._invalidated = False
 		self._on_invalidated = on_invalidated
-		self._invalidate_lock = wrap_debug_lock(threading.RLock()) # Test it more with Lock with turned off logs in ParameterizedLock and ScopedLock
+		self._invalidate_lock = ReadWriteLock() # Test it more with Lock with turned off logs in ParameterizedLock and ScopedLock
 		# self._invalidate_lock = threading.RLock()
 		self.max_calls = max_calls
 		self._call_count = 0
@@ -70,13 +71,16 @@ class Callable(TrackableResource):
 
 	def _invalidate(self):
 		# Keep internal data unchanged for debugging purposes
-		with self._invalidate_lock as acquired: # _invalidated flag can be checked through is_valid() with an assumption that the attached _on_invalidated callback was called (e.g. against existing subscriptions in notify() call to ensure subscriptions were unsubscribed in self._on_invalidated callback),
-			if not acquired:
-				raise RuntimeError(utils.function.msg_kw("Failed to acquire the lock to invalidate the callable"))
-			# therefore the lock is needed to glue setting _invalicated flag with _on_invalidated call into an atomic operation.
+		with self._invalidate_lock.read as acquired_read: # _invalidated flag can be checked through is_valid() with an assumption that the attached _on_invalidated callback was called (e.g. against existing subscriptions in notify() call to ensure subscriptions were unsubscribed in self._on_invalidated callback),
+			if not acquired_read:
+				raise RuntimeError(utils.function.msg_kw("Failed to acquire the lock for readnig to invalidate the callable"))
 			if self._invalidated:
 				raise RuntimeError(utils.function.msg_kw("Callable has already been invalidated"))
-			self._invalidated = True
+			with self._invalidate_lock.write as acquired_write:
+				if not acquired_write:
+					raise RuntimeError(utils.function.msg_kw("Failed to acquire the lock for writing to invalidate the callable"))
+				# therefore the lock is needed to glue setting _invalicated flag with _on_invalidated call into an atomic operation.
+				self._invalidated = True
 			if self._on_invalidated is not None:
 				self._on_invalidated(self)
 		log.verbose(utils.function.msg_kw()) # Log after invalidating to avoid infinite recursion in log subscriptions
@@ -88,7 +92,7 @@ class Callable(TrackableResource):
 	# Checks if the callable was invalidated. Synchronized with _invalidate() call.
 	def is_invalidated(self):
 		# with self._invalidate_lock:
-		with self._invalidate_lock as acquired:
+		with self._invalidate_lock.read as acquired:
 			if not acquired:
 				raise RuntimeError(utils.function.msg_kw("Failed to acquire the lock in time"))
 			return self._invalidated
