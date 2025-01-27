@@ -22,21 +22,21 @@ class DebugDetector:
 		result = self._on_debug_detected_subscription
 		if result is None:
 			result = utils.subscription.Subscription()
+			result.subscribe(self._on_debug_detected)
 			self._on_debug_detected_subscription = result
-			self.on_debug_detected.subscribe(self._on_debug_detected)
 		return result
 
 	def _on_debug_detected(self):
 		self._last_debug_timespan_checkin.clear()
 
 	def check_debug_detection(self):
-		with self.debug_detection_lock:
-			current_time = datetime.now().timestamp()
-			dt = current_time - (self._last_check_time or current_time)
-			self._last_check_time = current_time
-			if dt > self.debug_detection_threshold:
-				self.last_debug_timespan = dt
-				self.on_debug_detected.notify()
+		# with self.debug_detection_lock:  # Does not worth it
+		current_time = datetime.now().timestamp()
+		dt = current_time - (self._last_check_time or current_time)
+		self._last_check_time = current_time
+		if dt > self.debug_detection_threshold:
+			self.last_debug_timespan = dt
+			self.on_debug_detected.notify()
 
 	def grab_last_debug_timespan(self, checker):
 		self.check_debug_detection()
