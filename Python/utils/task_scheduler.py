@@ -328,7 +328,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 						raise ex
 			taken_time = time.time() - cur
 			self.on_update.notify(taken_time)
-			TaskScheduler.on_update.notify(self, taken_time)
+			TaskScheduler.on_update.notify(self, taken_time)  # TODO: Make sure it can be performed from the scheduler thread
 
 	@allow_any_thread_with_lock("_lock")
 	def registered_task_count(self, function=None):
