@@ -1,3 +1,4 @@
+import threading
 import time
 import weakref
 
@@ -40,6 +41,7 @@ class TrackableResource:
 	"""
 
 	resources = AssociativeList()
+	lock = threading.Lock()
 
 	def __repr__(self):
 		super_repr = super().__repr__()
@@ -54,7 +56,9 @@ class TrackableResource:
 			log.verbose(f"TrackableResource destroyed: '{info.repr}'")
 			if info.on_destroyed is not None:
 				info.on_destroyed(info)
-			TrackableResource.resources.remove(info.id)
+			with self.lock:
+				TrackableResource.resources.remove(info.id)
 		info.ref = weakref.ref(self, _on_destroyed)
-		info.id = self.resources.add(info)
+		with self.lock:
+			info.id = self.resources.add(info)
 		log.verbose(f"TrackableResource created: '{info.repr}'")
