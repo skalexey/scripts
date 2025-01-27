@@ -10,6 +10,7 @@ from utils.collection.ordered_dict import OrderedDict
 from utils.collection.ordered_set import OrderedSet
 from utils.concurrency.scoped_lock import ScopedLock
 from utils.debug import wrap_debug_lock
+from utils.lang import NoValue
 from utils.live import verify
 from utils.log.logger import Logger
 from utils.memory import OwnedCallable, SmartCallable
@@ -102,6 +103,7 @@ class Subscription:
 	def notify(self, *args, **kwargs):
 		if not self._priorities:
 			return
+		all_done = False
 		for state in timed_loop(3):
 			with self._lock:
 				cb_locks = []
@@ -109,8 +111,8 @@ class Subscription:
 				for priority_group in priorities:
 					for i, cb_id in enumerate(priority_group):
 						cb = self._data[cb_id]
-						cb_locks.append(cb._invalidate_lock)
-						# log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock}' of cb {cb} (id: {cb_id})"))
+						cb_locks.append(cb._invalidate_lock.read)
+						# log.debug(utils.method.msg(f"Added lock {i + 1}: '{cb._invalidate_lock.read}' of cb {cb} (id: {cb_id})"))
 				with ScopedLock(*cb_locks, timeout=0) as ndl: # TODO: Consider non blocking, or a bit more bigger timeout
 					if not ndl.locked():
 						sleep(0.01)
@@ -123,9 +125,13 @@ class Subscription:
 							if cb._invalidated: # Use is_invalidated() if haven't locked _invalidate_lock manually as above.
 								if self.is_subscribed(cb.id): # Should be unsubscribed through on_invalidated callback if invalidated
 									raise RuntimeError(f"Callable {cb} has been invalidated, but not unsubscribed")
+					all_done = True
 					break
 		if state.timedout:
-			raise RuntimeError(utils.method.msg(f"Failed to acquire all locks in time of 3 seconds (self={self})"))
+			if all_done:
+				log.warning(utils.method.msg(f"Took {state.elapsed_time} seconds to notify all subscribers (self={self})"))
+			else:
+				raise RuntimeError(utils.method.msg(f"Failed to acquire all locks in time of 3 seconds (self={self})"))
 
 	def wait(self, timeout=None):
 		event = threading.Event()
