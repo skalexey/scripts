@@ -56,7 +56,7 @@ class TrackableResource:
 			log.verbose(f"TrackableResource destroyed: '{info.repr}'")
 			if info.on_destroyed is not None:
 				info.on_destroyed(info)
-			with self.lock:
+			with TrackableResource.lock:
 				TrackableResource.resources.remove(info.id)
 		info.ref = weakref.ref(self, _on_destroyed)
 		with self.lock:
