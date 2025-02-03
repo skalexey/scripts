@@ -18,14 +18,16 @@ from utils.log import log_to_server
 
 class Logger:
 	log_addition = None
-
 	def __init__(self, title=None, title_stack_level=1):
 		super().__init__()
 		self.log_level = 0
 		self.log_addition = None
 		self.connection = None
 		# Take the caller script name from the stack
-		self.set_log_title(title or os.path.splitext(os.path.basename(inspect.stack()[title_stack_level].filename))[0])
+		stack = inspect.stack()
+		fname = stack[title_stack_level].filename
+		_title = title or os.path.splitext(os.path.basename(fname))[0]
+		self.set_log_title(_title)
 		self._on_log = None # Allocated on demand through on_log property
 		self.file = None
 		self._log = _g_log
@@ -59,7 +61,8 @@ class Logger:
 			args = (message, level, self.log_title, (str(self.log_addition or "") + str(addition or "")) or None)
 			result = self._log(*args)
 			if self._on_log:
-				self._on_log(result)
+				if result is not None:
+					self._on_log(result)
 			return result
 
 	def redirect_to_file(self, fpath=None, level=None, *args, **kwargs):

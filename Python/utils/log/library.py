@@ -82,7 +82,7 @@ class LogPacket:
 		self.addition = str(g_log_addition or "") + str(addition or "")
 
 class Log:
-	def __init__(self, message=None, level=None, title=None, addition=None, timestamp=None, packet=None, *args, **kwargs):
+	def __init__(self, message=None, level=LogLevel.PRINT, title=None, addition=None, timestamp=None, packet=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.packet = packet or LogPacket(timestamp, message, level, title, addition)
 		self._full_message = None
@@ -123,12 +123,12 @@ def compose_log_message(message, level=LogLevel.PRINT, log_title=None, log_addit
 	return msg, _datetime
 
 # Variadic arguments
-def print_log(message, level=LogLevel.PRINT, log_title=None, log_addition=None, timestamp=None):
+def print_log(*args, **kwargs):
 	global print_log_level, print_strict_order
-	if level < print_log_level:
-		return None
 	# Print the log level,time (hour, minute, second, and microsecond), and the message
-	log = Log(message, level, log_title, log_addition, timestamp)
+	log = Log(*args, **kwargs)
+	if log.packet.level < print_log_level:
+		return None
 	with print_lock if print_strict_order else nullcontext():
 		print(log.full_message)
 	return log
@@ -164,11 +164,11 @@ def _init():
 
 _init()
 
-def log_to_server(connection, message, level=LogLevel.PRINT, log_title=None, log_addition=None):
+def log_to_server(connection, *args, **kwargs):
 	if connection:
 		# Pack all the data into a packet <packet size:4bytes><packet data>
 		timestamp = time()
-		log = print_log(message, level, log_title, log_addition, timestamp) or Log(message, level, log_title, log_addition, timestamp)
+		log = print_log(*args, **kwargs, timestamp=timestamp) or Log(*args, **kwargs, timestamp=timestamp)
 		try:
 			packet_data = pickle.dumps(log.packet)
 			data = struct.pack('>I', len(packet_data)) + packet_data

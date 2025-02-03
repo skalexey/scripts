@@ -22,8 +22,9 @@ def _init():
 	base_log = LogServer.on_log
 	def log(self, packet):
 		_log = base_log(self, packet)
-		g_on_log_level[packet.level.value].notify(_log)
-		g_on_log.notify(_log)
+		if _log is not None:
+			g_on_log_level[packet.level.value].notify(_log)
+			g_on_log.notify(_log)
 		return _log
 	LogServer.on_log = log
 
