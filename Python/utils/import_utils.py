@@ -61,7 +61,7 @@ def module_cache():
 				_cache_is_loading = False
 			# Run task in parallel
 			_cache_is_loading = True
-			threading.Thread(target=work).start()
+			threading.Thread(target=work, name="ModuleCache").start()
 			
 	return _module_cache
 
