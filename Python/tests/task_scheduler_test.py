@@ -7,10 +7,10 @@ import utils.method
 import utils.profile.profiler
 import utils.text
 from utils.profile.trackable_resource import TrackableResource
-from utils.task_scheduler import TaskScheduler
+from utils.thread_task_scheduler import ThreadTaskScheduler
 
 
-class A(TaskScheduler):
+class A(ThreadTaskScheduler):
 	async def async_method1(self):
 		log("Task 1 started")
 		await asyncio.sleep(1)
@@ -109,7 +109,7 @@ def validation_test():
 def tasks_test():
 	class A:
 		def __init__(self):
-			self.scheduler = TaskScheduler()
+			self.scheduler = ThreadTaskScheduler()
 		
 		def update(self, dt):
 			self.scheduler.update(dt)

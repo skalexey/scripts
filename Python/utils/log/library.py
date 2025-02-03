@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import pickle
 import struct
@@ -108,6 +109,14 @@ class Log:
 
 	def __getattr__(self, name):
 		return getattr(self.packet, name)
+	
+	def __getstate__(self):
+		# Return the object's dictionary for pickling
+		return self.__dict__
+
+	def __setstate__(self, state):
+		# Restore the object's state after unpickling
+		self.__dict__.update(state)
 
 
 def compose_log_message(message, level=LogLevel.PRINT, log_title=None, log_addition=None, timestamp=None):
@@ -243,6 +252,33 @@ def redirect_to_server(address):
 	utils.live.verify(g_connection is None, "Connection already established")
 	_log_impl, g_connection = gen_redirect_to_server_func(address)
 	return g_connection
+
+base_log = _log_impl
+def _log_process_job(log_queue, logged_event):
+	while True:
+		try:
+			while log_queue:
+				log = log_queue.get()
+				packet = log.packet
+				message, level, title, addition = packet.message, packet.level, packet.title, packet.addition
+				base_log(message, level, title, addition)
+				logged_event.clear()
+			logged_event.wait()
+		except Exception as e:
+			print(f"Failed to print message: {e}")
+
+def redirect_to_process():
+	manager = multiprocessing.Manager()
+	log_queue = manager.Queue()
+	logged_event = multiprocessing.Event()
+	global _log_impl
+	process = multiprocessing.Process(target=_log_process_job, args=(log_queue, logged_event), name="LogProcess")
+	process.start()
+	def log_override_to_thread(*args, **kwargs):
+		log = Log(*args, **kwargs)
+		log_queue.put(log)
+		logged_event.set()
+	_log_impl = log_override_to_thread
 
 def start_server(port, *levels, server=None):
 	if server is None:

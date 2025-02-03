@@ -11,7 +11,7 @@ from utils.log.logger import Logger
 from utils.memory import SmartCallable
 from utils.profile.trackable_resource import TrackableResource
 from utils.profile.weakref_manager import WeakrefManager
-from utils.task_scheduler import TaskScheduler
+from utils.thread_task_scheduler import ThreadTaskScheduler
 
 log = Logger()
 _globals = globals()
@@ -153,10 +153,10 @@ def circular_ref_test():
 					loop.run_until_complete(_cancel())
 					log(utils.method.msg_kw("Task has been cancelled"))
 
-			class TaskSchedulerOwner(TrackableResource):
+			class ThreadTaskSchedulerOwner(TrackableResource):
 				def __init__(self):
 					super().__init__()
-					self.scheduler = TaskScheduler()
+					self.scheduler = ThreadTaskScheduler()
 					self.scheduler.schedule_task(self.saf)
 
 				async def saf(self):
@@ -167,30 +167,30 @@ def circular_ref_test():
 						raise e
 
 			man.asyncio_task = AsyncioTask()
-			man.task_scheduler_owner = TaskSchedulerOwner()
+			man.task_scheduler_owner = ThreadTaskSchedulerOwner()
 
 			log(title("End of Inner Scope"))
 
 		inner_scope()
 		
 		assert man.asyncio_task is not None, "AsyncioTask should have not been collected since it has a reference to itself captured in the task object"
-		assert man.task_scheduler_owner is not None, "TaskSchedulerOwner should have not been collected since it has a reference to itself captured in the task object"
+		assert man.task_scheduler_owner is not None, "ThreadTaskSchedulerOwner should have not been collected since it has a reference to itself captured in the task object"
 		man.asyncio_task.cancel_task()
 		assert man.asyncio_task is None, "AsyncioTask should have been collected since the task has been cancelled"
 		log(title("End of Asyncio Test"))
 
 	def task_scheduler_test():
-		log(title("TaskScheduler Test"))
+		log(title("ThreadTaskScheduler Test"))
 
 		man = WeakrefManager()
 
 		def inner_scope():
 			log(title("Inner Scope"))
 
-			class TaskSchedulerOwner(TrackableResource):
+			class ThreadTaskSchedulerOwner(TrackableResource):
 				def __init__(self):
 					super().__init__()
-					self.scheduler = TaskScheduler()
+					self.scheduler = ThreadTaskScheduler()
 					self.scheduler.schedule_task(self.saf)
 
 				async def saf(self):
@@ -201,15 +201,15 @@ def circular_ref_test():
 					log(utils.method.msg_kw("Perform step 5"))
 					log(utils.method.msg_kw("Perform step 6"))
 
-			man.task_scheduler_owner = TaskSchedulerOwner()
+			man.task_scheduler_owner = ThreadTaskSchedulerOwner()
 			log(title("End of Inner Scope"))
 
 		inner_scope()
 		
-		assert man.task_scheduler_owner is not None, "TaskSchedulerOwner should have not been collected since it has a reference to itself captured in the task object"
+		assert man.task_scheduler_owner is not None, "ThreadTaskSchedulerOwner should have not been collected since it has a reference to itself captured in the task object"
 		man.task_scheduler_owner.scheduler.cancel_all_tasks()
-		assert man.task_scheduler_owner is None, "TaskSchedulerOwner should have been collected since the task has been cancelled"
-		log(title("End of TaskScheduler Test"))
+		assert man.task_scheduler_owner is None, "ThreadTaskSchedulerOwner should have been collected since the task has been cancelled"
+		log(title("End of ThreadTaskScheduler Test"))
 
 
 	def strategy_test():
@@ -221,7 +221,7 @@ def circular_ref_test():
 			class TestStrategy(Strategy):
 				def __init__(self, context, *args, **kwargs): # context is TradeContext
 					super().__init__(context=context, *args, **kwargs) # name should be passed through GeneralStrategy
-					self.scheduler = utils.task_scheduler.TaskScheduler()
+					self.scheduler = utils.thread_task_scheduler.ThreadTaskScheduler()
 					self.scheduler.schedule_task(self.empty_task, 1)
 				
 				async def empty_task(self):

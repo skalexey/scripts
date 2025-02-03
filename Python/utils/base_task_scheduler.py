@@ -1,6 +1,5 @@
 import asyncio
 import concurrent.futures
-import threading
 import time
 import weakref
 from collections import deque
@@ -8,10 +7,10 @@ from collections import deque
 import utils.asyncio_utils as asyncio_utils
 import utils.function
 import utils.method
-from utils.concurrency.thread_guard import (
-    ThreadGuard,
-    allow_any_thread,
-    allow_any_thread_with_lock,
+from utils.concurrency.base_guard import (
+    ContextGuard,
+    allow_any_context,
+    allow_any_context_with_lock,
 )
 from utils.debug import wrap_debug_lock
 from utils.lang import safe_enter
@@ -25,32 +24,38 @@ log = Logger()
 
 
 # This class runs any async function passed to it and returns a future that can be awaited on
-class TaskScheduler(TrackableResource, ThreadGuard):
+class TaskSchedulerBase(TrackableResource, ContextGuard):
 	"""
-	Aims to provide a simple interface to maintain a queue of functions to run in non-blocking manner, allowing the running thread to continue handling other tasks, delegating the queue maintainance to the underlying mechanisms of TaskScheduler based on asyncio.
-	Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread safety of all operations.
+	Aims to provide a simple interface to maintain a queue of functions to run in non-blocking manner, allowing the running thread/process to continue handling other tasks, delegating the queue maintainance to the underlying mechanisms of TaskScheduler based on asyncio.
+	Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread/process safety of all operations.
 	"""
 
 	instances: list[weakref.ref] = []
 	on_update = Subscription()
+	context_package = None
+	context_title = None
 
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
+		assert self.context_package is not None, "Derived class must set the context_package class attribute"
+		assert self.context_title is not None, "Derived class must set the context_title class attribute"
 		self.update_interval = kwargs.get("update_interval", 0.1)
 		self._tasks = {}
 		self._queue = deque()
 		self._current_task_info = None
 		self._loop = None
-		self._lock = wrap_debug_lock(threading.RLock())
-		self._loop_operator = self.LoopOperator()
+		self._lock = wrap_debug_lock(self.context_package.RLock())
+		class LoopOperator(self.LoopOperatorBase):
+			context_package = self.context_package
+		self._loop_operator = LoopOperator()
 		self.on_update = Subscription()
 		def on_destroyed(ref):
-			TaskScheduler.instances.remove(ref)
+			TaskSchedulerBase.instances.remove(ref)
 		ref = weakref.ref(self, on_destroyed)
-		TaskScheduler.instances.append(ref)
+		TaskSchedulerBase.instances.append(ref)
 
 	@property
-	@allow_any_thread
+	@allow_any_context
 	def loop(self):
 		with self._lock:
 			if self._loop is None:
@@ -68,7 +73,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 	def tasks(self):
 		return self._tasks
 
-	@allow_any_thread
+	@allow_any_context
 	def schedule_task(self, async_function, max_queue_size=0, *args, **kwargs):
 		"""
 		Runs a function, or puts it in the queue but no more than <max_queue_size> times unique for this function.
@@ -84,14 +89,14 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		# Need to consider making TaskScheduler as a manager of FunctionScheduler.
 		raise "Not implemented yet."
 
-	@allow_any_thread
+	@allow_any_context
 	def run_until_complete(self, awaitable):
 		"""
 		Executes an awaitable (such as an asyncio.Task, coroutine, or future) until completion, handling precautions for the currently running event loop and threading context.
 		"""
 		log.debug(utils.method.msg_kw())
 		try:
-			log.debug(utils.method.msg_kw(f"Trying to check if the tasks are under processing by the owner thread"))
+			log.debug(utils.method.msg_kw(f"Trying to check if the tasks are under processing by the owner {self.context_title}"))
 			with self._loop_operator.try_use(self.loop) as operator:
 				try_result = operator.try_result()
 				if try_result is True:
@@ -99,12 +104,12 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 					result = self.loop.run_until_complete(awaitable)
 					log.verbose(utils.method.msg_kw(f"run_until_complete result: {result}"))
 				else:
-					if operator.is_operating_in_current_thread():
+					if operator.is_operating_in_current_context():
 						raise RuntimeError(utils.method.msg_kw("Called run_until_complete() from a running task."))
 
-					log.debug(utils.method.msg_kw(f"Called run_until_complete() from a different thread. Waiting the task to complete by the loop-owner thread '{operator.thread_id}'"))
+					log.debug(utils.method.msg_kw(f"Called run_until_complete() from a different {self.context_title}. Waiting the task to complete by the loop-owner {self.context_title} '{operator.context_id}'"))
 
-					stop_waiting_event = threading.Event()
+					stop_waiting_event = self.context_package.Event()
 
 					def on_future_done(future):
 						log.debug(utils.method.msg_kw(f"Task done: {future}"))
@@ -113,8 +118,8 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 					future = asyncio.run_coroutine_threadsafe(awaitable, self.loop)
 					future.add_done_callback(on_future_done)
 
-					def on_operator_released(operator_thread_id):
-						log.debug(utils.function.msg_kw(f"Operator '{operator_thread_id}' released the loop"))
+					def on_operator_released(operator_context_id):
+						log.debug(utils.function.msg_kw(f"Operator '{operator_context_id}' released the loop"))
 						stop_waiting_event.set()
 
 					self._loop_operator.on_released.subscribe(on_operator_released)
@@ -123,7 +128,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 
 					if not future.done():
 						if not self._loop_operator.is_operating():
-							log.debug(utils.method.msg_kw("Operator abandoned the task. Trying to perform it in the current thread"))
+							log.debug(utils.method.msg_kw(f"Operator abandoned the task. Trying to perform it in the current {self.context_title}"))
 							with self._loop_operator(self.loop):
 								task = asyncio_utils.task(awaitable, self.loop)
 								if task is None:
@@ -137,7 +142,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 						else:
 							log.debug("Operator abandoned the task for a short period and is operating it again. Waiting for the task to complete")
 					result = future.result()
-					log.verbose(utils.method.msg_kw(f"Other thread run_until_complete result: '{result}'"))
+					log.verbose(utils.method.msg_kw(f"Other {self.context_title} run_until_complete result: '{result}'"))
 		except Exception as e:
 			log.error(utils.method.msg_kw(f"BaseException occurred while running the awaitable: '{e!r}'"))
 			raise
@@ -202,13 +207,13 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		log.debug(utils.function.msg(f"Waiting for {name_type}s completed with result: {result}"))
 		return result
 
-	@allow_any_thread
+	@allow_any_context
 	def wait_all_tasks(self, timeout=None):
 		"""
 		Waits for all scheduled tasks to complete, with an optional timeout.
 		"""
 		log.debug(utils.method.msg_kw())
-		if self._loop_operator.is_operating_in_current_thread():
+		if self._loop_operator.is_operating_in_current_context():
 			raise RuntimeError(utils.method.msg_kw("Called wait_all_tasks() from a running task."))
 		task_infos = self._tasks
 		if len(task_infos) == 0:
@@ -223,7 +228,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 			futures.append(task_info.future)
 		return self.run_until_complete_for(futures, timeout)
 	
-	@allow_any_thread
+	@allow_any_context
 	# Returns the result of the future in the case of a successful completion
 	def wait(self, future):
 		"""
@@ -259,7 +264,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 			return collect_results(True)
 		return collect_results(False)
 
-	@allow_any_thread
+	@allow_any_context
 	# Returns False in the case of a timeout. Otherwise, always True
 	def complete_all_tasks(self, timeout=None):
 		"""
@@ -282,7 +287,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		def __bool__(self):
 			return not self.timedout
 
-	@allow_any_thread
+	@allow_any_context
 	# Returns WaitForResult object that contains the result of the future in the case of a successful completion and a timedout flag
 	def wait_for(self, future, timeout):
 		"""
@@ -304,7 +309,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 	# Use this method in a loop if your application doesn't have an event loop running
 	def update(self, dt):
 		log.loop(utils.method.msg_kw())
-		# Create the loop from the updating thread if it doesn't exist
+		# Create the loop from the updating thread/process if it doesn't exist
 		# self.loop
 		# Update the tasks
 		if len(self._tasks) > 0:
@@ -328,13 +333,13 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 						raise ex
 			taken_time = time.time() - cur
 			self.on_update.notify(taken_time)
-			TaskScheduler.on_update.notify(self, taken_time)  # TODO: Make sure it can be performed from the scheduler thread
+			TaskSchedulerBase.on_update.notify(self, taken_time)  # TODO: Make sure it can be performed from the scheduler thread/process
 
-	@allow_any_thread_with_lock("_lock")
+	@allow_any_context_with_lock("_lock")
 	def registered_task_count(self, function=None):
 		return self.task_in_work_count(function) + self.queue_size(function)
 	
-	@allow_any_thread_with_lock("_lock")
+	@allow_any_context_with_lock("_lock")
 	def queue_size(self, function=None):
 		if function is not None:
 			return sum(1 for task_info in self._queue if task_info.function == function)
@@ -366,7 +371,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 		return task_info
 
 	def _run_next(self):
-		# assert(self.is_current_thread_loop_owner())
+		# assert(self.is_current_context_loop_owner())
 		with self._lock:
 			task_info = self._queue.popleft()
 			assert task_info.task is None
@@ -392,7 +397,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 				future.add_done_callback(future_done)
 				return future
 
-			# Schedule the task creation in a thread-safe manner
+			# Schedule the task creation in a thread/process-safe manner
 			# loop = self.loop
 			# future = asyncio.run_coroutine_threadsafe(create_task(), loop).result()
 			future = create_task()
@@ -416,17 +421,20 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 			if len(self._queue) > 0:
 				self._run_next()
 
-	class LoopOperator:
+	class LoopOperatorBase:
+		context_package = None
+		
 		def __init__(self):
-			self.thread_id = None
-			self.enter_lock = wrap_debug_lock(threading.RLock())
+			assert self.context_package is not None, "Derived class must set the context_package class attribute"
+			self.context_id = None
+			self.enter_lock = wrap_debug_lock(self.context_package.RLock())
 			self.on_released = OneTimeSubscription()
 
 		def is_operating(self):
-			return self.thread_id is not None
+			return self.context_id is not None
 
-		def is_operating_in_current_thread(self):
-			return self.thread_id == threading.current_thread().name
+		def is_operating_in_current_context(self):
+			return self.context_id == self.context_package.current_context().name
 
 
 		class LoopOperatorEnter:
@@ -439,14 +447,14 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 				return getattr(self.operator, name)
 
 			def _loop_is_operating_msg(self):
-				return utils.method.msg_kw(f"Loop is already operating by '{self.operator.thread_id}'")
+				return utils.method.msg_kw(f"Loop is already operating by '{self.operator.context_id}'")
 
 			def _on_is_operating_check(self, is_operating):
 				if is_operating:
 					msg = self._loop_is_operating_msg()
 					raise RuntimeError(msg)
 				else:
-					self.operator.thread_id = threading.current_thread().name
+					self.operator.context_id = self.context_package.current_context().name
 					self.operator.on_released.reset()
 
 			def _is_operating(self):
@@ -459,23 +467,23 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 			@safe_enter
 			def __enter__(self):
 				with self.operator.enter_lock:
-					current_thread_id = threading.current_thread().name
-					log.verbose(utils.method.msg_kw(f"Thread '{current_thread_id}' is entering the loop operator"))
+					current_context_id = self.context_package.current_context().name
+					log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' is entering the loop operator"))
 					is_operating = self._is_operating()
 					self._on_is_operating_check(is_operating)
-					log.verbose(utils.method.msg_kw(f"Thread '{current_thread_id}' entered the loop operator"))
+					log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' entered the loop operator"))
 					return self
 			
 			def __exit__(self, exc_type, exc_value, traceback):
-				operator_thread_id = self.operator.thread_id
-				current_thread_id = threading.current_thread().name
-				is_owner = operator_thread_id == current_thread_id
+				operator_context_id = self.operator.context_id
+				current_context_id = self.context_package.current_context().name
+				is_owner = operator_context_id == current_context_id
 				msg_addition = "" if is_owner else " (not the owner)"
-				log.verbose(utils.method.msg_kw(f"Thread '{current_thread_id}'{msg_addition} is exiting the loop operator"))
+				log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} is exiting the loop operator"))
 				if is_owner:
-					self.operator.thread_id = None
-					self.operator.on_released.set_result(operator_thread_id)
-				log.verbose(utils.method.msg_kw(f"Thread '{current_thread_id}'{msg_addition} exited the loop operator"))
+					self.operator.context_id = None
+					self.operator.on_released.set_result(operator_context_id)
+				log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} exited the loop operator"))
 
 
 		class LoopOperatorEnterCheckIfFree(LoopOperatorEnter):
@@ -518,7 +526,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 					log.info(self._loop_is_operating_msg())
 				else:
 					super()._on_is_operating_check(is_operating)
-				self._try_result = not is_operating or self.operator.is_operating_in_current_thread()
+				self._try_result = not is_operating or self.operator.is_operating_in_current_context()
 
 
 		def __call__(self, loop):
