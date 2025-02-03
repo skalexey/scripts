@@ -7,12 +7,25 @@ from utils.log.logger import Logger
 
 log = Logger()
 
+def datetime_format():
+	"""
+	Returns the date and time format compatible with system file name rules.
+	"""
+	return "%Y-%m-%d_%H-%M-%S"
+
+def datetime_str():
+	"""
+	Returns the current date and time compatible with system file name rules.
+	"""
+	_date_format = datetime_format()
+	return _datetime.now().strftime(_date_format)
+
 def backup_path(path, datetime=None, date_format=None):
 	"""
     Generates a unique backup name with date and time and returns it as a path in the same directory as the original file.
 	"""
 	dt = datetime or _datetime.now()
-	_date_format = date_format or "%Y-%m-%d_%H-%M-%S"
+	_date_format = date_format or datetime_format()
 	def gen_backup_path(cnt):
 		cnt_addition = f"_{cnt}" if cnt > 0 else ""
 		return path + "." + dt.strftime(_date_format) + cnt_addition + ".bak"
