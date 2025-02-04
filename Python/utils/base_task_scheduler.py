@@ -23,6 +23,120 @@ from utils.subscription import OneTimeSubscription, Subscription
 log = Logger()
 
 
+class LoopOperatorBase:
+	context_package = None
+	
+	def __init__(self):
+		assert self.context_package is not None, "Derived class must set the context_package class attribute"
+		# assert getattr(self, "enter_lock", None) is not None, "Derived class must set the enter_lock attribute"
+		self.context_id = None
+		self.on_released = OneTimeSubscription()
+
+	def is_operating(self):
+		return self.context_id is not None
+
+	def is_operating_in_current_context(self):
+		return self.context_id == self.context_package.current_context().name
+
+
+class LoopOperatorEnter:
+	def __init__(self, loop=None, operator=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.loop = loop
+		self.operator = operator
+
+	def __getattr__(self, name):
+		return getattr(self.operator, name)
+
+	def _loop_is_operating_msg(self):
+		return utils.method.msg_kw(f"Loop is already operating by '{self.operator.context_id}'")
+
+	def _on_is_operating_check(self, is_operating):
+		if is_operating:
+			msg = self._loop_is_operating_msg()
+			raise RuntimeError(msg)
+		else:
+			self.operator.context_id = self.context_package.current_context().name
+			self.operator.on_released.reset()
+
+	def _is_operating(self):
+		is_operating = self.operator.is_operating()
+		if not is_operating:
+			if self.loop.is_running():
+				raise RuntimeError("Unknown operator is already running the loop")
+		return is_operating
+
+	@safe_enter
+	def __enter__(self):
+		with self.operator.enter_lock:
+			current_context_id = self.context_package.current_context().name
+			log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' is entering the loop operator"))
+			is_operating = self._is_operating()
+			self._on_is_operating_check(is_operating)
+			log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' entered the loop operator"))
+			return self
+	
+	def __exit__(self, exc_type, exc_value, traceback):
+		operator_context_id = self.operator.context_id
+		current_context_id = self.context_package.current_context().name
+		is_owner = operator_context_id == current_context_id
+		msg_addition = "" if is_owner else " (not the owner)"
+		log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} is exiting the loop operator"))
+		if is_owner:
+			self.operator.context_id = None
+			self.operator.on_released.set_result(operator_context_id)
+		log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} exited the loop operator"))
+
+
+class LoopOperatorEnterCheckIfFree(LoopOperatorEnter):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._check_result = None
+		self.lock = self.operator.enter_lock # RLock
+
+	def check_result(self):
+		return self._check_result
+
+	def _on_is_operating_check(self, is_operating):
+		self._check_result = not is_operating
+
+	@safe_enter
+	def __enter__(self):
+		log.verbose(utils.method.msg_kw("Trying to acquire the lock"))
+		self.lock.acquire() # Unlock in __exit__
+		log.verbose(utils.method.msg_kw("Lock acquired"))
+		self._check_result = not self._is_operating()
+		return self
+	
+	def __exit__(self, exc_type, exc_value, traceback):
+		if self.lock._is_owned():
+			log.verbose(utils.method.msg_kw("Releasing the lock"))
+			self.lock.release()
+			log.verbose(utils.method.msg_kw("Lock released"))
+
+
+class LoopOperatorEnterTryUse(LoopOperatorEnter):
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self._try_result = None
+
+	def try_result(self):
+		return self._try_result
+
+	def _on_is_operating_check(self, is_operating):
+		if is_operating:
+			log.info(self._loop_is_operating_msg())
+		else:
+			super()._on_is_operating_check(is_operating)
+		self._try_result = not is_operating or self.operator.is_operating_in_current_context()
+
+
+class TaskInfo:
+	def __init__(self, function, task=None, future=None):
+		self.function = function
+		self.task = task
+		self.future = future or asyncio_utils.get_event_loop().create_future()
+		super().__init__()
 # This class runs any async function passed to it and returns a future that can be awaited on
 class TaskSchedulerBase(TrackableResource, ContextGuard):
 	"""
@@ -44,10 +158,6 @@ class TaskSchedulerBase(TrackableResource, ContextGuard):
 		self._queue = deque()
 		self._current_task_info = None
 		self._loop = None
-		self._lock = wrap_debug_lock(self.context_package.RLock())
-		class LoopOperator(self.LoopOperatorBase):
-			context_package = self.context_package
-		self._loop_operator = LoopOperator()
 		self.on_update = Subscription()
 		def on_destroyed(ref):
 			TaskSchedulerBase.instances.remove(ref)
@@ -69,6 +179,18 @@ class TaskSchedulerBase(TrackableResource, ContextGuard):
 			asyncio.set_event_loop(loop)
 			self._loop = loop
 			return loop
+
+	def __call__(self, loop):
+		params = LoopOperatorEnter(loop=loop, operator=self)
+		return params
+
+	def try_use(self, loop):
+		params = LoopOperatorEnterTryUse(loop=loop, operator=self)
+		return params
+
+	def check_if_free(self, loop):
+		params = LoopOperatorEnterCheckIfFree(loop=loop, operator=self)
+		return params
 
 	def tasks(self):
 		return self._tasks
@@ -420,134 +542,6 @@ class TaskSchedulerBase(TrackableResource, ContextGuard):
 			self._current_task_info = None
 			if len(self._queue) > 0:
 				self._run_next()
-
-	class LoopOperatorBase:
-		context_package = None
-		
-		def __init__(self):
-			assert self.context_package is not None, "Derived class must set the context_package class attribute"
-			self.context_id = None
-			self.enter_lock = wrap_debug_lock(self.context_package.RLock())
-			self.on_released = OneTimeSubscription()
-
-		def is_operating(self):
-			return self.context_id is not None
-
-		def is_operating_in_current_context(self):
-			return self.context_id == self.context_package.current_context().name
-
-
-		class LoopOperatorEnter:
-			def __init__(self, loop=None, operator=None, *args, **kwargs):
-				super().__init__(*args, **kwargs)
-				self.loop = loop
-				self.operator = operator
-
-			def __getattr__(self, name):
-				return getattr(self.operator, name)
-
-			def _loop_is_operating_msg(self):
-				return utils.method.msg_kw(f"Loop is already operating by '{self.operator.context_id}'")
-
-			def _on_is_operating_check(self, is_operating):
-				if is_operating:
-					msg = self._loop_is_operating_msg()
-					raise RuntimeError(msg)
-				else:
-					self.operator.context_id = self.context_package.current_context().name
-					self.operator.on_released.reset()
-
-			def _is_operating(self):
-				is_operating = self.operator.is_operating()
-				if not is_operating:
-					if self.loop.is_running():
-						raise RuntimeError("Unknown operator is already running the loop")
-				return is_operating
-
-			@safe_enter
-			def __enter__(self):
-				with self.operator.enter_lock:
-					current_context_id = self.context_package.current_context().name
-					log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' is entering the loop operator"))
-					is_operating = self._is_operating()
-					self._on_is_operating_check(is_operating)
-					log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' entered the loop operator"))
-					return self
-			
-			def __exit__(self, exc_type, exc_value, traceback):
-				operator_context_id = self.operator.context_id
-				current_context_id = self.context_package.current_context().name
-				is_owner = operator_context_id == current_context_id
-				msg_addition = "" if is_owner else " (not the owner)"
-				log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} is exiting the loop operator"))
-				if is_owner:
-					self.operator.context_id = None
-					self.operator.on_released.set_result(operator_context_id)
-				log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} exited the loop operator"))
-
-
-		class LoopOperatorEnterCheckIfFree(LoopOperatorEnter):
-			def __init__(self, *args, **kwargs):
-				super().__init__(*args, **kwargs)
-				self._check_result = None
-				self.lock = self.operator.enter_lock # RLock
-
-			def check_result(self):
-				return self._check_result
-
-			def _on_is_operating_check(self, is_operating):
-				self._check_result = not is_operating
-
-			@safe_enter
-			def __enter__(self):
-				log.verbose(utils.method.msg_kw("Trying to acquire the lock"))
-				self.lock.acquire() # Unlock in __exit__
-				log.verbose(utils.method.msg_kw("Lock acquired"))
-				self._check_result = not self._is_operating()
-				return self
-			
-			def __exit__(self, exc_type, exc_value, traceback):
-				if self.lock._is_owned():
-					log.verbose(utils.method.msg_kw("Releasing the lock"))
-					self.lock.release()
-					log.verbose(utils.method.msg_kw("Lock released"))
-
-
-		class LoopOperatorEnterTryUse(LoopOperatorEnter):
-			def __init__(self, *args, **kwargs):
-				super().__init__(*args, **kwargs)
-				self._try_result = None
-
-			def try_result(self):
-				return self._try_result
-
-			def _on_is_operating_check(self, is_operating):
-				if is_operating:
-					log.info(self._loop_is_operating_msg())
-				else:
-					super()._on_is_operating_check(is_operating)
-				self._try_result = not is_operating or self.operator.is_operating_in_current_context()
-
-
-		def __call__(self, loop):
-			params = self.LoopOperatorEnter(loop=loop, operator=self)
-			return params
-		
-		def try_use(self, loop):
-			params = self.LoopOperatorEnterTryUse(loop=loop, operator=self)
-			return params
-		
-		def check_if_free(self, loop):
-			params = self.LoopOperatorEnterCheckIfFree(loop=loop, operator=self)
-			return params
-
-
-	class TaskInfo:
-		def __init__(self, function, task=None, future=None):
-			self.function = function
-			self.task = task
-			self.future = future or asyncio_utils.get_event_loop().create_future()
-			super().__init__()
 
 
 def _check_future_task_cancelled(future, task):

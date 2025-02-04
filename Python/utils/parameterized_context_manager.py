@@ -70,6 +70,13 @@ class ParameterizedContextManagerBase(ABC):
 
 	def __getattr__(self, name):
 		return getattr(self._obj, name)
+	
+	def __getstate__(self):
+		return self.__dict__
+	
+	def __setstate__(self, state):
+		self.__dict__.update(state)
+		self._thread_local = threading.local()
 
 	def __call__(self, *args, **kwargs):
 		_args, _kwargs = self._merge_into_constant_args(args, kwargs)
