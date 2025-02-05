@@ -3,6 +3,7 @@ import threading
 from utils.base_task_scheduler import LoopOperatorBase, TaskSchedulerBase
 from utils.concurrency.thread_guard import ThreadGuard
 from utils.debug import wrap_debug_lock
+from utils.subscription import Subscription
 
 
 class ThreadTaskScheduler(ThreadGuard, TaskSchedulerBase):
@@ -16,3 +17,4 @@ class ThreadTaskScheduler(ThreadGuard, TaskSchedulerBase):
 			context_package = self.context_package
 		self._loop_operator = LoopOperator()
 		self.loop_operator.enter_lock = wrap_debug_lock(threading.RLock())
+		self.on_update = Subscription()

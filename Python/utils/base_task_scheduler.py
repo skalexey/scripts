@@ -138,7 +138,7 @@ class TaskInfo:
 		self.future = future or asyncio_utils.get_event_loop().create_future()
 		super().__init__()
 # This class runs any async function passed to it and returns a future that can be awaited on
-class TaskSchedulerBase(TrackableResource, ContextGuard):
+class TaskSchedulerBase(ContextGuard, TrackableResource):
 	"""
 	Aims to provide a simple interface to maintain a queue of functions to run in non-blocking manner, allowing the running thread/process to continue handling other tasks, delegating the queue maintainance to the underlying mechanisms of TaskScheduler based on asyncio.
 	Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread/process safety of all operations.
@@ -158,7 +158,6 @@ class TaskSchedulerBase(TrackableResource, ContextGuard):
 		self._queue = deque()
 		self._current_task_info = None
 		self._loop = None
-		self.on_update = Subscription()
 		def on_destroyed(ref):
 			TaskSchedulerBase.instances.remove(ref)
 		ref = weakref.ref(self, on_destroyed)

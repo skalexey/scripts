@@ -93,10 +93,11 @@ class ContextGuard:
 		super().__init_subclass__(**kwargs)
 		apply_context_check(cls)
 
-	def __init__(self):
+	def __init__(self, *args, **kwargs):
 		assert self._context_getter is not None, "Derived class must define '_context_getter' class attribute"
 		super().__setattr__('_tmp_context_ids', defaultdict(int))
 		super().__setattr__('_allowed_context_ids', set([self.__class__._context_getter().name]))
+		super().__init__(*args, **kwargs)
 
 	def allow_context(self, context):
 		self._allowed_context_ids.add(context.name)
