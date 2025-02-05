@@ -15,12 +15,13 @@ from utils.concurrency.base_guard import (
 from utils.debug import wrap_debug_lock
 from utils.lang import safe_enter
 from utils.live import verify
-from utils.log.logger import Logger
+
+# from utils.log.logger import Logger
 from utils.memory import SmartCallable
 from utils.profile.trackable_resource import TrackableResource
 from utils.subscription import OneTimeSubscription, Subscription
 
-log = Logger()
+# log = Logger()
 
 
 class LoopOperatorBase:
@@ -70,10 +71,10 @@ class LoopOperatorEnter:
 	def __enter__(self):
 		with self.operator.enter_lock:
 			current_context_id = self.context_package.current_context().name
-			log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' is entering the loop operator"))
+			# log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' is entering the loop operator"))
 			is_operating = self._is_operating()
 			self._on_is_operating_check(is_operating)
-			log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' entered the loop operator"))
+			# log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}' entered the loop operator"))
 			return self
 	
 	def __exit__(self, exc_type, exc_value, traceback):
@@ -81,11 +82,11 @@ class LoopOperatorEnter:
 		current_context_id = self.context_package.current_context().name
 		is_owner = operator_context_id == current_context_id
 		msg_addition = "" if is_owner else " (not the owner)"
-		log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} is exiting the loop operator"))
+		# log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} is exiting the loop operator"))
 		if is_owner:
 			self.operator.context_id = None
 			self.operator.on_released.set_result(operator_context_id)
-		log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} exited the loop operator"))
+		# log.verbose(utils.method.msg_kw(f"Thread '{current_context_id}'{msg_addition} exited the loop operator"))
 
 
 class LoopOperatorEnterCheckIfFree(LoopOperatorEnter):
@@ -102,17 +103,17 @@ class LoopOperatorEnterCheckIfFree(LoopOperatorEnter):
 
 	@safe_enter
 	def __enter__(self):
-		log.verbose(utils.method.msg_kw("Trying to acquire the lock"))
+		# log.verbose(utils.method.msg_kw("Trying to acquire the lock"))
 		self.lock.acquire() # Unlock in __exit__
-		log.verbose(utils.method.msg_kw("Lock acquired"))
+		# log.verbose(utils.method.msg_kw("Lock acquired"))
 		self._check_result = not self._is_operating()
 		return self
 	
 	def __exit__(self, exc_type, exc_value, traceback):
 		if self.lock._is_owned():
-			log.verbose(utils.method.msg_kw("Releasing the lock"))
+			# log.verbose(utils.method.msg_kw("Releasing the lock"))
 			self.lock.release()
-			log.verbose(utils.method.msg_kw("Lock released"))
+			# log.verbose(utils.method.msg_kw("Lock released"))
 
 
 class LoopOperatorEnterTryUse(LoopOperatorEnter):
@@ -125,7 +126,8 @@ class LoopOperatorEnterTryUse(LoopOperatorEnter):
 
 	def _on_is_operating_check(self, is_operating):
 		if is_operating:
-			log.info(self._loop_is_operating_msg())
+			pass
+			# log.info(self._loop_is_operating_msg())
 		else:
 			super()._on_is_operating_check(is_operating)
 		self._try_result = not is_operating or self.operator.is_operating_in_current_context()
@@ -199,7 +201,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		"""
 		Runs a function, or puts it in the queue but no more than <max_queue_size> times unique for this function.
 		"""
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		cb = SmartCallable.bind_if_func(async_function, self, args=args, kwargs=kwargs)
 		with self._lock:
 			registered_task_count = self.registered_task_count(cb)
@@ -215,32 +217,32 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		"""
 		Executes an awaitable (such as an asyncio.Task, coroutine, or future) until completion, handling precautions for the currently running event loop and threading context.
 		"""
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		try:
-			log.debug(utils.method.msg_kw(f"Trying to check if the tasks are under processing by the owner {self.context_title}"))
+			# log.debug(utils.method.msg_kw(f"Trying to check if the tasks are under processing by the owner {self.context_title}"))
 			with self._loop_operator.try_use(self.loop) as operator:
 				try_result = operator.try_result()
 				if try_result is True:
-					log.debug(utils.method.msg_kw(f"Running the task until complete"))
+					# log.debug(utils.method.msg_kw(f"Running the task until complete"))
 					result = self.loop.run_until_complete(awaitable)
-					log.verbose(utils.method.msg_kw(f"run_until_complete result: {result}"))
+					# log.verbose(utils.method.msg_kw(f"run_until_complete result: {result}"))
 				else:
 					if operator.is_operating_in_current_context():
 						raise RuntimeError(utils.method.msg_kw("Called run_until_complete() from a running task."))
 
-					log.debug(utils.method.msg_kw(f"Called run_until_complete() from a different {self.context_title}. Waiting the task to complete by the loop-owner {self.context_title} '{operator.context_id}'"))
+					# log.debug(utils.method.msg_kw(f"Called run_until_complete() from a different {self.context_title}. Waiting the task to complete by the loop-owner {self.context_title} '{operator.context_id}'"))
 
 					stop_waiting_event = self.context_package.Event()
 
 					def on_future_done(future):
-						log.debug(utils.method.msg_kw(f"Task done: {future}"))
+						# log.debug(utils.method.msg_kw(f"Task done: {future}"))
 						stop_waiting_event.set()
 
 					future = asyncio.run_coroutine_threadsafe(awaitable, self.loop)
 					future.add_done_callback(on_future_done)
 
 					def on_operator_released(operator_context_id):
-						log.debug(utils.function.msg_kw(f"Operator '{operator_context_id}' released the loop"))
+						# log.debug(utils.function.msg_kw(f"Operator '{operator_context_id}' released the loop"))
 						stop_waiting_event.set()
 
 					self._loop_operator.on_released.subscribe(on_operator_released)
@@ -249,7 +251,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 
 					if not future.done():
 						if not self._loop_operator.is_operating():
-							log.debug(utils.method.msg_kw(f"Operator abandoned the task. Trying to perform it in the current {self.context_title}"))
+							# log.debug(utils.method.msg_kw(f"Operator abandoned the task. Trying to perform it in the current {self.context_title}"))
 							with self._loop_operator(self.loop):
 								task = asyncio_utils.task(awaitable, self.loop)
 								if task is None:
@@ -257,36 +259,36 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 									task = asyncio_utils.task(awaitable, self.loop)
 								if task is None:
 									verify(future.done(), utils.method.msg_kw("Task must have been created after performing a small update in the loop"))
-									log.debug("Task has been completed during the small update in the loop")
+									# log.debug("Task has been completed during the small update in the loop")
 								else:
 									self.loop.run_until_complete(task)
-						else:
-							log.debug("Operator abandoned the task for a short period and is operating it again. Waiting for the task to complete")
+						# else:
+							# log.debug("Operator abandoned the task for a short period and is operating it again. Waiting for the task to complete")
 					result = future.result()
-					log.verbose(utils.method.msg_kw(f"Other {self.context_title} run_until_complete result: '{result}'"))
+					# log.verbose(utils.method.msg_kw(f"Other {self.context_title} run_until_complete result: '{result}'"))
 		except Exception as e:
-			log.error(utils.method.msg_kw(f"BaseException occurred while running the awaitable: '{e!r}'"))
+			# log.error(utils.method.msg_kw(f"BaseException occurred while running the awaitable: '{e!r}'"))
 			raise
 		except asyncio.CancelledError as e:
-			log.error(utils.method.msg_kw(f"CancelledError occurred while running the awaitable"))
+			# log.error(utils.method.msg_kw(f"CancelledError occurred while running the awaitable"))
 			raise
 		return result
 
 	def _wait_futures(self, futures, timeout=None):
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		async def wait_for_all_futures(futures, timeout=None):
 			done, pending = await asyncio.wait_for(futures, timeout=timeout)
 			for future in done:
 				exception = future.exception()
-				if exception is None:
-					log.debug(utils.function.msg(f"Future completed with result: {future.result()}"))
-				else:
-					log.debug(utils.function.msg(f"Future raised an exception: {exception}"))
-			log.debug(utils.function.msg(f"Done {len(done)} / {len(futures)} futures"))
-			if pending:
-				log.debug(utils.function.msg(f"Timeout occurred. {len(pending)} futures did not complete."))
-				for future in pending:
-					log.debug(utils.function.msg(f"Future did not complete yet: {future}"))
+				# if exception is None:
+					# log.debug(utils.function.msg(f"Future completed with result: {future.result()}"))
+				# else:
+					# log.debug(utils.function.msg(f"Future raised an exception: {exception}"))
+			# log.debug(utils.function.msg(f"Done {len(done)} / {len(futures)} futures"))
+			# if pending:
+				# log.debug(utils.function.msg(f"Timeout occurred. {len(pending)} futures did not complete."))
+				# for future in pending:
+					# log.debug(utils.function.msg(f"Future did not complete yet: {future}"))
 			return done, pending
 
 		# Run the coroutine that waits for all futures in the provided event loop
@@ -299,11 +301,11 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 			if wait_future in concurrent_done:
 				return wait_future.result()
 			raise RuntimeError(utils.method.msg_kw("The wait_future is not done, but no exception occurred"))
-		log.error(utils.method.msg_kw(f"An exception occurred: {exc}"))
+		# log.error(utils.method.msg_kw(f"An exception occurred: {exc}"))
 		raise exc
 
 	async def _run_until_complete_for_async(self, tasks_or_futures, timeout=None):
-		log.debug(utils.method.msg(f"timeout={timeout}"))
+		# log.debug(utils.method.msg(f"timeout={timeout}"))
 		# Wait for the event in place of tasks to avoid the task cancellation
 		event = asyncio.Event()
 		name_type = "task" if isinstance(tasks_or_futures[0], asyncio.Task) else "future"
@@ -311,21 +313,21 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		def on_done(task_or_future):
 			nonlocal remaining
 			remaining -= 1
-			log.debug(utils.function.msg(f"{name_type.capitalize()} done: '{task_or_future}'. Remaining: {remaining}"))
+			# log.debug(utils.function.msg(f"{name_type.capitalize()} done: '{task_or_future}'. Remaining: {remaining}"))
 			if remaining == 0:
 				event.set()
-				log.debug(utils.function.msg(f"All {count_to_wait} {name_type}s are done"))
+				# log.debug(utils.function.msg(f"All {count_to_wait} {name_type}s are done"))
 		for task_or_future in tasks_or_futures:
 			if not task_or_future.done():
 				task_or_future.add_done_callback(on_done)
 				count_to_wait += 1
 		remaining = count_to_wait
 		if remaining == 0:
-			log.debug(utils.function.msg(f"No {name_type}s to wait for"))
+			# log.debug(utils.function.msg(f"No {name_type}s to wait for"))
 			return None
-		log.debug(utils.function.msg(f"Waiting for {remaining} {name_type}s to complete"))
+		# log.debug(utils.function.msg(f"Waiting for {remaining} {name_type}s to complete"))
 		result = await asyncio.wait_for(event.wait(), timeout=timeout)
-		log.debug(utils.function.msg(f"Waiting for {name_type}s completed with result: {result}"))
+		# log.debug(utils.function.msg(f"Waiting for {name_type}s completed with result: {result}"))
 		return result
 
 	@allow_any_context
@@ -333,12 +335,12 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		"""
 		Waits for all scheduled tasks to complete, with an optional timeout.
 		"""
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		if self._loop_operator.is_operating_in_current_context():
 			raise RuntimeError(utils.method.msg_kw("Called wait_all_tasks() from a running task."))
 		task_infos = self._tasks
 		if len(task_infos) == 0:
-			log.debug(utils.method.msg_kw("Nothing to wait for"))
+			# log.debug(utils.method.msg_kw("Nothing to wait for"))
 			return self.WaitForResult()
 		tasks = []
 		futures = []
@@ -359,9 +361,11 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		try:
 			return self.run_until_complete(future)
 		except Exception as e:
-			log.error(utils.function.msg_kw(f"Exception occurred while waiting for the future: '{e!r}'"))
+			pass
+			# log.error(utils.function.msg_kw(f"Exception occurred while waiting for the future: '{e!r}'"))
 		except asyncio.CancelledError as e:
-			log.error(utils.function.msg_kw(f"CancelledError occurred while waiting for the future: '{e!r}'"))
+			pass
+			# log.error(utils.function.msg_kw(f"CancelledError occurred while waiting for the future: '{e!r}'"))
 		results, done, not_done = asyncio_utils.collect_results([future])
 		return results[0]
 
@@ -369,7 +373,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		"""
 		Runs multiple awaitables with run_until_complete() for a limited time, returning their results.
 		"""
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		name_type = "task" if isinstance(tasks_or_futures[0], asyncio.Task) else "future"
 		def collect_results(timedout):
 			results, done, not_done = asyncio_utils.collect_results(tasks_or_futures)
@@ -378,10 +382,10 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 			self.run_until_complete(self._run_until_complete_for_async(tasks_or_futures, timeout))
 			return collect_results(False)
 		except asyncio.TimeoutError:
-			log.debug(utils.method.msg_kw(f"Timeout occurred while completing the {name_type}s with timeout {timeout}"))
+			# log.debug(utils.method.msg_kw(f"Timeout occurred while completing the {name_type}s with timeout {timeout}"))
 			return collect_results(True)
 		except asyncio.CancelledError:
-			log.debug(utils.method.msg_kw(f"CancelledError occurred while completing the {name_type}s with timeout {timeout}"))
+			# log.debug(utils.method.msg_kw(f"CancelledError occurred while completing the {name_type}s with timeout {timeout}"))
 			return collect_results(True)
 		return collect_results(False)
 
@@ -393,7 +397,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		"""
 		result = self.wait_all_tasks(timeout)
 		if not result:
-			log.debug(utils.method.msg_kw("Timeout occurred while completing all tasks. Cancelling all tasks"))
+			# log.debug(utils.method.msg_kw("Timeout occurred while completing all tasks. Cancelling all tasks"))
 			self.cancel_all_tasks()
 		return result
 
@@ -420,7 +424,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		return result
 
 	def cancel_all_tasks(self):
-		log.debug(utils.method.msg_kw(f"Cancelling {len(self._tasks)} tasks"))
+		# log.debug(utils.method.msg_kw(f"Cancelling {len(self._tasks)} tasks"))
 		self._queue.clear()
 		for task_info in list(self._tasks.values()):
 			task_info.task.cancel()
@@ -429,7 +433,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 
 	# Use this method in a loop if your application doesn't have an event loop running
 	def update(self, dt):
-		log.loop(utils.method.msg_kw())
+		# log.loop(utils.method.msg_kw())
 		# Create the loop from the updating thread/process if it doesn't exist
 		# self.loop
 		# Update the tasks
@@ -450,7 +454,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 				if not future.cancelled():
 					ex = future.exception()
 					if ex is not None:
-						log.error(utils.method.msg_kw(f"Exception occurred while updating the tasks: '{ex}'"))
+						# log.error(utils.method.msg_kw(f"Exception occurred while updating the tasks: '{ex}'"))
 						raise ex
 			taken_time = time.time() - cur
 			self.on_update.notify(taken_time)
@@ -472,7 +476,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 		return len(self._tasks)
 
 	def _schedule_task(self, async_function, registered_task_count, max_queue_size=0):
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		with self._lock:
 			# Locked by the caller method
 			if 0 <= max_queue_size >= registered_task_count:
@@ -483,7 +487,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 				else:
 					return task_info.future
 			# Don't fit by queue size
-			log.debug(utils.method.msg_kw(f"Task scheduling has been ignored due to the queue size limit"))
+			# log.debug(utils.method.msg_kw(f"Task scheduling has been ignored due to the queue size limit"))
 			return None
 
 	def _create_task_info(self, async_function):
@@ -503,16 +507,16 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 				task = self.loop.create_task(task_info.function())
 				task_info.task = task
 				self._tasks[task] = task_info
-				log.debug(utils.method.msg(f"Task {task} has been registered. Total task count: {len(self._tasks)}"))
+				# log.debug(utils.method.msg(f"Task {task} has been registered. Total task count: {len(self._tasks)}"))
 				assert len(self._tasks) == 1
 				task.add_done_callback(self._on_task_done)
 
-				# log.attention(f"Added a new task {task} to the loop")
+				# # log.attention(f"Added a new task {task} to the loop")
 
 				future = task_info.future
 
 				def future_done(future):
-					log.debug(utils.function.msg_kw())
+					# log.debug(utils.function.msg_kw())
 					_check_future_task_cancelled(future, task)
 				
 				future.add_done_callback(future_done)
@@ -525,7 +529,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 			return future
 
 	def _on_task_done(self, task):
-		log.debug(utils.method.msg_kw())
+		# log.debug(utils.method.msg_kw())
 		task_info = self._tasks.pop(task)
 		assert task_info == self._current_task_info
 		task, future = task_info.task, task_info.future
@@ -534,7 +538,7 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 				if not future.done():
 					future.set_result(task.result())
 		except Exception as e:
-			log.error(f"Exception in _on_task_done: {e}")
+			# log.error(f"Exception in _on_task_done: {e}")
 			if not future.done():
 				future.set_exception(e)
 		finally:
@@ -545,21 +549,23 @@ class TaskSchedulerBase(ContextGuard, TrackableResource):
 
 def _check_future_task_cancelled(future, task):
 	if future.cancelled():
-		log.debug(utils.method.msg_kw(f"Future has been cancelled"))
+		# log.debug(utils.method.msg_kw(f"Future has been cancelled"))
 		if not task.cancelled():
-			# log.debug(utils.method.msg_kw(f"Cancelling the task"))
+			# # log.debug(utils.method.msg_kw(f"Cancelling the task"))
 			task.cancel()
-			log.debug(utils.method.msg_kw(f"  Cancelled the task"))
+			# log.debug(utils.method.msg_kw(f"  Cancelled the task"))
 		else:
-			log.debug(utils.method.msg_kw(f"  Task is already cancelled"))
+			pass
+			# log.debug(utils.method.msg_kw(f"  Task is already cancelled"))
 	elif task.cancelled():
-		log.debug(utils.method.msg_kw(f"Task has been cancelled"))
+		# log.debug(utils.method.msg_kw(f"Task has been cancelled"))
 		if not future.done():
-			# log.debug(utils.method.msg_kw(f"Cancelling the future"))
+			# # log.debug(utils.method.msg_kw(f"Cancelling the future"))
 			future.cancel()
-			log.debug(utils.method.msg_kw(f"  Cancelled the future"))
+			# log.debug(utils.method.msg_kw(f"  Cancelled the future"))
 		else:
-			log.debug(utils.method.msg_kw(f"  Future is already done"))
+			pass
+			# log.debug(utils.method.msg_kw(f"  Future is already done"))
 	else:
 		return False
 	return True
