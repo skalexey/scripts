@@ -43,7 +43,8 @@ class Intrstate:
 		if self_attr is not None:
 			raise AttributeError(f"Cannot set the intrincic attribute '{name}'")
 		if value is None:
-			del self._state[name]
+			if name in self._state:
+				del self._state[name]
 		else:
 			self._state[name] = self._process_set_value(name, value)
 		self._on_state_update(name, value)
