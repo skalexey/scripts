@@ -21,32 +21,37 @@ _cache_lock = wrap_debug_lock(threading.Lock())
 _cache_is_loading = None
 
 def work():
-	global _module_cache
-	global _cache_is_loading
-	profiler.start()
-	cache = multiprocessing.Manager().dict()
-	search_dirs = collect_search_paths()
-	for dir_path in search_dirs:
-		for root, dirs, files in os.walk(dir_path):
-			dirname = os.path.basename(root)
-			if dirname.startswith('.'):
-				continue
-			if dirname == '__pycache__':
-				continue
-			if '__init__.py' not in files:
-				continue
-			files.remove('__init__.py')
-			for file in files:
-				if file.endswith('.py'):
-					full_fpath = os.path.join(root, file)
-					relpath = os.path.relpath(full_fpath, dir_path)
-					module_path = os.path.splitext(relpath)[0].replace(os.path.sep, '.')
-					# log.debug(f"Found module: {module_path} in dir_path: '{dir_path}', root: '{root}', file: '{file}'")
-					assert module_path not in cache
-					cache[module_path] = full_fpath
-	log.debug(f"module_cache(): Found {len(cache)} modules in {profiler.measure().timespan} seconds")
-	_module_cache = cache
-	_cache_is_loading = False
+	try:
+		global _module_cache
+		global _cache_is_loading
+		profiler.start()
+		cache = multiprocessing.Manager().dict()
+		search_dirs = collect_search_paths()
+		for dir_path in search_dirs:
+			for root, dirs, files in os.walk(dir_path):
+				dirname = os.path.basename(root)
+				if dirname.startswith('.'):
+					continue
+				if dirname == '__pycache__':
+					continue
+				if '__init__.py' not in files:
+					continue
+				files.remove('__init__.py')
+				for file in files:
+					if file.endswith('.py'):
+						full_fpath = os.path.join(root, file)
+						relpath = os.path.relpath(full_fpath, dir_path)
+						module_path = os.path.splitext(relpath)[0].replace(os.path.sep, '.')
+						# log.debug(f"Found module: {module_path} in dir_path: '{dir_path}', root: '{root}', file: '{file}'")
+						assert module_path not in cache
+						cache[module_path] = full_fpath
+		log.debug(f"module_cache(): Found {len(cache)} modules in {profiler.measure().timespan} seconds")
+		_module_cache = cache
+		_cache_is_loading = False
+	except Exception as e:
+		log.error(f"Error in module cache process: {e}")
+		multiprocessing.active_children()
+		sys.exit(-32)
 
 def module_cache():
 	"""
