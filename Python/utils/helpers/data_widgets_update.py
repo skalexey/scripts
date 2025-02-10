@@ -54,6 +54,10 @@ class DataWidgetsUpdateMixin(ABC):
 		widgets = [self._widgets[i] for i in indexes]
 		return widgets
 	
+	def get_widget_by_data(self, data):
+		widgets = self.get_widgets_by_data(data)
+		return widgets[0] if widgets else None
+	
 	def get_widget_at(self, index):
 		return self._widgets[index]
 
