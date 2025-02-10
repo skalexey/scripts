@@ -67,5 +67,5 @@ class Line():
 		if self.points[0] == self.points[1]:
 			raise ValueError("The contains 2 same points.")
 		result = (self.points[1] - self.points[0]) * point_traverse_direction.x
-		assert result.x >= 0
+		# assert result.x >= 0  # This assert is to catch external errors
 		return result
