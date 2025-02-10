@@ -22,7 +22,6 @@ class Logger:
 		super().__init__()
 		self.log_level = 0
 		self.log_addition = None
-		self.connection = None
 		# Take the caller script name from the stack
 		stack = inspect.stack()
 		fname = stack[title_stack_level].filename
@@ -70,18 +69,11 @@ class Logger:
 		self.file = utils.log.redirect_to_file(fpath, level, self.on_log, *args, **kwargs)
 		return self.file
 	
-	def close_connection(self):
-		if self.connection:
-			self.on_log.unsubscribe(self.connection)
-			self.connection.close()
-			self.connection = None
-	
 	def redirect_to_server(self, address):
-		utils.live.verify(self.connection is None, "Connection already established")
-		self.connection = utils.log.redirect_to_server(address, self.on_log)
-		def log(*args, **kwargs):
-			return log_to_server(self.connection, *args, **kwargs)
-		self._log = log
+		utils.live.verify(getattr(self, "_redirected_to_server", None) is True, "Connection already established")
+		log_func = utils.log.redirect_to_server(address, self.on_log)
+		self._log = log_func
+		self._redirected_to_server = True
 
 	def _exec(self, expression, globals=None, locals=None):
 		try:

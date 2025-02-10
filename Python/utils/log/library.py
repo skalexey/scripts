@@ -1,12 +1,15 @@
+import multiprocessing
 import os
 import pickle
 import struct
+import sys
 import threading
 import weakref
 from abc import ABC, abstractmethod
 from contextlib import nullcontext
 from datetime import datetime
 from enum import IntEnum
+from functools import partial
 from time import time
 
 # All utils imports in logger must be lazy to avoid circular imports since logger is imported in many modules
@@ -108,6 +111,14 @@ class Log:
 
 	def __getattr__(self, name):
 		return getattr(self.packet, name)
+	
+	def __getstate__(self):
+		# Return the object's dictionary for pickling
+		return self.__dict__
+
+	def __setstate__(self, state):
+		# Restore the object's state after unpickling
+		self.__dict__.update(state)
 
 
 def compose_log_message(message, level=LogLevel.PRINT, log_title=None, log_addition=None, timestamp=None):
@@ -224,25 +235,54 @@ def redirect_to_file_levels(*levels):
 g_server = None
 g_connection = None
 
+def log_override_to_server(address, *args, **kwargs):
+	global g_connection
+	if g_connection is None:
+		from utils.concurrency.thread_local_proxy import ThreadLocalProxy
+		from utils.net.udp.connection import Connection as UDPConnection
+		ip, port = address.split(':')
+		port = int(port)
+		g_connection = ThreadLocalProxy(UDPConnection, (ip, port))
+	return log_to_server(g_connection, *args, **kwargs)
+
 def gen_redirect_to_server_func(address):
-	from utils.concurrency.thread_local_proxy import ThreadLocalProxy
-	from utils.net.udp.connection import Connection as UDPConnection
-	ip, port = address.split(':')
-	port = int(port)
-	# _connection = socket.create_connection((ip, port))
-	_connection = ThreadLocalProxy(UDPConnection, (ip, port))
-
-	def log_override_to_server(*args, **kwargs):
-		return log_to_server(g_connection, *args, **kwargs)
-
-	return log_override_to_server, _connection
+	return partial(log_override_to_server, address)
 
 def redirect_to_server(address):
 	# Override the global log function
 	global _log_impl, g_connection
 	utils.live.verify(g_connection is None, "Connection already established")
-	_log_impl, g_connection = gen_redirect_to_server_func(address)
-	return g_connection
+	_log_impl = gen_redirect_to_server_func(address)
+	return _log_impl
+
+def _log_process_job(log_queue, logged_event, log_func):
+	try:
+		while True:
+			while log_queue:
+				log = log_queue.get()
+				packet = log.packet
+				message, level, title, addition = packet.message, packet.level, packet.title, packet.addition
+				log_func(message, level, title, addition)
+				logged_event.clear()
+			logged_event.wait()
+	except Exception as e:
+		print(f"Unexpected error during logging: {e}")
+		multiprocessing.active_children()
+		sys.exit(-128)
+
+def redirect_to_process():
+	manager = multiprocessing.Manager()
+	log_queue = manager.Queue()
+	logged_event = multiprocessing.Event()
+	global _log_impl
+	base_log = _log_impl
+	def log_override_to_process(*args, **kwargs):
+		log = Log(*args, **kwargs)
+		log_queue.put(log)
+		logged_event.set()
+	_log_impl = log_override_to_process
+	process = multiprocessing.Process(target=_log_process_job, args=(log_queue, logged_event, base_log), name="LogProcess")
+	process.start()
 
 def start_server(port, *levels, server=None):
 	if server is None:
