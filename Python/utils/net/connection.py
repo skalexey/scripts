@@ -1,6 +1,6 @@
 import threading
 from abc import ABC, abstractmethod
-
+from typing import Tuple
 from utils.debug import wrap_debug_lock
 
 
@@ -26,7 +26,7 @@ class Connection(ABC):
 		pass
 
 	@abstractmethod
-	def recvfrom(self, size) -> tuple[bytearray, str]: # Any connection must implement it for abstraction
+	def recvfrom(self, size) -> Tuple[bytearray, str]: # Any connection must implement it for abstraction
 		pass
 
 	def recv(self, size):

@@ -4,7 +4,7 @@ import threading
 import time
 import weakref
 from collections import deque
-
+from typing import List
 import utils.asyncio_utils as asyncio_utils
 import utils.function
 import utils.method
@@ -31,7 +31,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 	Provides not async interface, allowing it to be used within ordinary (not async) functions, and ensures thread safety of all operations.
 	"""
 
-	instances: list[weakref.ref] = []
+	instances: List[weakref.ref] = []
 	on_update = Subscription()
 
 	def __init__(self, *args, **kwargs):
