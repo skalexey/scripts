@@ -31,9 +31,9 @@ class DataWidgetsUpdateMixin(ABC):
 	def _on_data_destroyed(self, data_id, index):
 		self._remove_data_id_index(data_id, index)
 		self._data_ids.pop(index)
-		self._data_list.pop(index)
+		data = self._data_list.pop(index)
 		widget = self._widgets.pop(index)
-		self._destroy_widget(widget)
+		self._destroy_widget(widget, index, data)
 
 	def _data_id_indexes(self, data_id):
 		indexes = self._data_indexes.get(data_id)
@@ -62,15 +62,15 @@ class DataWidgetsUpdateMixin(ABC):
 		return self._widgets[index]
 
 	def clear(self):
-		for widget, data in self.pairs():
-			self._destroy_widget(widget)
+		for i, (widget, data) in enumerate(self.pairs()):
+			self._destroy_widget(widget, i, data)
 		self._data_list.clear()
 		self._widgets.clear()
 		self._data_indexes.clear()
 		self._data_ids.clear()
 
 	@abstractmethod
-	def _destroy_widget(self, widget):
+	def _destroy_widget(self, widget, index, data):
 		pass
 		# Example:
 		# chart = self.app_context.main_window.chart_view
@@ -123,10 +123,11 @@ class DataWidgetsUpdateMixin(ABC):
 				data = self._data_list.pop()
 				# Data can be destroyed, so data_id is taken from _data_ids
 				data_id = self._data_ids.pop()
-				removed = self._remove_data_id_index(data_id, stored_size - i - 1)
+				index = stored_size - i - 1
+				removed = self._remove_data_id_index(data_id, index)
 				assert removed
 				widget = self._widgets.pop()
-				self._destroy_widget(widget)
+				self._destroy_widget(widget, index, data)
 			if to_remove_count > 0:
 				# profiler.mark(f"Removed {to_remove_count} widgets")
 				self._on_widgets_removed(to_remove_count)
