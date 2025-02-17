@@ -59,6 +59,6 @@ class TrackableResource:
 			with TrackableResource.lock:
 				TrackableResource.resources.remove(info.id)
 		info.ref = weakref.ref(self, _on_destroyed)
-		with self.lock:
+		with TrackableResource.lock:
 			info.id = self.resources.add(info)
 		log.verbose(f"TrackableResource created: '{info.repr}'")
