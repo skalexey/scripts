@@ -59,3 +59,6 @@ class WeakList:
 
 	def pop(self, index=-1):
 		return deref_if_weak_proxy(self._data.pop(index))
+	
+	def values(self):
+		return (deref_if_weak_proxy(item) for item in self._data)
