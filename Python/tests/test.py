@@ -18,30 +18,22 @@ from utils.log.logger import Logger, LogLevel
 from utils.pyside.application import Application
 from utils.timed_loop import timed_loop
 
+app_context = None
+app = None
+app_context = None
+log_server_port = None
+log = Logger()
+
 
 class TestApplication(Application):
 	def on_update(self, dt):
 		pass
 
-app_context = ApplicationContext()
-app = TestApplication(app_context, [])
-app_context.app = app
-
-log = Logger()
-# TODO: it makes infinite recursion in Subscription.notify
-# log_files = utils.log.redirect_to_file_levels(LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
-log_server_port = 36912
-utils.log.start_server(log_server_port, LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
-utils.log.redirect_to_server(f"localhost:{log_server_port}")
-sleep(1)
-profiler = utils.profile.profiler.TimeProfiler()
-profiler.set_print_function(log.log)
 
 class LogAddition:
 	def __str__(self):
 		return f"[{threading.current_thread().name}] "
 
-utils.log.add_global_addition(LogAddition(), front=True)
 
 def title(text):
 	return utils.text.title(text, "=", 60)
@@ -110,6 +102,21 @@ class AssertExceptionType:
 		return True
 
 def run():
+	app_context = ApplicationContext()
+	app = TestApplication(app_context, [])
+	app_context.app = app
+
+	# TODO: it makes infinite recursion in Subscription.notify
+	# log_files = utils.log.redirect_to_file_levels(LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
+	log_server_port = 36912
+	utils.log.start_server(log_server_port, LogLevel.VERBOSE, LogLevel.DEBUG, LogLevel.INFO, LogLevel.ATTENTION)
+	utils.log.redirect_to_server(f"localhost:{log_server_port}")
+	sleep(1)
+	profiler = utils.profile.profiler.TimeProfiler()
+	profiler.set_print_function(log.log)
+
+	utils.log.add_global_addition(LogAddition(), front=True)
+
 	function_name = sys.argv[1] if len(sys.argv) > 1 else 'test'
 	user_frame = inspect_utils.user_frame()
 	# Get the caller's globals from the frame
@@ -133,3 +140,4 @@ def assert_exception(expr, result=True):
 def log_if_true(flag, msg):
 	if flag:
 		log(msg)
+
