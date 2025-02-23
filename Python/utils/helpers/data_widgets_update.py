@@ -186,6 +186,8 @@ class DataWidgetsUpdateMixin(ABC):
 						continue
 					if data == current_data:
 						continue
+					if data is None:
+						continue
 				widget = self._widgets[i]
 				widgets_to_update.append((widget, data, i))
 			widget_to_update_count = len(widgets_to_update)
