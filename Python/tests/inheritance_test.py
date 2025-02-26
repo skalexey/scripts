@@ -123,11 +123,45 @@ def same_method_test():
 	c = C()
 	c.f()
 
+def diamond_inheritance_test():
+	log(title("Diamond Inheritance Test"))
+	class A:
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+
+	class B(A):
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+
+	class C(A):
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+
+	class D(B, C):
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+
+	d = D()
+
+	class E(B, C, A):
+		def __init__(self):
+			log(utils.method.msg_kw())
+			super().__init__()
+
+	e = E()
+
+	log(title("End of Diamond Inheritance Test"))
+
 def test():
 	log(title("Inheritance Test"))
 	# init_test()
 	# abc_test()
-	same_method_test()
+	# same_method_test()
+	diamond_inheritance_test()
 	log(title("End of Inheritance Test"))
 
 run()
