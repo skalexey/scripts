@@ -106,4 +106,7 @@ class SessionManager:
 	def _session_id(self, storage_path):
 		relpath = os.path.relpath(storage_path, self.storage_directory)
 		# The session id is concatenated path parts
+		# Replace the path separator with an empty string but remove "0" if the last part is "0"
+		if relpath.endswith("0"):
+			relpath = relpath[:-1]
 		return relpath.replace(os.sep, "")
