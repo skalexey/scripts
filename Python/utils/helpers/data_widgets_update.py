@@ -104,14 +104,17 @@ class DataWidgetsUpdateMixin(ABC):
 		# return data.id
 
 	# If data_list is None, it will update all the widgets with the current data list. Can be used as a "force" update, but with current data.
-	def update(self, data_list=None, *args, force=False, **kwargs):
+	def update(self, data_list=None, *args, dt=0, force=False, **kwargs):
 		# profiler = TimeProfiler(print_function=log.verbose)
 		# profiler.start()
 		assert len(self._widgets) == len(self._data_list)
 		if data_list is None: # Just update with the current data
 			# profiler.mark("Updating with the current data list")
-			for widget, data in self.pairs():
-				widget.update(data, *args, **kwargs)
+			result = []
+			for index, widget, data in enumerate(self.pairs()):
+				widget.update(data, *args, dt=dt, **kwargs)
+				result.append((widget, data, index))
+			return result, []
 			# profiler.mark(f"Updated {len(self._widgets)} widgets with the current data list")
 		else: # Update with the new data list
 			# profiler.mark("Updating with the new data list")
@@ -135,7 +138,7 @@ class DataWidgetsUpdateMixin(ABC):
 				stored_size = len(self._data_list)
 			# Update existing widgets
 			# profiler.mark("Calling _update_widgets()")
-			self._update_widgets(data_list, *args, force=force, **kwargs)
+			update_result = self._update_widgets(data_list, *args, dt=dt, force=force, **kwargs)
 			# profiler.mark("_update_widgets() called")
 			assert len(self._widgets) == len(self._data_list)
 			# Add new widgets
@@ -145,6 +148,7 @@ class DataWidgetsUpdateMixin(ABC):
 			assert len(self._widgets) == len(self._data_list)
 			# log.verbose(f'			{utils.method.msg(f"updated {len(data_list)} widgets within {profiler.measure().timespan} seconds")}')
 			# profiler.print_marks("  			{description} within {timespan} seconds")
+			return update_result
 
 	def _add_new_widgets(self, data_list, *args, **kwargs):
 		data_size = len(data_list)
@@ -161,12 +165,12 @@ class DataWidgetsUpdateMixin(ABC):
 		# profiler.start()
 		# log.verbose(utils.function.msg(f"			Updating {len(data_list)} widgets..."))
 		assert len(self._widgets) == len(self._data_list)
-		updated_count = 0
+		widgets_to_update = []
 		if not force:
 			if data_list == self._data_list:
-				return updated_count
+				return widgets_to_update, ((widget, self._data_list[index], index) for index, widget in enumerate(self._widgets))
 		# profiler.mark("Compared data lists")
-		widgets_to_update = []
+		not_updated_widgets = []
 		widget_count = len(self._widgets)
 		data_count = len(self._data_list)
 		assert widget_count == data_count
@@ -181,14 +185,17 @@ class DataWidgetsUpdateMixin(ABC):
 			for i, current_data in enumerate(self._data_list):
 				data = data_list[i]
 				current_data = self._data_list[i]
+				widget = self._widgets[i]
 				if not force:
 					if data is current_data: # Don't compare all the data since it is quite expensive. If needed to compare the data in every update, consider manual update call with no data list passed, so it will update all the widgets with the current data and reflect the changes.
+						not_updated_widgets.append((widget, data, i))
 						continue
 					if data == current_data:
+						not_updated_widgets.append((widget, data, i))
 						continue
 					if data is None:
+						not_updated_widgets.append((widget, data, i))
 						continue
-				widget = self._widgets[i]
 				widgets_to_update.append((widget, data, i))
 			widget_to_update_count = len(widgets_to_update)
 			# type_addition = f" of type '{widgets_to_update[0][0].__class__.__name__}'" if widget_to_update_count > 0 else ""
@@ -200,7 +207,6 @@ class DataWidgetsUpdateMixin(ABC):
 				# assert data_id not in self._widgets
 				# if widget:
 				self._update_widget(widget, data, i, *args, **kwargs)
-				updated_count += 1
 				# self._widgets[i] = weakref.ref(widget) # Already updated. No need to overwrite the widget by itself # TODO: if widget == None?
 		# profiler.mark(f"Updated {updated_count} of {widget_count} widgets")
 		# log.debug(utils.method.msg(f"Updated {updated_count} of {widget_count} widgets with the goal of {widget_to_update_count}"))
@@ -211,7 +217,7 @@ class DataWidgetsUpdateMixin(ABC):
 		# assert len(self._data_ids) == data_indexes_count_assert == len(self._data_list) == len(self._widgets)
 		# profiler.print_marks("  			{description} within {timespan} seconds")
 		# log.verbose(utils.function.msg(f"				Updated {len(data_list)} widgets within {profiler.measure().timespan} seconds"))
-		return updated_count
+		return widgets_to_update, not_updated_widgets
 
 	def _update_widget(self, widget, data, index, *args, **kwargs):
 		widget.update(data, *args, **kwargs)
