@@ -5,6 +5,7 @@ import time
 import weakref
 from collections import deque
 from typing import List
+
 import utils.asyncio_utils as asyncio_utils
 import utils.function
 import utils.method
@@ -34,7 +35,7 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 	instances: List[weakref.ref] = []
 	on_update = Subscription()
 
-	def __init__(self, *args, **kwargs):
+	def __init__(self, *args, use_shared_loop=None, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.update_interval = kwargs.get("update_interval", 0.1)
 		self._tasks = {}
@@ -48,6 +49,8 @@ class TaskScheduler(TrackableResource, ThreadGuard):
 			TaskScheduler.instances.remove(ref)
 		ref = weakref.ref(self, on_destroyed)
 		TaskScheduler.instances.append(ref)
+		if not use_shared_loop:
+			self.init_with_new_loop()
 
 	@property
 	@allow_any_thread
