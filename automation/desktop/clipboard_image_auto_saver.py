@@ -16,16 +16,19 @@ def get_active_window_title():
 	return win32gui.GetWindowText(hwnd).strip() or "UnknownApp"
 
 def get_clipboard_image():
+	time_before = time.time()
 	img = ImageGrab.grabclipboard()
+	time_after = time.time()
+	print(f"[+] Time taken to grab clipboard image: {time_after - time_before:.2f} seconds")
+
 	if isinstance(img, ImageGrab.Image.Image):
 		return img
 	return None
 
 
-def calculate_md5(img):
-	with io.BytesIO() as output:
-		img.save(output, format="PNG")
-		return hashlib.md5(output.getvalue()).hexdigest()
+def calculate_md5(img, size=(64, 64)):
+	img_small = img.copy().resize(size).convert("RGB")
+	return hashlib.md5(img_small.tobytes()).hexdigest()
 
 def get_screenshot_path(base_dir, app_name, timestamp):
 	base_name = f"{app_name}_{timestamp}.png"
@@ -80,7 +83,10 @@ def main():
 		try:
 			image = get_clipboard_image()
 			if image:
+				# time_before = time.time()
 				last_md5 = save_screenshot_if_new(image, last_md5, pictures_dir)
+				# time_after = time.time()
+				# print(f"[+] Time taken to process image: {time_after - time_before:.2f} seconds")
 		except Exception as e:
 			print(f"[!] Error: {e}")
 		time.sleep(CHECK_INTERVAL)
