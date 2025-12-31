@@ -10,6 +10,8 @@ function create_backup() {
 		local current_time=$(date +'%H-%M-%S')
 		local dir_name=$(basename "$src")
 		local backup_dir="$backup_root/$current_date"
+		# If backup_dir path does not exist - then stop
+		[ ! -d "$backup_root" ] && log_error "Backup directory '$backup_root' does not exist" && return 1
 		local archive_name="$dir_name--$current_date--$current_time"
 		local destination="$backup_dir/$archive_name"
 	fi
@@ -19,6 +21,7 @@ function create_backup() {
 
 	# Create the archive
 	source $scripts_dir/include/zip.sh
+	log_info "Compressing '$src' to '$destination'"
 	compress "$src" "$destination" ${@:3}
 
 	local code=$?
@@ -34,7 +37,6 @@ function job()
 	source $scripts_dir/include/log.sh
 	local this_script_name=$(basename "${BASH_SOURCE[0]}")
 	local log_prefix="[$this_script_name] "
-
 	
 	[ -z "$1" ] && log_error "No source provided" && return 1 || local src="$1"
 	local cmd="create_backup \"$src\" \"$2\" ${@:3}"
