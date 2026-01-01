@@ -28,11 +28,21 @@ function job() {
 	fi
 	# Append the wrapper function to the bashrc file
 	echo "function stack() { \"$stack_script_path\" \"\$@\"; }" >> "$bashrc_file"
-	# Empty line
 	echo "" >> "$bashrc_file"
 	if ! validate_install "$bashrc_file"; then
 		log_error "Failed to set up stack command in '$bashrc_file'. Could not validate the modification."
 		return 1
+	fi
+	# Create the config file
+	local config_file="$THIS_DIR/stack.conf"
+	if [ ! -f "$config_file" ]; then
+		touch "$config_file"
+		# Write the stack file path to the config file
+		read -p "Enter the stack text file directory path: " stack_text_file_dir
+		echo "stack_file=\"$stack_text_file_dir/stack.txt\"" >> "$config_file"
+		echo "" >> "$config_file"
+	else
+		log_warning "Config file already exists at '$config_file'"
 	fi
 	log_success "Stack command set up successfully in '$bashrc_file'. Please restart your terminal or run 'source $bashrc_file' to apply the changes."
 }

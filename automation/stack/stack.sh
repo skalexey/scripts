@@ -49,7 +49,7 @@ function job() {
 	local config_file="$THIS_DIR/stack.conf"
 	[ ! -f "$config_file" ] && log_error "Config file not found at '$config_file'" && return 1
 	source "$config_file"
-	[ -z "$stack_file" ] && log_error "Stack file not found" && return 1
+	[ -z "$stack_file" ] && log_error "Stack file not found at '$stack_file'" && return 1
 	# Command process
 	# Find a function in this script with name cmd_<comand> and execute. Otherwise print an error and return
 	local cmd_function="cmd_$command"
