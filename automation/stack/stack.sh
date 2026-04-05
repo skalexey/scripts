@@ -37,6 +37,12 @@ function cmd_size() {
 	echo "$size"
 }
 
+function cmd_show() {
+	# Print all items in the stack file
+	[ ! -f "$stack_file" ] && log_error "Stack file not found at '$stack_file'" && return 1
+	cat "$stack_file"
+}
+
 function job() {
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 	source $THIS_DIR/../automation_config.sh
