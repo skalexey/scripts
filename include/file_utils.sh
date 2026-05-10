@@ -185,6 +185,7 @@ function to_nix_path() {
 	else
 		echo "$1"
 	fi
+	exit -1
 }
 
 function is_win_path() {
@@ -229,36 +230,67 @@ function directory_tree() {
 	find $1 | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
 }
 
+# Returns the filesystem type for a path (walks up to nearest existing parent).
+function path_fs_type() {
+	local path="$1"
+	while [[ ! -e "$path" ]]; do
+		path="$(dirname "$path")"
+		[[ "$path" == "/" ]] && break
+	done
+	stat -f --format=%T "$path" 2>/dev/null || echo "unknown"
+}
+
+# Returns true if the path lives on a Windows-mounted filesystem (drvfs/9p in WSL).
+function is_windows_fs() {
+	local fstype
+	fstype="$(path_fs_type "$1")"
+	[[ "$fstype" == "v9fs" ]]
+}
+
 function symlink() {
 	[ -z "$1" ] && echo "No source file provided" && return 1 || local src="$1"
 	[ -z "$2" ] && echo "No destination file provided" && return 2 || local dest="$2"
+	[ ! -e "$src" ] && echo "Source path does not exist: '$src'" && return 3
 	local fname=$(basename "$src")
-	if [ -d $dest ]; then
+	if [ -d "$dest" ]; then
 		local dest_complete_path="$dest/$fname"
-	elif [ -f $dest ]; then
+	else
 		local dest_complete_path="$dest"
 	fi
-	[ -L "$dest_complete_path" ] && echo "Destination file is already a symlink: '$dest_complete_path'" && return 3
-	[ -f "$dest_complete_path" ] && echo "Destination file already exists: '$dest_complete_path'" && return 4
-	[ -d "$dest_complete_path" ] && echo "Destination directory already exists: '$dest_complete_path'" && return 5
+	[ -L "$dest_complete_path" ] && echo "Destination file is already a symlink: '$dest_complete_path'" && return 4
+	[ -f "$dest_complete_path" ] && echo "Destination file already exists: '$dest_complete_path'" && return 5
+	[ -d "$dest_complete_path" ] && echo "Destination directory already exists: '$dest_complete_path'" && return 6
 	local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-	source $THIS_DIR/os.sh
-	[ $? -ne 0 ] && echo "Failed to include os.sh" && return 6
-	if is_windows; then
-		# Call symlink command trhough file_utils.bat
-		local THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-		# if is full path:
-		local full_path_src=$(full_path "$src")
-		[ $? -ne 0 ] && echo "Failed to get full path of the source" && return 7
-		mkdir -p "$dest"
-		[ $? -ne 0 ] && echo "Failed to create the destination directory" && return 8
-		local full_path_dest=$(file_full_path "$dest")
-		local win_path_src=$(cygpath -w $full_path_src)
-		local win_path_dest=$(cygpath -w $full_path_dest)
-		$THIS_DIR/file_utils.bat symlink "$win_path_src" "$win_path_dest"
+	source "$THIS_DIR/os.sh"
+	[ $? -ne 0 ] && echo "Failed to include os.sh" && return 7
+	mkdir -p "$(dirname "$dest_complete_path")"
+	[ $? -ne 0 ] && echo "Failed to create the destination directory" && return 9
+	if is_windows && is_windows_fs "$dest_complete_path"; then
+		# Windows filesystem: use mklink via cmd.exe
+		if is_wsl; then
+			# WSL: convert paths with wslpath
+			local win_path_src win_path_dest
+			win_path_src=$(wslpath -w "$(realpath -m "$src")")
+			win_path_dest=$(wslpath -w "$dest_complete_path")
+			cmd.exe /c mklink "$win_path_dest" "$win_path_src" >/dev/null
+		else
+			# Cygwin/MSYS: use cygpath + file_utils.bat
+			local full_path_src
+			full_path_src=$(full_path "$src")
+			[ $? -ne 0 ] && echo "Failed to get full path of the source" && return 8
+			local win_path_src win_path_dest
+			win_path_src=$(cygpath -w "$full_path_src")
+			win_path_dest=$(cygpath -w "$dest_complete_path")
+			"$THIS_DIR/file_utils.bat" symlink "$win_path_src" "$win_path_dest"
+		fi
 	else
-		ln -s "$src" "$dest"
+		# Linux filesystem (or native Linux): use ln -s
+		ln -s "$src" "$dest_complete_path"
 	fi
 	local code=$?
-	[ $code -ne 0 ] && echo "Failed to create the symlink. Error code: $code" && return 7
+	if [ $code -ne 0 ]; then
+		echo "Failed to create the symlink. Error code: $code"
+		return 10
+	fi
+	return 0
 }

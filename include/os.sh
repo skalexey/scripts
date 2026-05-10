@@ -1,7 +1,7 @@
 #!/bin/bash
 
 is_windows() {
-	[[ is_cygwin || is_msys || is_wsl || "$OSTYPE" == "win32" ]]
+	is_cygwin || is_msys || is_wsl || [[ "$OSTYPE" == "win32" ]]
 }
 
 is_nix() {
