@@ -31,6 +31,7 @@ function switch_light_mode()
 	file_replace "$full_path" "$vscode_from" "$vscode_to"
 	[ $? -ne 0 ] && log_error "Failed to switch VSCode theme"
 	powershell.exe "$(to_win_path $THIS_DIR/win_theme_switch.ps1)" "$win_theme"
+	powershell.exe "$(to_win_path $THIS_DIR/terminal_theme_switch.ps1)" "$win_theme"
 	local plugins_dir="plugins"
 
 	for file in $THIS_DIR/$plugins_dir/*; do
